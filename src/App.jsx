@@ -7,9 +7,11 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MainLayout = ({ children, quizMode }) => (
-  <div className={`min-h-screen text-slate-100 font-sans transition-colors duration-500 flex flex-col ${quizMode.includes('test') ? 'bg-slate-900 border-t-8 border-amber-500' : 'bg-[#0f172a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/40 via-slate-900 to-slate-900'}`}>
+  // ÆNDRING: min-h-[100dvh] sikrer at den passer præcis indenfor browserens rammer på mobil (uden adressebar-problemer)
+  <div className={`min-h-[100dvh] text-slate-100 font-sans transition-colors duration-500 flex flex-col ${quizMode.includes('test') ? 'bg-slate-900 border-t-8 border-amber-500' : 'bg-[#0f172a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/40 via-slate-900 to-slate-900'}`}>
     {quizMode.includes('test') && <div className="bg-amber-500 text-black font-black text-center text-xs py-1">TEST MODE {quizMode.includes('3') ? '3' : (quizMode.includes('2') ? '2' : '1')} (DEV)</div>}
-    <div className="w-full max-w-md md:max-w-4xl mx-auto p-4 md:p-6 flex-grow flex flex-col">
+    {/* ÆNDRING: p-3 i stedet for p-4/p-6 for at spare vertikal plads på mobiler */}
+    <div className="w-full max-w-md md:max-w-4xl mx-auto p-3 md:p-6 flex-grow flex flex-col justify-between">
       {children}
     </div>
   </div>
@@ -37,7 +39,7 @@ const QuizApp = () => {
     { q: "RUNDE 3 TEST (SPICY): Skal vi i seng?", o: ["Nu", "Aldrig", "Om lidt", "I morgen"], a: 0, c: "Sengen kalder, men festen larmer. Godnat!" }
   ];
 
-  // --- DATA: RUNDE 1 (FAKTA & KALENDER 2025) ---
+  // --- DATA: RUNDE 1 (FAKTA & KALENDER 2025 - ORDSPIL EDITION) ---
   const realQuestions1 = [
     // DE 5 NYE STARTSPØRGSMÅL
     { q: "Hvilke tre lande delte værtsskabet for VM i Herrehåndbold i januar 2025?", o: ["Danmark, Sverige, Norge", "Danmark, Norge, Kroatien", "Tyskland, Polen, Danmark", "Frankrig, Spanien, Portugal"], a: 1, c: "Vi håndterede det for vildt! Det var ikke en harpiks-situation, men en ren mål-fest i tre lande. Man må sige, vi havde grebet om tingene." },
@@ -74,7 +76,7 @@ const QuizApp = () => {
     { q: "Hvad var det, Dronning Margrethe gjorde for præcis to år siden (nytår 23/24)?", o: ["Hun abdicerede", "Hun fik en hund", "Hun flyttede", "Hun fik kørekort"], a: 0, c: "Hun smed kronen på værket. Det var en kongelig overraskelse, der fik os til at tabe kæben. Nu er det Frederik, der styrer ballet." }
   ];
 
-  // --- DATA: RUNDE 2 (BLANDET MIX 2025) ---
+  // --- DATA: RUNDE 2 (BLANDET MIX 2025 - ORDSPIL EDITION) ---
   const realQuestions2 = [
     { q: "FILM: Hvilken spil-filmatisering med Jack Black havde premiere i april 2025?", o: ["Minecraft: The Movie", "Fortnite: The Movie", "Zelda", "Mario 2"], a: 0, c: "En rigtig blok-buster! Men anmelderne var lidt firkantede. Det var måske at bygge lidt for højt på en spil-succes." },
     { q: "ROYALT: Hvem fyldte 20 år d. 15. oktober 2025?", o: ["Prins Christian", "Prinsesse Isabella", "Grev Nikolai", "Prins Joachim"], a: 0, c: "Han er ikke længere teen-konge, men tyve! Han tronede frem på dagen. Det var en fyrstelig fejring." },
@@ -99,7 +101,7 @@ const QuizApp = () => {
     { q: "BONUS: Er vi klar til den SPICY runde?", o: ["JA!", "Nej", "Måske", "Hvad?"], a: 0, c: "Så stram ballerne, for nu gælder det trends og TikTok-sprog!" }
   ];
 
-  // --- DATA: RUNDE 3 (SPICY TRENDS & BEGREBER 2025) ---
+  // --- DATA: RUNDE 3 (SPICY TRENDS & BEGREBER 2025 - ORDSPIL EDITION) ---
   const realQuestions3 = [
     { q: "TREND: Hvad gik fænomenet 'Rawdogging' på en flyvetur ud på?", o: ["Ingen skærm/mad/søvn", "At flyve nøgen", "At spise råt kød", "At stå op"], a: 0, c: "Det er rå-kost for hjernen! Ingen underholdning, bare luft. Man skal være gjort af et særligt stof for ikke at flyve op i det røde felt." },
     { q: "SLANG: Hvad betød det, hvis en person havde 'Rizz' i 2025?", o: ["Charme/Score-evne", "Risengrød", "Penge", "Dårlig stil"], a: 0, c: "Har du Rizz, får du kys! Ingen Rizz? Så er det bare ris til egen røv. Det handler om at have talegaverne i orden." },
@@ -172,6 +174,7 @@ const QuizApp = () => {
   // AUTO-REVEAL LOGIK FOR VÆRTEN
   useEffect(() => {
     if (role === 'host' && gameState.status === 'active' && players.length > 0) {
+        // VIGTIGT: Vi tjekker nu, om spilleren har svaret på DETTE spørgsmål (ved at kigge på indekset)
         const allAnswered = players.every(p => p.last_q_index === gameState.current_question);
         if (allAnswered) {
             const timer = setTimeout(() => {
@@ -185,10 +188,12 @@ const QuizApp = () => {
   const submitAnswer = async (idx) => {
     const me = players.find(p => p.name === playerName);
     
+    // SIKKERHEDSTJEK: Har jeg allerede svaret på DETTE spørgsmål?
     if (me && me.last_q_index === gameState.current_question) return;
     if (gameState.status !== 'active') return;
 
     if (me) {
+        // Vi gemmer nu både SVARET og SPØRGSMÅLS-NUMMERET.
         let updateData = { last_answer: idx, last_q_index: gameState.current_question };
         if (idx === activeData[gameState.current_question]?.a) {
             const secondsPassed = (new Date() - new Date(gameState.question_started_at)) / 1000;
@@ -203,6 +208,9 @@ const QuizApp = () => {
 
   const updateGameStatus = async (status, idx = 0) => {
     if (idx >= activeData.length && status === 'active') status = 'finished';
+    
+    // Vi behøver ikke længere "nulstille" svar i databasen, fordi vi nu tjekker versions-nummeret (last_q_index).
+    // Det gør systemet lynhurtigt og fejlfrit.
     
     const payload = { status, current_question: Math.min(idx, activeData.length - 1) };
     if (status === 'active') payload.question_started_at = new Date().toISOString();
@@ -222,7 +230,9 @@ const QuizApp = () => {
     }
   };
 
+  // HER ER FIXET: VI BRUGER room_id TIL AT SLETTE POINT
   const startMoreQuestions = async () => {
+    // Find ud af hvilken mode vi er i, og hvad den næste er
     const currentBase = gameState.quiz_mode.includes('test') ? 'test' : 'real';
     let nextMode = '';
     let promptText = '';
@@ -232,16 +242,18 @@ const QuizApp = () => {
         promptText = "Klar til RUNDE 2? Pointene nulstilles!";
     } else if (gameState.quiz_mode === currentBase + '_2') {
         nextMode = currentBase + '_3';
-        promptText = "Klar til RUNDE 3 (SPICY FINALEN)? Pointene nulstilles!";
+        promptText = "Klar til RUNDE 3 (FINALEN)? Pointene nulstilles!";
     } else {
-        return; 
+        return; // Ingen flere runder
     }
 
     if (!window.confirm(promptText)) return;
     
+    // 1. Find ID på rummet
     const { data: room } = await supabase.from('quiz_rooms').select('id').eq('room_code', roomCode).single();
     
     if (room) {
+        // 2. Nulstil spillere KUN i dette rum
         const { error } = await supabase.from('players')
             .update({ score: 0, correct_count: 0, total_bonus: 0, last_answer: null, last_q_index: -1 })
             .eq('room_id', room.id);
@@ -267,6 +279,8 @@ const QuizApp = () => {
     const { data: room } = await supabase.from('quiz_rooms').select('id').eq('room_code', roomCode).single();
     if (room) { await supabase.from('players').insert([{ name: playerName, score: 0, room_id: room.id, last_q_index: -1 }]); setRole('player'); setView('game'); }
   };
+
+  // --- UI VIEWS ---
 
   if (view === 'landing') {
     return (
@@ -295,9 +309,12 @@ const QuizApp = () => {
   }
 
   const currentQ = activeData[gameState.current_question];
+  
+  // HER ER MAGIEN: Vi tjekker databasen: Har JEG svaret på DETTE spørgsmål (indeks)?
   const myData = players.find(p => p.name === playerName);
   const iHaveAnsweredThisSpecificQuestion = myData && myData.last_q_index === gameState.current_question;
 
+  // Header Title Helper
   const getRoundTitle = () => {
       if (gameState.quiz_mode.includes('3')) return "RUNDE 3 🔥";
       if (gameState.quiz_mode.includes('2')) return "RUNDE 2 🚀";
@@ -306,7 +323,8 @@ const QuizApp = () => {
 
   return (
     <MainLayout quizMode={gameState.quiz_mode}>
-      <div className="flex justify-between items-center mb-6 bg-slate-800/50 p-4 rounded-2xl backdrop-blur-sm border border-slate-700/50">
+      {/* HEADER */}
+      <div className="flex justify-between items-center mb-4 bg-slate-800/50 p-4 rounded-2xl backdrop-blur-sm border border-slate-700/50">
         <div className="font-black text-xl italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
             {getRoundTitle()}
         </div>
@@ -316,6 +334,7 @@ const QuizApp = () => {
         </div>
       </div>
 
+      {/* LOBBY */}
       {gameState.status === 'lobby' && (
         <div className="flex-grow flex flex-col text-center">
           <h2 className="text-4xl font-black mb-2 text-white">
@@ -344,9 +363,10 @@ const QuizApp = () => {
         </div>
       )}
 
+      {/* GAME ACTIVE */}
       {gameState.status === 'active' && currentQ && (
         <div className="flex-grow flex flex-col">
-          <div className="text-center mb-6">
+          <div className="text-center mb-4">
             <span className="inline-block bg-slate-800 text-indigo-300 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase mb-4 border border-slate-700">Spørgsmål {gameState.current_question + 1} / {activeData.length}</span>
             <h2 className="text-2xl md:text-4xl font-black leading-tight text-white drop-shadow-sm">{currentQ.q}</h2>
           </div>
@@ -378,9 +398,11 @@ const QuizApp = () => {
         </div>
       )}
 
+      {/* SHOWING ANSWER */}
       {gameState.status === 'showing_answer' && currentQ && (
         <div className="flex-grow flex flex-col items-center justify-start text-center overflow-y-auto">
           
+          {/* SKÅL ALARM LOGIK */}
           {(() => {
             const playersWhoAnswered = players.filter(p => p.last_q_index === gameState.current_question);
             const everyoneWrong = playersWhoAnswered.length > 0 && playersWhoAnswered.every(p => p.last_answer !== currentQ.a);
@@ -397,6 +419,7 @@ const QuizApp = () => {
             return null;
           })()}
 
+          {/* DET RIGTIGE SVAR + CONTEXT */}
           <div className="mb-6 w-full max-w-2xl mx-auto">
              <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4 border border-emerald-500/20">
                 <CheckCircle2 size={14} /> Det rigtige svar
@@ -410,9 +433,11 @@ const QuizApp = () => {
              )}
           </div>
 
+          {/* HVEM SVAREDE HVAD? */}
           <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
              {currentQ.o.map((opt, i) => {
                 const isCorrect = i === currentQ.a;
+                // Her kigger vi kun på dem, der har svaret PÅ DENNE RUNDE
                 const votedHere = players.filter(p => p.last_q_index === gameState.current_question && p.last_answer === i);
                 
                 return (
@@ -437,6 +462,7 @@ const QuizApp = () => {
         </div>
       )}
 
+      {/* RESULTS */}
       {gameState.status === 'finished' && (
         <div className="flex-grow flex flex-col">
           <div className="text-center mb-8">
@@ -465,6 +491,7 @@ const QuizApp = () => {
           
           {role === 'host' && (
             <div className="mt-auto space-y-4">
+                {/* KNAPPEN TIL NÆSTE RUNDE (VISES KUN HVIS VI IKKE ALLEREDE ER I RUNDE 3) */}
                 {!gameState.quiz_mode.includes('3') && (
                     <button onClick={startMoreQuestions} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl animate-pulse hover:scale-[1.02] transition-transform flex items-center justify-center gap-3">
                          {gameState.quiz_mode.includes('2') ? "SPICY RUNDE 3!!!" : "MERE!!!"} <Flame fill="currentColor" />
