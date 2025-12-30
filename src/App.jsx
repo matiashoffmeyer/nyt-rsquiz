@@ -22,7 +22,9 @@ const QuizApp = () => {
   const [playerName, setPlayerName] = useState('');
   const [players, setPlayers] = useState([]);
   const [gameState, setGameState] = useState({ status: 'lobby', current_question: 0, question_started_at: null, quiz_mode: 'real' });
-  const [hasAnswered, setHasAnswered] = useState(false);
+  
+  // FIX: Vi bruger nu et tal til at huske, hvilket spørgsmål der er svaret på, i stedet for en boolean
+  const [lastAnsweredQIndex, setLastAnsweredQIndex] = useState(-1);
 
   // --- DATA: TEST RUNDE 1 ---
   const testQuestions1 = [
@@ -157,12 +159,12 @@ const QuizApp = () => {
     return () => { supabase.removeChannel(roomSub); supabase.removeChannel(playerSub); };
   }, [roomCode, role]);
 
-  // VIGTIGT: Nulstil knapperne LOKALT for spilleren, når spørgsmålet skifter
+  // FIX: Sørg for at nulstille vores svar-husker, hvis vi kommer ud i lobbyen igen
   useEffect(() => {
-     if (gameState.status === 'active') {
-         setHasAnswered(false);
+     if (gameState.status === 'lobby') {
+         setLastAnsweredQIndex(-1);
      }
-  }, [gameState.current_question, gameState.quiz_mode, gameState.status]);
+  }, [gameState.status]);
 
   // AUTO-REVEAL LOGIK FOR VÆRTEN
   useEffect(() => {
@@ -178,8 +180,11 @@ const QuizApp = () => {
   }, [players, gameState.status, role]);
 
   const submitAnswer = async (idx) => {
-    if (hasAnswered || gameState.status !== 'active') return;
-    setHasAnswered(true);
+    // FIX: Tjek om vi allerede HAR svaret på netop dette spørgsmål
+    if (lastAnsweredQIndex === gameState.current_question || gameState.status !== 'active') return;
+    
+    // Sæt vores lokale 'husk' til dette spørgsmåls nummer
+    setLastAnsweredQIndex(gameState.current_question);
     
     const me = players.find(p => p.name === playerName);
     if (me) {
@@ -272,6 +277,8 @@ const QuizApp = () => {
   }
 
   const currentQ = activeData[gameState.current_question];
+  // FIX: Beregn om vi har svaret på dette spørgsmål
+  const isAnswered = lastAnsweredQIndex === gameState.current_question;
 
   return (
     <MainLayout quizMode={gameState.quiz_mode}>
@@ -328,9 +335,9 @@ const QuizApp = () => {
               role === 'player' ? (
                 <button 
                   key={i} 
-                  disabled={hasAnswered} 
+                  disabled={isAnswered} 
                   onClick={() => submitAnswer(i)} 
-                  className={`relative p-6 rounded-2xl text-xl font-bold text-left transition-all border-b-4 active:border-b-0 active:translate-y-1 touch-manipulation ${hasAnswered ? 'bg-slate-800 border-slate-900 text-slate-500' : 'bg-slate-700 border-slate-900 hover:bg-slate-600 text-white active:bg-indigo-600'}`}
+                  className={`relative p-6 rounded-2xl text-xl font-bold text-left transition-all border-b-4 active:border-b-0 active:translate-y-1 touch-manipulation ${isAnswered ? 'bg-slate-800 border-slate-900 text-slate-500' : 'bg-slate-700 border-slate-900 hover:bg-slate-600 text-white active:bg-indigo-600'}`}
                 >
                   {opt}
                 </button>
@@ -346,7 +353,7 @@ const QuizApp = () => {
           </div>
 
           {role === 'host' && <button onClick={() => updateGameStatus('showing_answer', gameState.current_question)} className="mt-6 w-full bg-amber-500 text-black py-4 rounded-2xl font-black text-xl shadow-lg">SE SVAR</button>}
-          {role === 'player' && hasAnswered && <div className="mt-4 text-center text-indigo-400 font-bold animate-pulse">Svar modtaget... 🤞</div>}
+          {role === 'player' && isAnswered && <div className="mt-4 text-center text-indigo-400 font-bold animate-pulse">Svar modtaget... 🤞</div>}
         </div>
       )}
 
