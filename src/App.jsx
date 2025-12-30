@@ -122,6 +122,20 @@ const QuizApp = () => {
     return () => { supabase.removeChannel(roomSub); supabase.removeChannel(playerSub); };
   }, [roomCode, role]);
 
+  // NYT: AUTO-REVEAL LOGIK FOR VÆRTEN
+  useEffect(() => {
+    if (role === 'host' && gameState.status === 'active' && players.length > 0) {
+        const allAnswered = players.every(p => p.last_answer !== null);
+        if (allAnswered) {
+            // Lille pause så det ikke virker abrupt
+            const timer = setTimeout(() => {
+                updateGameStatus('showing_answer', gameState.current_question);
+            }, 500);
+            return () => clearTimeout(timer);
+        }
+    }
+  }, [players, gameState.status, role]);
+
   const submitAnswer = async (idx) => {
     if (hasAnswered || gameState.status !== 'active') return;
     setHasAnswered(true);
@@ -184,7 +198,7 @@ const QuizApp = () => {
             <div className="relative bg-slate-900 rounded-full p-4 mb-6"><Zap className="text-amber-400" size={64} fill="currentColor" /></div>
           </div>
           <h1 className="text-6xl font-black mb-10 italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 drop-shadow-lg">
-            H. SCHNEEKLOTHS<br/>NY-NY-NY-NYTÅRS<br/>BATTLE<br/>2025
+            H. Schneekloths<br/>NYTÅRS<br/>BATTLE<br/>2025
           </h1>
           
           <div className="w-full space-y-4">
