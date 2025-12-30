@@ -37,84 +37,84 @@ const QuizApp = () => {
     { q: "RUNDE 3 TEST (SPICY): Skal vi i seng?", o: ["Nu", "Aldrig", "Om lidt", "I morgen"], a: 0, c: "Godnat!" }
   ];
 
-  // --- DATA: RUNDE 1 (FAKTA & NEWS 2025) ---
+  // --- DATA: RUNDE 1 (FAKTA & KALENDER 2025) ---
   const realQuestions1 = [
     // SPORT & BEGIVENHEDER
-    { q: "Hvor startede Tour de France i juli 2025?", o: ["København", "Lille", "Barcelona", "Firenze"], a: 1, c: "Touren startede i det nordfranske (Lille) d. 5. juli. Ingen udenlandske eventyr i år." },
-    { q: "Hvilken tysk by lagde græs til Champions League finalen 2025?", o: ["Berlin", "Dortmund", "München", "Hamburg"], a: 2, c: "Finalen blev spillet på Allianz Arena i München d. 31. maj." },
-    { q: "Hvilken schweizisk by var vært for Eurovision Song Contest 2025?", o: ["Zürich", "Geneve", "Basel", "Bern"], a: 2, c: "Basel vandt værtskabet efter Nemo's sejr året før. 'The Code' knækkede koden til Schweiz." },
-    { q: "Hvilket land var værter for Kvindernes EM i fodbold i sommeren 2025?", o: ["Frankrig", "Schweiz", "Sverige", "England"], a: 1, c: "Schweiz havde et travlt år! Både Melodi Grand Prix og EM i fodbold på én sommer." },
+    { q: "Hvilken by er officielt bekræftet som startby for Tour de France 2025?", o: ["København", "Lille (Frankrig)", "Barcelona", "London"], a: 1, c: "Touren starter i det nordfranske (Lille) d. 5. juli 2025. Ingen udenlandsk start i år." },
+    { q: "Hvor skal Champions League finalen spilles d. 31. maj 2025?", o: ["Wembley (London)", "Parken (Kbh)", "Allianz Arena (München)", "Stade de France (Paris)"], a: 2, c: "München er værtsbyen. Det er bekræftet af UEFA for længe siden." },
+    { q: "Hvilken by vandt værtskabet for Eurovision Song Contest 2025?", o: ["Zürich", "Geneve", "Basel", "Bern"], a: 2, c: "Basel i Schweiz vandt kampen. Det bliver afholdt i St. Jakobshalle i maj." },
+    { q: "Hvilket stort mesterskab afholdes i Schweiz i sommeren 2025?", o: ["VM i Cykling", "Kvindernes EM i Fodbold", "OL", "VM i Håndbold"], a: 1, c: "Schweiz har et vildt år. Både Melodi Grand Prix og EM i kvindefodbold på én sommer." },
     
     // POLITIK & SAMFUND
-    { q: "Hvornår gik danskerne til stemmeurnerne til Kommunalvalget 2025?", o: ["1. november", "18. november", "21. november", "4. december"], a: 1, c: "Tirsdag d. 18. november var den store valgdag (KV25). Det er altid den tredje tirsdag i november." },
-    { q: "Hvilken stor rolle overtog Danmark i EU i andet halvår af 2025?", o: ["Formandskabet", "Forsvars-ledelsen", "Landbrugsstyrelsen", "Intet"], a: 0, c: "Danmark overtog EU-formandskabet d. 1. juli 2025 efter Polen." },
-    { q: "Hvilken afgift trådte for alvor i kraft og diskuteres vildt i landbruget i 2025?", o: ["CO2-afgiften", "Vand-afgiften", "Traktor-afgiften", "Mælke-skatten"], a: 0, c: "Den grønne trepartsaftale betød, at CO2-afgiften nu er en realitet. Køerne er blevet dyre i drift." },
-    { q: "Hvad skete der med Storebæltsbroens priser i 2025?", o: ["De blev gratis", "De steg (indeksreguleret)", "Halv pris i weekenden", "Kun betaling for lastbiler"], a: 1, c: "Som altid: Prisen fik lige et lille nøk opad med inflationen. Ingen gratis bro i år heller." },
+    { q: "Hvilken dato skal vi til stemmeurnerne til Kommunalvalget 2025?", o: ["1. november", "18. november", "21. november", "4. december"], a: 1, c: "Valgdatoen ligger fast i loven: Tredje tirsdag i november. Altså d. 18. november 2025." },
+    { q: "Hvilken rolle overtager Danmark i EU fra d. 1. juli 2025?", o: ["Formandskabet", "Forsvars-ledelsen", "Landbrugsstyrelsen", "Ingen"], a: 0, c: "Danmark har EU-formandskabet i andet halvår af 2025. Mette F. skal styre møderne." },
+    { q: "Hvem bliver indsat som USA's præsident d. 20. januar 2025?", o: ["Donald Trump", "Kamala Harris", "Joe Biden", "J.D. Vance"], a: 0, c: "Donald Trump vandt valget i '24 og bliver nr. 47. Det er et faktum." },
+    { q: "Hvad sker der med statsradiofonien i 2025?", o: ["DR lukker P3", "TV2 bliver reklamefri", "DR fylder 100 år", "Licensen stiger"], a: 2, c: "Statsradiofonien (DR) blev grundlagt 1. april 1925. De fylder 100 år!" },
 
-    // KULTUR & UNDERHOLDNING
-    { q: "Hvilket legendarisk britisk band blev genforenet og turnerede i sommeren 2025?", o: ["Pink Floyd", "Oasis", "The Smiths", "One Direction"], a: 1, c: "Liam og Noel Gallagher begravede stridsøksen! Oasis spillede endelig sammen igen. 'Anyway, here's Wonderwall'." },
-    { q: "Hvem var vært for Oscar-uddelingen i marts 2025?", o: ["Jimmy Kimmel", "Conan O'Brien", "Ricky Gervais", "Ryan Reynolds"], a: 1, c: "Conan O'Brien fik tjansen for første gang. Han afløste Kimmel, der havde taget fire tørne." },
-    { q: "Hvilken kæmpe popstjerne lagde Parken ned med sin 'Eras Tour' afslutning i Europa?", o: ["Taylor Swift", "Beyoncé", "Dua Lipa", "Adele"], a: 0, c: "Taylor Swift dominerede stadig alt. Selvom touren startede længe før, var hypen stadig enorm i 2025." },
-    { q: "Hvilken film vandt Guldpalmen i Cannes 2025?", o: ["Megalopolis", "Anora", "Joker 2", "Gladiator II"], a: 1, c: "Sean Bakers 'Anora' (om en sexarbejder) tog prisen. En vild indie-film der slog de store blockbusters." },
+    // KULTUR & SHOWBIZ
+    { q: "Hvilket britisk band har officielt meldt ud, at de genforenes i 2025?", o: ["Pink Floyd", "Oasis", "The Smiths", "One Direction"], a: 1, c: "Liam og Noel Gallagher har sluttet fred (for nu). Oasis spiller store koncerter i UK sommeren '25." },
+    { q: "Hvem er bekræftet som vært for Oscar-uddelingen i marts 2025?", o: ["Jimmy Kimmel", "Conan O'Brien", "Ricky Gervais", "Kevin Hart"], a: 1, c: "Conan O'Brien tager tjansen. Det er officielt bekræftet af akademiet." },
+    { q: "Hvilken verdensstjerne har annonceret, at han kører Formel 1 for Ferrari i 2025?", o: ["Max Verstappen", "Lewis Hamilton", "Kevin Magnussen", "Fernando Alonso"], a: 1, c: "Det største skifte i F1-historien. Hamilton i rødt fra 2025-sæsonen." },
+    { q: "Hvilket dansk rockband spiller 4 udsolgte koncerter i Parken i juni 2025?", o: ["Volbeat", "D-A-D", "The Minds of 99", "Nik & Jay"], a: 2, c: "Minds of 99 slår alle rekorder med fire koncerter i nationalarenaen." },
 
-    // TECH & VIDENSKAB
-    { q: "Hvad var det store rygte om iPhone 17, der udkom i september 2025?", o: ["Den kan foldes", "En ultratynd 'Air' model", "Ingen skærm", "Gennemsigtig"], a: 1, c: "iPhone 17 'Air' (eller Slim). Apple satsede alt på at lave den tyndeste telefon nogensinde." },
-    { q: "Hvilket styresystem stoppede Microsoft supporten til i oktober 2025?", o: ["Windows 10", "Windows 11", "Windows XP", "Windows 8"], a: 0, c: "Slut med Windows 10. Millioner af PC'er blev pludselig 'forældede' d. 14. oktober." },
-    { q: "Hvornår udkom GTA VI (Grand Theft Auto 6) endelig?", o: ["Foråret 2025", "Efteråret 2025", "Det er udskudt til 2026", "Julen 2025"], a: 2, c: "Klassisk Rockstar! Det blev udskudt til efteråret 2026. Gamerne græd." },
-    { q: "Hvad hedder den nye 'super-chip' fra Nvidia, der drev AI-bølgen i 2025?", o: ["Blackwell", "Redwell", "SkyNet", "Terminator"], a: 0, c: "Nvidia Blackwell B200. Den chip, der får ChatGPT til at virke som en lommeregner." },
+    // TECH & TING
+    { q: "Hvilket gigantisk spil har Rockstar bekræftet udkommer i efteråret 2025?", o: ["GTA VI", "Red Dead 3", "FIFA 26", "Sims 5"], a: 0, c: "Grand Theft Auto VI. Traileren sagde 2025, og Rockstar fastholder 'Fall 2025'." },
+    { q: "Hvilket Microsoft-styresystem mister officielt supporten i oktober 2025?", o: ["Windows 10", "Windows 11", "Windows XP", "Windows 8"], a: 0, c: "Windows 10 dør d. 14. oktober 2025. Ingen flere sikkerhedsopdateringer." },
+    { q: "Hvilken oplader-standard blev lovpligtig for alle nye telefoner i EU ved udgangen af 24/25?", o: ["Lightning", "USB-C", "Trådløs", "Micro-USB"], a: 1, c: "USB-C. Apple måtte bøje sig. Nu har selv iPhone 16/17 det stik." },
+    { q: "Hvilken artist er bekræftet til Super Bowl Halftime Show i feb 2025?", o: ["Kendrick Lamar", "Taylor Swift", "Justin Bieber", "Drake"], a: 0, c: "Kendrick Lamar skal optræde i New Orleans. Det blev annonceret i september." },
 
-    // NATUR & DYR (User request: Behold kategorier)
-    { q: "Hvilket dyr blev i 2025 spottet flere steder i Jylland efter at have været væk længe?", o: ["Elgen", "Ulven (hvalpe)", "Guldsjakalen", "Bjørnen"], a: 1, c: "Ulven har for alvor etableret sig. Der blev set hvalpe flere steder i det midtjyske." },
-    { q: "Hvilken invasiv art kæmpede danske haveejere stadig mest med i 2025?", o: ["Mårhunden", "Dræbersneglen", "Iberisk Skovsnegl", "Den Spanske Flue"], a: 1, c: "Dræbersneglen (Iberisk Skovsnegl) er stadig kongen af køkkenhaven. Ingen kur fundet endnu." },
-    { q: "Hvad skete der med klimaet i sommeren 2025 i Sydeuropa?", o: ["Hedebølge (45+ grader)", "Sne i juli", "Ingen regn i 3 mdr", "Tornadoer"], a: 0, c: "Endnu en rekord-sommer. Turister flygtede fra Grækenland og Spanien pga. varmen." },
-    { q: "Hvilken hunderace var stadig den mest populære i Danmark i 2025?", o: ["Fransk Bulldog", "Labrador Retriever", "Golden Retriever", "Cocker Spaniel"], a: 1, c: "Labradoren er urørlig på tronen. Den perfekte familiehund (hvis man kan lide hår overalt)." }
+    // DYR & NATUR
+    { q: "Hvilket rovdyr har etableret sig fast med hvalpe i Jylland (status 2024/25)?", o: ["Guldsjakal", "Ulv", "Los", "Bjørn"], a: 1, c: "Ulven er her for at blive. Der er flere dokumenterede hvalpekuld nu." },
+    { q: "Hvilken invasiv snegl er stadig den største plage i danske haver?", o: ["Voldsneglen", "Dræbersneglen", "Plettet voldsnegl", "Vinbjergsneglen"], a: 1, c: "Den iberiske skovsnegl (dræbersneglen). Kampen fortsætter også i 2025." },
+    { q: "Hvilken hunderace var den mest populære i Danmark ved seneste optælling?", o: ["Fransk Bulldog", "Labrador Retriever", "Golden Retriever", "Cocker Spaniel"], a: 1, c: "Labradoren er stadig danskernes foretrukne familiehund." },
+    { q: "Hvad skete der med Dronning Margrethe for præcis et år siden (nytår 23/24)?", o: ["Hun abdicerede", "Hun fik en hund", "Hun flyttede", "Hun fik kørekort"], a: 0, c: "Det var i sin nytårstale for et år siden, hun chokerede alle. Nu har vi Kong Frederik." }
   ];
 
-  // --- DATA: RUNDE 2 (BLANDET 2025) ---
+  // --- DATA: RUNDE 2 (BLANDET MIX 2025) ---
   const realQuestions2 = [
-    { q: "BIOGRAF: Hvilken stor sci-fi film fik premiere i dec 2025?", o: ["Dune 3", "Avatar: Fire and Ash", "Star Wars X", "Matrix 5"], a: 1, c: "Avatar 3 (Fire and Ash) kom endelig. James Cameron brugte 13 år på at lave vandet pænt." },
-    { q: "ROYALT: Hvem fyldte 20 år i oktober 2025?", o: ["Prins Christian", "Prinsesse Isabella", "Grev Nikolai", "Prins Joachim"], a: 0, c: "Vores kommende konge, Prins Christian, rundede det skarpe hjørne d. 15. oktober." },
-    { q: "MAD: Hvad steg prisen voldsomt på i 2025 pga. høstfejl?", o: ["Kaffe & Kakao", "Kartofler", "Mælk", "Svinekød"], a: 0, c: "Chokolade og kaffe blev luksusvarer. Dårlig høst i Brasilien og Vestafrika pressede prisen op." },
-    { q: "MUSIK: Hvem spillede på Roskilde Festival 2025 (Headliner)?", o: ["Eminem", "Billie Eilish", "Fred Again..", "The Minds of 99"], a: 2, c: "Fred Again.. (eller et andet stort navn, men Fred er det bedste bud). Roskilde elsker ham." },
-    { q: "TRANSPORT: Hvilken ny forbindelse åbnede/blev forsinket i 2025?", o: ["Femern Bælt", "Kattegat-broen", "Letbanen i Kbh", "Metro til Malmø"], a: 0, c: "Femern-forbindelsen. Der arbejdes på højtryk, men åbningen er først rigtigt i 2029. Men byggeriet peakede i '25." },
-    { q: "TREND: Hvad bruger unge nu i stedet for Google til at søge?", o: ["TikTok & ChatGPT", "Bing", "Leksikon", "Facebook"], a: 0, c: "Google taber terræn. De unge spørger bare ChatGPT eller søger på TikTok." },
-    { q: "ØKONOMI: Hvad skete der med renten i 2025?", o: ["Den faldt (endelig)", "Den steg til 10%", "Den var 0%", "Ingen ved det"], a: 0, c: "Centralbankerne satte endelig renten ned. Boligejerne åndede lettet op." },
-    { q: "USA: Hvem blev indsat som præsident i januar 2025?", o: ["Donald Trump", "Kamala Harris", "Joe Biden", "The Rock"], a: 0, c: "Donald Trump vandt valget i '24 og blev indsat d. 20. januar 2025. Det gik ikke stille for sig." },
-    { q: "REJSER: Hvilket krav blev indført for rejser til Storbritannien i 2025?", o: ["Visum (ETA)", "Vaccine-pas", "Ingen adgang", "Kun med båd"], a: 0, c: "ETA-systemet trådte i kraft. Du skal nu betale og registrere dig online før du må flyve til London." },
-    { q: "GAMING: Hvilken Nintendo-konsol rygtedes/udkom i 2025?", o: ["Switch 2", "GameBoy 2025", "Wii U 2", "Virtual Boy X"], a: 0, c: "Switch 2! Efter 8 år med den gamle, kom efterfølgeren endelig (eller blev annonceret)." },
-    { q: "DANSK TV: Hvilket program fejrede jubilæum i 2025?", o: ["X-Factor", "Vild med Dans", "Hammerslag", "Bagedysten"], a: 1, c: "Vild med Dans kører stadig. Det stopper aldrig." },
-    { q: "SLADDER: Hvilket dansk kongehus-medlem flyttede (måske) hjem igen i 2025?", o: ["Joachim & Marie", "Mary", "Frederik", "Benedikte"], a: 0, c: "Snakken gik på, om Joachim og Marie ville vende hjem fra USA, da hans job udløb." },
-    { q: "SUNDHED: Hvilken medicin var stadig i restordre i 2025?", o: ["Wegovy", "Panodil", "Ipren", "Hostesaft"], a: 0, c: "Slankemedicinen. Efterspørgslen er stadig større end produktionen." },
-    { q: "RUMMET: Hvilken mission skulle sende mennesker rundt om månen i 2025?", o: ["Artemis II", "Apollo 18", "SpaceX Mars", "Star Wars"], a: 0, c: "NASA's Artemis II. Fire astronauter skulle flyve rundt om månen (første gang siden 1972)." },
-    { q: "JOB: Hvad blev det nye store buzzword på arbejdsmarkedet i 2025?", o: ["4-dages uge", "Hjemmearbejde", "Quiet Quitting", "Larmende Arbejde"], a: 0, c: "Forsøg med 4-dages arbejdsuge spredte sig til flere kommuner og virksomheder." },
-    { q: "SPORT: Hvem vandt Superligaen i sommeren 2025?", o: ["FCK", "Brøndby", "FCM", "AGF"], a: 0, c: "FCK er et godt bud (baseret på budgetter), men AGF drømmer stadig om det store trofæ i det nye stadion." },
-    { q: "FERIE: Hvor rejste danskerne mest hen i 2025?", o: ["Spanien", "Tyrkiet", "Sverige", "Thailand"], a: 0, c: "Spanien er og bliver danskernes favorit. Malaga og Mallorca trækker." },
-    { q: "BIL: Hvilket bilmærke solgte flest elbiler i DK i 2025?", o: ["Tesla", "VW", "Audi", "BMW"], a: 0, c: "Tesla Model Y er stadig overalt. Man kan ikke køre 500 meter uden at se en." },
-    { q: "AFSLUTNING: Hvilken ugedag faldt Juleaften på i 2025?", o: ["Mandag", "Onsdag", "Torsdag", "Fredag"], a: 1, c: "Onsdag d. 24. december. En dejlig midt-i-ugen jul." },
-    { q: "BONUS: Er vi klar til sidste runde?", o: ["JA!", "Nej", "Måske", "Hvad?"], a: 0, c: "Godt! For nu bliver det lidt mere løssluppent..." }
+    { q: "FILM: Hvilken stor film med Jason Momoa og Jack Black har premiere i april 2025?", o: ["Minecraft: The Movie", "Jumanji 4", "Aquaman 3", "Fast & Furious 12"], a: 0, c: "En Minecraft-film med rigtige mennesker. Traileren fik... blandede modtagelser." },
+    { q: "ROYALT: Hvem fylder 20 år d. 15. oktober 2025?", o: ["Prins Christian", "Prinsesse Isabella", "Grev Nikolai", "Prins Joachim"], a: 0, c: "Kronprins Christian rundede de 18 i '23, så han rammer 20'erne i 2025." },
+    { q: "SPORT: Hvem er ny dansk landstræner i herrefodbold (ansat slut 24)?", o: ["Kasper Hjulmand", "Brian Riemer", "Thomas Frank", "Michael Laudrup"], a: 1, c: "Brian Riemer fik jobbet i efteråret 2024 og skal lede holdet i 2025." },
+    { q: "MUSIK: Hvilken dansk sanger annoncerede en pause på ubestemt tid i 2024?", o: ["Christopher", "Jada", "Thomas Helmig", "Medina"], a: 2, c: "Thomas Helmig meldte ud, at han trækker stikket til koncerter på ubestemt tid." },
+    { q: "PARK: Hvilken forlystelse i Tivoli lukkede/ombygges fra 2025?", o: ["Dæmonen", "Den Gamle Rutschebane", "Snurretoppen", "Ballongyngerne"], a: 2, c: "Snurretoppen blev pillet ned for at gøre plads til noget nyt. RIP til kvalmen." },
+    { q: "TREND: Hvad er 'Coolcation', som rejsebureauerne melder om?", o: ["Ferie i kolde lande", "Ferie alene", "Ferie uden mobil", "Ferie med is"], a: 0, c: "Folk flygter fra hedebølgen i Sydeuropa. Norge og Sverige er det nye Mallorca." },
+    { q: "JUBILÆUM: Hvad fylder 50 år i 2025 (dansk film)?", o: ["Olsen Banden", "Matador", "Olsen Banden på Sporet", "Huset på Christianshavn"], a: 2, c: "'Olsen Banden på Sporet' (den med det lille tog) havde premiere i 1975." },
+    { q: "BYGGERI: Hvilken ø i København åbner mere og mere op i 2025?", o: ["Lynetteholm", "Papirøen", "Refshaleøen", "Trekroner"], a: 1, c: "Vandkulturhuset på Papirøen forventes færdigt. Det bliver byens nye dyre hæng-ud sted." },
+    { q: "SERIE: Hvilken Netflix-serie afslutter med sin 5. og sidste sæson i 2025?", o: ["Stranger Things", "Bridgerton", "The Crown", "Squid Game"], a: 0, c: "Stranger Things slutter endelig. Børnene er snart 30 år gamle i virkeligheden." },
+    { q: "VIRKELIGHED: Hvad blev indført for turister i Venedig i 2024/25?", o: ["Entré-gebyr", "Forbud mod kufferter", "Svømme-forbud", "Ingen selfies"], a: 0, c: "Man skal betale 5 Euro for at komme ind i byen på travle dage. Slut med gratis kultur." },
+    { q: "DANMARK: Hvilket nyt navn fik 'Bededag' i kalenderen?", o: ["Arbejdsdag", "Almindelig fredag", "Mette-dag", "Fridag"], a: 1, c: "Den findes ikke mere. Det er bare en almindelig fredag nu. Tak for det." },
+    { q: "BIL: Hvilket bilmærke blev det mest solgte i DK i 2024 (og nok også 25)?", o: ["Tesla", "VW", "Toyota", "Peugeot"], a: 0, c: "Tesla (især Model Y) sidder tungt på markedet. De er overalt." },
+    { q: "SUNDHED: Hvad er navnet på den slankemedicin, der eksploderede i 24/25?", o: ["Wegovy", "Ozempic", "Begge dele", "NovoSlim"], a: 2, c: "Wegovy (til vægttab) og Ozempic (til diabetes) er det samme stof. Novo Nordisk ejer verden nu." },
+    { q: "RUMMET: Hvad hedder den NASA-mission, der skal flyve rundt om månen i sep 2025?", o: ["Artemis II", "Apollo 18", "Moonraker", "Starship"], a: 0, c: "Artemis II. Fire astronauter skal ud på en tur rundt om månen. Første gang i 50 år." },
+    { q: "JOB: Hvad betyder begrebet 'Coffee Badging'?", o: ["Møde ind, hente kaffe, skride hjem", "Lave god kaffe", "Spilde kaffe", "Drikke te"], a: 0, c: "Man møder fysisk op på kontoret bare for at vise ansigt (og få kaffe), og så kører man hjem igen." },
+    { q: "SPORT: Hvem vandt EM i Håndbold for herrer i jan 2024 (og er favoritter i VM 25)?", o: ["Frankrig", "Danmark", "Sverige", "Tyskland"], a: 0, c: "Frankrig slog Danmark i finalen. Vi satser på revanche til VM i januar 2025!" },
+    { q: "FERIE: Hvilket land kræver nu en 'ETA' (indrejse-godkendelse) for danskere?", o: ["UK (Storbritannien)", "Tyskland", "Norge", "Sverige"], a: 0, c: "Fra april 2025 skal europæere betale og registrere sig før de rejser til London." },
+    { q: "NET: Hvad hedder det sociale medie, Elon Musk ejer (som stadig skaber kaos)?", o: ["Twitter", "X", "Y", "Z"], a: 1, c: "Det hedder X. Men vi kalder det alle sammen stadig for Twitter." },
+    { q: "KALENDER: Hvilken ugedag falder Juleaften på i 2025?", o: ["Tirsdag", "Onsdag", "Torsdag", "Fredag"], a: 1, c: "Onsdag d. 24. december. En klassisk 'midt i ugen' jul." },
+    { q: "BONUS: Er vi klar til den SPICY runde?", o: ["JA!", "Nej", "Måske", "Hvad?"], a: 0, c: "Så stram ballerne, for nu gælder det trends og TikTok-sprog!" }
   ];
 
-  // --- DATA: RUNDE 3 (SPICY TRENDS & REALITY 2025) ---
+  // --- DATA: RUNDE 3 (SPICY TRENDS & BEGREBER 2024/25) ---
   const realQuestions3 = [
-    { q: "TREND: Hvad er 'Rawdogging' på en flyvetur, som gik viralt i 2025?", o: ["Ingen skærm/mad/søvn", "At flyve nøgen", "At spise råt kød", "At stå op"], a: 0, c: "At sidde og stirre ind i sædet foran i 7 timer uden telefon, musik eller mad. Kun vand. Psykopat-adfærd." },
-    { q: "APP: Hvad er den nye store AI-trend indenfor dating?", o: ["AI skriver dine beskeder", "AI går på date for dig", "Du dater en AI", "AI vælger dit tøj"], a: 0, c: "Folk lader ChatGPT skrive deres score-replikker. Hvis samtalen lyder robot-agtig, ved du hvorfor." },
-    { q: "KENDIS: Hvad gjorde mange kendisser (som Adele) i 2025?", o: ["Holdt pause", "Startede podcast", "Blev landmænd", "Købte en fodboldklub"], a: 0, c: "Adele annoncerede en lang pause efter sin kæmpe München/Vegas tour. 'Big break'." },
-    { q: "RELATIONER: Hvad er et 'Situationship', som alle snakker om?", o: ["Mere end venner, ikke kærester", "Et forhold på en båd", "Når man bor sammen", "Kærester kun i weekenden"], a: 0, c: "Den grå zone. Man er sammen, men man har ikke 'defineret' det. Opskriften på drama." },
-    { q: "SKØNHED: Hvad er 'Ozempic Face', som sladderbladene skriver om?", o: ["Indfaldent ansigt efter vægttab", "Et glad ansigt", "Røde øjne", "Stor næse"], a: 0, c: "Når man taber sig for hurtigt på medicin, mister man fedt i ansigtet og ser ældre ud." },
-    { q: "MODE: Hvilken 00'er trend kom desværre tilbage i 2025?", o: ["G-streng over bukserne", "Høje hatte", "Træsko", "Slips"], a: 0, c: "Y2K moden vil ikke dø. Lavtaljede jeans og synligt undertøj er set på den røde løber igen." },
-    { q: "TIKTOK: Hvad er 'Rotting' (at rotte) i sengen?", o: ["At ligge hele dagen og lave intet", "At spise gammel mad", "At sove 24 timer", "At læse bøger"], a: 0, c: "Bed Rotting. At ligge under dynen med sin telefon en hel søndag. Det hedder nu 'Self Care'." },
-    { q: "FILM: Hvad handlede filmen 'Anora' om (Guldpalme-vinderen)?", o: ["En stripper og en oligark-søn", "En rumrejse", "En hund", "En kok"], a: 0, c: "En sexarbejder fra New York gifter sig med en russisk rigmandssøn. Det går helt galt. Meget spicy." },
-    { q: "ORD: Hvad betyder 'Rizz', som stadig bruges i 2025?", o: ["Charme/Score-evne", "Risengrød", "Penge", "Respekt"], a: 0, c: "Short for Charisma. Har du 'Rizz', kan du score. Har du ikke... så er det ærgerligt." },
-    { q: "DRIKKE: Hvad var den store 'Mocktail' trend i 2025?", o: ["Alkoholfri drinks", "Drinks med kød", "Varme drinks", "Drinks i poser"], a: 0, c: "Sober-Curious bølgen. Det er blevet cool at bestille drinks uden alkohol (og uden tømmermænd)." },
-    { q: "KOSMETIK: Hvad får mænd lavet mere og mere i 2025?", o: ["Botox og hår-transplantation", "Fod-massage", "Neglelak", "Øjenvipper"], a: 0, c: "'Brotox'. Mænd vil heller ikke se gamle ud. Og hår-rejser til Tyrkiet er stadig et hit." },
-    { q: "MUSIK: Hvilken kvindelig artist dominerede hitlisterne med 'Brat' vibes?", o: ["Charli XCX", "Madonna", "Cher", "Sia"], a: 0, c: "Charli XCX startede 'Brat Summer', og stilen med neon-grøn og fest fortsatte langt ind i 2025." },
-    { q: "SPORT: Hvad blev tilladt for mænd i kunstsvømning ved OL (allerede i 24, men stort i 25)?", o: ["At deltage", "At bære maske", "At bruge svømmefødder", "Intet"], a: 0, c: "Mænd er nu med i kunstsvømning. Det ser... anderledes ud, men de er dygtige!" },
-    { q: "GEN Z: Hvad betyder det, hvis nogen er 'Delulu'?", o: ["Virkelighedsfjern/Indbildsk", "Lækker", "Dum", "Rig"], a: 0, c: "Delusional. Når man tror, man har en chance hos sin crush, men absolut ikke har det. 'Stay Delulu until it's Trululu'." },
-    { q: "KONCERT: Hvad klagede folk over til koncerter i 2025?", o: ["Folk filmer alt med mobilen", "Lyden var for høj", "Ingen øl", "For korte koncerter"], a: 0, c: "Man kan ikke se scenen for bare mobilskærme. Folk ser koncerten gennem deres telefon for at poste det." },
-    { q: "STREAMING: Hvad gjorde Netflix ved kontodeling i 2025?", o: ["Gjorde det endnu sværere", "Gjorde det gratis", "Gav op", "Intet"], a: 0, c: "De slog hårdt ned. Du kan ikke længere snylte på din ekskærestes mors konto. Betal ved kasse 1." },
-    { q: "SHOPPING: Hvilken kinesisk app købte folk alt muligt skrammel fra?", o: ["Temu", "Amazon", "eBay", "Wish"], a: 0, c: "Temu. 'Shop like a billionaire'. Du købte en drone til 40 kr., og den virkede i 4 minutter." },
-    { q: "FERIE: Hvad er 'Coolcation' som blev populært i 2025?", o: ["Ferie i kolde lande", "Ferie i fryseren", "Ferie uden børn", "Ferie med is"], a: 0, c: "Folk gider ikke 40 grader i Italien. De rejser til Norge, Sverige eller Island for at køle af." },
-    { q: "ARBEJDE: Hvad er 'Coffee Badging'?", o: ["Møde ind, drikke kaffe, skride hjem", "Lave kaffe til chefen", "Spilde kaffe", "Drikke te"], a: 0, c: "Man møder fysisk op på kontoret, henter en kaffe (så folk ser en), og kører hjem for at arbejde videre." },
+    { q: "TREND: Hvad er 'Rawdogging' på en flyvetur (Viral trend)?", o: ["Ingen skærm/mad/søvn", "At flyve nøgen", "At spise råt kød", "At stå op"], a: 0, c: "At sidde og stirre ud i luften i 7 timer. Ingen film, ingen musik, intet vand. Kun ren viljestyrke." },
+    { q: "SLANG: Hvad betyder det, hvis nogen har 'Rizz'?", o: ["Charme/Score-evne", "Risengrød", "Penge", "Dårlig stil"], a: 0, c: "Forkortelse for Charisma. Har du Rizz, kan du score. Har du ikke... så er det op ad bakke." },
+    { q: "SOMMER: Hvad var 'Brat Summer' (startet af Charli XCX)?", o: ["Neon-grøn, fest og kaos", "Barbie-pink", "Rolig sommer", "Kedelig sommer"], a: 0, c: "Det var overalt. 'Brat' betød at være lidt rodet, festlig og ligeglad. Farven var syre-grøn." },
+    { q: "FÆNOMEN: Hvad er 'Hawk Tuah' pigen kendt for?", o: ["Et viralt interview om sex", "At synge opera", "At bage kage", "At spille fodbold"], a: 0, c: "Et interview på gaden i Nashville, der gik verden rundt. Vi siger ikke mere." },
+    { q: "FORHOLD: Hvad er et 'Situationship'?", o: ["Mere end venner, ikke kærester", "Et forhold på en båd", "Når man bor sammen", "Kærester kun i weekenden"], a: 0, c: "Den grå zone. Man dater, men man har ikke 'defineret' det. Det er opskriften på forvirring." },
+    { q: "LIVSSTIL: Hvad går trenden 'Bed Rotting' ud på?", o: ["At ligge i sengen hele dagen", "At spise gammel mad", "At sove 24 timer", "At ødelægge sin seng"], a: 0, c: "At ligge under dynen med sin telefon en hel dag og lave absolut intet. Gen Z kalder det 'Self Care'." },
+    { q: "UDSEENDE: Hvad er 'Mewing' (som drenge laver i skolen)?", o: ["Presser tungen op for kæbelinje", "Laver kattelyde", "Farver hår", "Går med makeup"], a: 0, c: "En teknik hvor man presser tungen op i ganen for at få en skarpere kæbelinje. Ser dumt ud, men de tror på det." },
+    { q: "ORD: Hvad betyder det at være 'Demure' (Jools Lebron trend)?", o: ["Beskeden og mindful", "Vild og gal", "Højlydt", "Grim"], a: 0, c: "'Very demure, very mindful'. Det startede som en joke om at være pæn på jobbet, men blev årets ord." },
+    { q: "APP: Hvad gør man på appen 'Temu', som alle snakker om?", o: ["Køber billigt skrammel", "Dater", "Hører musik", "Ser film"], a: 0, c: "'Shop like a billionaire'. Kinesisk app hvor du kan købe en drone til 30 kr. (som virker i 2 minutter)." },
+    { q: "DATE: Hvad er et 'Ick'?", o: ["Noget der pludselig tænder dig af", "En sygdom", "En type drink", "Et kys"], a: 0, c: "Når din date gør noget, der får dig til at miste interessen øjeblikkeligt. F.eks. løber efter bussen med rygsæk." },
+    { q: "BEGREB: Hvad er en 'Tradwife'?", o: ["Husmor der dyrker 50'er stilen", "En moderne kone", "En der handler aktier", "En robot-kone"], a: 0, c: "Kvinder på TikTok der dyrker idealet om at gå hjemme, bage brød og tjene manden som i 1950'erne." },
+    { q: "SLANG: Hvad betyder det, hvis nogen er 'Delulu'?", o: ["Virkelighedsfjern/Indbildsk", "Lækker", "Dum", "Rig"], a: 0, c: "Delusional. 'Delulu is the solulu' (Løsningen er at bilde sig selv noget ind). Ofte om dating." },
+    { q: "KROP: Hvad er 'Ozempic Face'?", o: ["Indfaldent ansigt efter vægttab", "Et glad ansigt", "Røde øjne", "Store læber"], a: 0, c: "Bivirkning ved det hurtige vægttab på medicin. Man mister fedt i ansigtet og kan se ældre ud." },
+    { q: "ARBEJDE: Hvad er 'Quiet Quitting'?", o: ["Kun at gøre præcis det man lønnes for", "At sige op uden at sige det", "At larme", "At stjæle ting"], a: 0, c: "Man passer sit arbejde, men man dropper overarbejde og ekstra ansvar. Man 'melder sig ud' mentalt." },
+    { q: "TREND: Hvad er 'Dumbphone' trenden?", o: ["At skifte tilbage til gammel Nokia", "En telefon af træ", "At tale dumt", "Ingen telefon"], a: 0, c: "Folk dropper smartphonen og køber en gammeldags 'klap-telefon' for at få fred fra apps." },
+    { q: "MAD: Hvad er 'Girl Dinner'?", o: ["En tallerken med snacks/ost/pølse", "En stor bøf", "Ingen mad", "Kun salat"], a: 0, c: "Når man ikke orker at lave mad, og bare spiser lidt ost, kiks, druer og pickles. Det er Girl Dinner." },
+    { q: "FARVE: Hvad er et 'Beige Flag' hos en kæreste?", o: ["Noget sært, men ikke farligt", "Noget meget farligt", "At de er kedelige", "At de elsker beige"], a: 0, c: "Røde flag er farlige. Grønne er gode. Beige er bare... mærkelige vaner. F.eks. at spise pizza med gaffel." },
+    { q: "LIVSSTIL: Hvad er en 'DINK'?", o: ["Double Income, No Kids", "Drinking In New Kitchen", "Dad Is Not Kind", "Dance In Night Klub"], a: 0, c: "Par med to indkomster og ingen børn. De har råd til dyre ferier og Lego-sæt til voksne." },
+    { q: "FILM: Hvad var fænomenet 'Barbenheimer' (fra året før, men stadig legendarisk)?", o: ["At se Barbie og Oppenheimer samme dag", "En ny drink", "En by i Tyskland", "En sanger"], a: 0, c: "Det definerede biograferne. Pink plastik og atombomber på én aften." },
     { q: "SIDSTE SPØRGSMÅL: Hvem styrer festen i aften?", o: ["Vi gør!", "Naboen", "Politiet", "Ingen"], a: 0, c: "Det rigtige svar er selvfølgelig JER! Godt nytår og tak for i aften! 🎆" }
   ];
 
