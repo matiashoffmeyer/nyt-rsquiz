@@ -146,7 +146,6 @@ const QuizApp = () => {
         question_started_at: payload.new.question_started_at,
         quiz_mode: payload.new.quiz_mode || 'real' 
       });
-      if (payload.new.status === 'active') setHasAnswered(false);
     }).subscribe();
 
     const playerSub = supabase.channel('player_updates').on('postgres_changes', { event: '*', schema: 'public', table: 'players' }, async (payload) => {
@@ -157,6 +156,13 @@ const QuizApp = () => {
 
     return () => { supabase.removeChannel(roomSub); supabase.removeChannel(playerSub); };
   }, [roomCode, role]);
+
+  // VIGTIGT: Nulstil knapperne LOKALT for spilleren, når spørgsmålet skifter
+  useEffect(() => {
+     if (gameState.status === 'active') {
+         setHasAnswered(false);
+     }
+  }, [gameState.current_question, gameState.quiz_mode, gameState.status]);
 
   // AUTO-REVEAL LOGIK FOR VÆRTEN
   useEffect(() => {
@@ -170,11 +176,7 @@ const QuizApp = () => {
         }
     }
   }, [players, gameState.status, role]);
-// --- BUG FIX: Sørg for at nulstille knapperne ved nyt spørgsmål ---
-  useEffect(() => {
-     setHasAnswered(false);
-  }, [gameState.current_question, gameState.quiz_mode]);
-  
+
   const submitAnswer = async (idx) => {
     if (hasAnswered || gameState.status !== 'active') return;
     setHasAnswered(true);
@@ -195,9 +197,12 @@ const QuizApp = () => {
 
   const updateGameStatus = async (status, idx = 0) => {
     if (idx >= activeData.length && status === 'active') status = 'finished';
+    
+    // Hvis vi starter et nyt spørgsmål, skal databasen nulstilles for alle spillere
     if (status === 'active') {
        await supabase.from('players').update({ last_answer: null }).gt('id', -1);
     }
+    
     const payload = { status, current_question: Math.min(idx, activeData.length - 1) };
     if (status === 'active') payload.question_started_at = new Date().toISOString();
     await supabase.from('quiz_rooms').update(payload).eq('room_code', roomCode);
@@ -208,27 +213,21 @@ const QuizApp = () => {
     const { data: room } = await supabase.from('quiz_rooms').select('id').eq('room_code', roomCode).single();
     if (room) {
       await supabase.from('players').delete().eq('room_id', room.id);
-      await updateGameStatus('lobby', 0);
+      // BUG FIX: Sæt quiz_mode tilbage til 'real' (Runde 1) ved fuld reset
+      await supabase.from('quiz_rooms').update({ 
+          status: 'lobby', 
+          current_question: 0, 
+          quiz_mode: 'real' 
+      }).eq('room_code', roomCode);
     }
   };
 
-  // NY FUNKTION: START RUNDE 2 (Nulstiller point, men beholder spillere)
   const startMoreQuestions = async () => {
     if (!window.confirm("Er du klar til RUNDE 2? Dette nulstiller pointene for den nye runde!")) return;
-    
-    // Find ud af hvilken mode vi skal i (Test -> Test 2, Real -> Real 2)
     const currentBase = gameState.quiz_mode.includes('test') ? 'test' : 'real';
     const nextMode = currentBase + '_2'; 
-
-    // Nulstil point for alle spillere, men behold dem i rummet
     await supabase.from('players').update({ score: 0, correct_count: 0, total_bonus: 0, last_answer: null }).gt('id', -1);
-
-    // Opdater rummet til ny mode og lobby status
-    await supabase.from('quiz_rooms').update({ 
-        quiz_mode: nextMode, 
-        current_question: 0, 
-        status: 'lobby' 
-    }).eq('room_code', roomCode);
+    await supabase.from('quiz_rooms').update({ quiz_mode: nextMode, current_question: 0, status: 'lobby' }).eq('room_code', roomCode);
   };
 
   const toggleMode = async () => {
