@@ -23,7 +23,7 @@ const QuizApp = () => {
   const [players, setPlayers] = useState([]);
   const [gameState, setGameState] = useState({ status: 'lobby', current_question: 0, question_started_at: null, quiz_mode: 'real' });
   
-  // VI GÅR TILBAGE TIL DEN SIMPLE LØSNING, MEN BRUGER "KEY" TRICKET I JSX I STEDET
+  // Vi bruger "key" tricket senere, så denne state er mest for syns skyld nu, men vi beholder den
   const [hasAnswered, setHasAnswered] = useState(false);
 
   // --- DATA: TEST RUNDE 1 ---
@@ -159,6 +159,13 @@ const QuizApp = () => {
     return () => { supabase.removeChannel(roomSub); supabase.removeChannel(playerSub); };
   }, [roomCode, role]);
 
+  // FIX: Sørg for at nulstille vores svar-husker LOKALT
+  useEffect(() => {
+     if (gameState.status === 'active') {
+         setHasAnswered(false);
+     }
+  }, [gameState.current_question, gameState.quiz_mode]); // Hver gang spørgsmålet skifter = reset
+
   // AUTO-REVEAL LOGIK FOR VÆRTEN
   useEffect(() => {
     if (role === 'host' && gameState.status === 'active' && players.length > 0) {
@@ -190,12 +197,17 @@ const QuizApp = () => {
     }
   };
 
+  // HER ER FIXET: VI TVINGER RÆKKEFØLGEN OG VENTER
   const updateGameStatus = async (status, idx = 0) => {
     if (idx >= activeData.length && status === 'active') status = 'finished';
     
-    // Hvis vi starter et nyt spørgsmål, skal databasen nulstilles for alle spillere
+    // Hvis vi starter et nyt spørgsmål, skal vi SLETTE GAMLE SVAR FØRST
     if (status === 'active') {
+       // 1. Send besked om at slette svar
        await supabase.from('players').update({ last_answer: null }).gt('id', -1);
+       
+       // 2. LILLE PAUSE på 100ms for at sikre databasen er opdateret før vi skifter slide
+       await new Promise(resolve => setTimeout(resolve, 100));
     }
     
     const payload = { status, current_question: Math.min(idx, activeData.length - 1) };
@@ -317,7 +329,7 @@ const QuizApp = () => {
             <h2 className="text-2xl md:text-4xl font-black leading-tight text-white drop-shadow-sm">{currentQ.q}</h2>
           </div>
 
-          {/* HER ER FIXET: VI BRUGER KEY={CURRENT_QUESTION} PÅ BOKSEN */}
+          {/* HER ER DEN VIGTIGSTE DEL: KEY RESETTER HELE OMRÅDET */}
           <div key={gameState.current_question} className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-grow content-center">
             {currentQ.o.map((opt, i) => (
               role === 'player' ? (
