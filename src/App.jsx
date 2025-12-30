@@ -23,9 +23,6 @@ const QuizApp = () => {
   const [players, setPlayers] = useState([]);
   const [gameState, setGameState] = useState({ status: 'lobby', current_question: 0, question_started_at: null, quiz_mode: 'real' });
   
-  // Vi bruger "key" tricket senere, så denne state er mest for syns skyld nu, men vi beholder den
-  const [hasAnswered, setHasAnswered] = useState(false);
-
   // --- DATA: TEST RUNDE 1 ---
   const testQuestions1 = [
     { q: "TEST 1: Virker knapperne?", o: ["Ja", "Nej", "Måske", "Ved ikke"], a: 0, c: "Hvis du kan læse dette, så virker koden! Det er ren magi." },
@@ -159,17 +156,11 @@ const QuizApp = () => {
     return () => { supabase.removeChannel(roomSub); supabase.removeChannel(playerSub); };
   }, [roomCode, role]);
 
-  // FIX: Sørg for at nulstille vores svar-husker LOKALT
-  useEffect(() => {
-     if (gameState.status === 'active') {
-         setHasAnswered(false);
-     }
-  }, [gameState.current_question, gameState.quiz_mode]); // Hver gang spørgsmålet skifter = reset
-
   // AUTO-REVEAL LOGIK FOR VÆRTEN
   useEffect(() => {
     if (role === 'host' && gameState.status === 'active' && players.length > 0) {
-        const allAnswered = players.every(p => p.last_answer !== null);
+        // VIGTIGT: Vi tjekker nu, om spilleren har svaret på DETTE spørgsmål (ved at kigge på indekset)
+        const allAnswered = players.every(p => p.last_q_index === gameState.current_question);
         if (allAnswered) {
             const timer = setTimeout(() => {
                 updateGameStatus('showing_answer', gameState.current_question);
@@ -177,15 +168,18 @@ const QuizApp = () => {
             return () => clearTimeout(timer);
         }
     }
-  }, [players, gameState.status, role]);
+  }, [players, gameState.status, role, gameState.current_question]);
 
   const submitAnswer = async (idx) => {
-    if (hasAnswered || gameState.status !== 'active') return;
-    setHasAnswered(true);
-    
     const me = players.find(p => p.name === playerName);
+    
+    // SIKKERHEDSTJEK: Har jeg allerede svaret på DETTE spørgsmål?
+    if (me && me.last_q_index === gameState.current_question) return;
+    if (gameState.status !== 'active') return;
+
     if (me) {
-        let updateData = { last_answer: idx };
+        // Vi gemmer nu både SVARET og SPØRGSMÅLS-NUMMERET.
+        let updateData = { last_answer: idx, last_q_index: gameState.current_question };
         if (idx === activeData[gameState.current_question]?.a) {
             const secondsPassed = (new Date() - new Date(gameState.question_started_at)) / 1000;
             const speedBonus = Math.max(0, Math.floor(10 - secondsPassed));
@@ -197,18 +191,11 @@ const QuizApp = () => {
     }
   };
 
-  // HER ER FIXET: VI TVINGER RÆKKEFØLGEN OG VENTER
   const updateGameStatus = async (status, idx = 0) => {
     if (idx >= activeData.length && status === 'active') status = 'finished';
     
-    // Hvis vi starter et nyt spørgsmål, skal vi SLETTE GAMLE SVAR FØRST
-    if (status === 'active') {
-       // 1. Send besked om at slette svar
-       await supabase.from('players').update({ last_answer: null }).gt('id', -1);
-       
-       // 2. LILLE PAUSE på 100ms for at sikre databasen er opdateret før vi skifter slide
-       await new Promise(resolve => setTimeout(resolve, 100));
-    }
+    // Vi behøver ikke længere "nulstille" svar i databasen, fordi vi nu tjekker versions-nummeret (last_q_index).
+    // Det gør systemet lynhurtigt og fejlfrit.
     
     const payload = { status, current_question: Math.min(idx, activeData.length - 1) };
     if (status === 'active') payload.question_started_at = new Date().toISOString();
@@ -232,7 +219,8 @@ const QuizApp = () => {
     if (!window.confirm("Er du klar til RUNDE 2? Dette nulstiller pointene for den nye runde!")) return;
     const currentBase = gameState.quiz_mode.includes('test') ? 'test' : 'real';
     const nextMode = currentBase + '_2'; 
-    await supabase.from('players').update({ score: 0, correct_count: 0, total_bonus: 0, last_answer: null }).gt('id', -1);
+    // Vi nulstiller også 'last_q_index' til -1, så folk kan starte forfra
+    await supabase.from('players').update({ score: 0, correct_count: 0, total_bonus: 0, last_answer: null, last_q_index: -1 }).gt('id', -1);
     await supabase.from('quiz_rooms').update({ quiz_mode: nextMode, current_question: 0, status: 'lobby' }).eq('room_code', roomCode);
   };
 
@@ -246,7 +234,7 @@ const QuizApp = () => {
     e.preventDefault();
     if (!playerName.trim()) return;
     const { data: room } = await supabase.from('quiz_rooms').select('id').eq('room_code', roomCode).single();
-    if (room) { await supabase.from('players').insert([{ name: playerName, score: 0, room_id: room.id }]); setRole('player'); setView('game'); }
+    if (room) { await supabase.from('players').insert([{ name: playerName, score: 0, room_id: room.id, last_q_index: -1 }]); setRole('player'); setView('game'); }
   };
 
   // --- UI VIEWS ---
@@ -278,6 +266,10 @@ const QuizApp = () => {
   }
 
   const currentQ = activeData[gameState.current_question];
+  
+  // HER ER MAGIEN: Vi tjekker databasen: Har JEG svaret på DETTE spørgsmål (indeks)?
+  const myData = players.find(p => p.name === playerName);
+  const iHaveAnsweredThisSpecificQuestion = myData && myData.last_q_index === gameState.current_question;
 
   return (
     <MainLayout quizMode={gameState.quiz_mode}>
@@ -329,15 +321,14 @@ const QuizApp = () => {
             <h2 className="text-2xl md:text-4xl font-black leading-tight text-white drop-shadow-sm">{currentQ.q}</h2>
           </div>
 
-          {/* HER ER DEN VIGTIGSTE DEL: KEY RESETTER HELE OMRÅDET */}
           <div key={gameState.current_question} className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-grow content-center">
             {currentQ.o.map((opt, i) => (
               role === 'player' ? (
                 <button 
                   key={i} 
-                  disabled={hasAnswered} 
+                  disabled={iHaveAnsweredThisSpecificQuestion} 
                   onClick={() => submitAnswer(i)} 
-                  className={`relative p-6 rounded-2xl text-xl font-bold text-left transition-all border-b-4 active:border-b-0 active:translate-y-1 touch-manipulation ${hasAnswered ? 'bg-slate-800 border-slate-900 text-slate-500' : 'bg-slate-700 border-slate-900 hover:bg-slate-600 text-white active:bg-indigo-600'}`}
+                  className={`relative p-6 rounded-2xl text-xl font-bold text-left transition-all border-b-4 active:border-b-0 active:translate-y-1 touch-manipulation ${iHaveAnsweredThisSpecificQuestion ? 'bg-slate-800 border-slate-900 text-slate-500' : 'bg-slate-700 border-slate-900 hover:bg-slate-600 text-white active:bg-indigo-600'}`}
                 >
                   {opt}
                 </button>
@@ -345,7 +336,7 @@ const QuizApp = () => {
                 <div key={i} className="bg-slate-800 p-6 rounded-2xl text-xl font-bold text-center border-b-4 border-slate-900 text-slate-300 flex flex-col justify-center items-center">
                     <span>{opt}</span>
                     <div className="mt-2 flex gap-1 flex-wrap justify-center">
-                        {players.filter(p => p.last_answer === null).length > 0 && <span className="text-[10px] text-slate-500 animate-pulse">Venter på svar...</span>}
+                        {players.filter(p => p.last_q_index === gameState.current_question).length > 0 && <span className="text-[10px] text-slate-500 animate-pulse">Venter på svar...</span>}
                     </div>
                 </div>
               )
@@ -353,7 +344,7 @@ const QuizApp = () => {
           </div>
 
           {role === 'host' && <button onClick={() => updateGameStatus('showing_answer', gameState.current_question)} className="mt-6 w-full bg-amber-500 text-black py-4 rounded-2xl font-black text-xl shadow-lg">SE SVAR</button>}
-          {role === 'player' && hasAnswered && <div className="mt-4 text-center text-indigo-400 font-bold animate-pulse">Svar modtaget... 🤞</div>}
+          {role === 'player' && iHaveAnsweredThisSpecificQuestion && <div className="mt-4 text-center text-indigo-400 font-bold animate-pulse">Svar modtaget... 🤞</div>}
         </div>
       )}
 
@@ -363,7 +354,7 @@ const QuizApp = () => {
           
           {/* SKÅL ALARM LOGIK */}
           {(() => {
-            const playersWhoAnswered = players.filter(p => p.last_answer !== null);
+            const playersWhoAnswered = players.filter(p => p.last_q_index === gameState.current_question);
             const everyoneWrong = playersWhoAnswered.length > 0 && playersWhoAnswered.every(p => p.last_answer !== currentQ.a);
             
             if (everyoneWrong) {
@@ -396,7 +387,8 @@ const QuizApp = () => {
           <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
              {currentQ.o.map((opt, i) => {
                 const isCorrect = i === currentQ.a;
-                const votedHere = players.filter(p => p.last_answer === i);
+                // Her kigger vi kun på dem, der har svaret PÅ DENNE RUNDE
+                const votedHere = players.filter(p => p.last_q_index === gameState.current_question && p.last_answer === i);
                 
                 return (
                     <div key={i} className={`p-3 rounded-xl border-2 flex flex-col ${isCorrect ? 'bg-emerald-900/30 border-emerald-500/50' : 'bg-slate-800/50 border-slate-800'}`}>
