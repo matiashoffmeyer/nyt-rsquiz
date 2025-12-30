@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Users, Play, Trophy, Smartphone, Monitor, ChevronRight, CheckCircle2, Zap, Trash2, Timer, Star, RefreshCcw, Award, FlaskConical } from 'lucide-react';
+import { Users, Play, Trophy, Smartphone, Monitor, ChevronRight, CheckCircle2, Zap, Trash2, Timer, Star, RefreshCcw, Award, FlaskConical, XCircle } from 'lucide-react';
 
-// HUSK AT OPRETTE DIN .ENV FIL MED DISSE NØGLER!
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- LAYOUT KOMPONENT (Ligger UDENFOR QuizApp for at inputtet ikke mister fokus) ---
 const MainLayout = ({ children, quizMode }) => (
   <div className={`min-h-screen text-slate-100 font-sans transition-colors duration-500 flex flex-col ${quizMode === 'test' ? 'bg-slate-900 border-t-8 border-amber-500' : 'bg-[#0f172a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/40 via-slate-900 to-slate-900'}`}>
     {quizMode === 'test' && <div className="bg-amber-500 text-black font-black text-center text-xs py-1">TEST MODE (DEV)</div>}
@@ -26,55 +24,55 @@ const QuizApp = () => {
   const [gameState, setGameState] = useState({ status: 'lobby', current_question: 0, question_started_at: null, quiz_mode: 'real' });
   const [hasAnswered, setHasAnswered] = useState(false);
 
-  // --- DATA: TEST MILJØ (2 SPG) ---
+  // --- DATA: TEST MILJØ ---
   const testQuestions = [
-    { q: "TEST 1: Virker knapperne?", o: ["Ja", "Nej", "Måske", "Ved ikke"], a: 0 },
-    { q: "TEST 2: Hvad hedder Matias' kat?", o: ["Plet", "Mina", "Speck", "Felix"], a: 2 }
+    { q: "TEST 1: Virker knapperne?", o: ["Ja", "Nej", "Måske", "Ved ikke"], a: 0, c: "Hvis du kan læse dette, så virker koden! Det er ren magi (og lidt JavaScript)." },
+    { q: "TEST 2: Hvad hedder Matias' kat?", o: ["Plet", "Mina", "Speck", "Felix"], a: 2, c: "Speck styrer showet. Det ved alle, der har mødt ham." }
   ];
 
-  // --- DATA: NYTÅRS QUIZ 2025 (30 NYE SPØRGSMÅL) ---
+  // --- DATA: NYTÅRS QUIZ 2025 (MED SJOVE FACTS) ---
   const realQuestions = [
     // SPORT & BEGIVENHEDER
-    { q: "Hvem vandt Tour de France i sommeren 2025?", o: ["Jonas Vingegaard", "Tadej Pogacar", "Remco Evenepoel", "Primoz Roglic"], a: 0 },
-    { q: "Hvilken dansk festival meldte 'Alt Udsolgt' på rekordtid (4 minutter) i 2025?", o: ["Roskilde Festival", "Smukfest", "NorthSide", "Copenhell"], a: 1 },
-    { q: "Hvilket land vandt Eurovision Song Contest 2025?", o: ["Sverige", "Frankrig", "Italien", "Ukraine"], a: 2 },
-    { q: "Hvad blev resultatet af den store 'Storebælts-lukning' i januar 2025?", o: ["Ingen mælk i Kbh", "Total trafikprop", "Færgerne kom tilbage", "Gratis bro i en uge"], a: 1 },
+    { q: "Hvem vandt Tour de France i sommeren 2025?", o: ["Jonas Vingegaard", "Tadej Pogacar", "Remco Evenepoel", "Primoz Roglic"], a: 0, c: "Vingegaard smadrede dem på Mont Ventoux. Der var slet ingen tvivl i år – Glyngøres stolthed er tilbage på tronen!" },
+    { q: "Hvilken dansk festival meldte 'Alt Udsolgt' på rekordtid (4 minutter) i 2025?", o: ["Roskilde Festival", "Smukfest", "NorthSide", "Copenhell"], a: 1, c: "Smukfest billetterne røg hurtigere end man kan drikke en fadøl i Bøgeskoven. Serverne nedsmeltede totalt." },
+    { q: "Hvilket land vandt Eurovision Song Contest 2025?", o: ["Sverige", "Frankrig", "Italien", "Ukraine"], a: 2, c: "Italien vandt med en rocksang, der fik Måneskin til at ligne et kirkekor. Det var vildt!" },
+    { q: "Hvad blev resultatet af den store 'Storebælts-lukning' i januar 2025?", o: ["Ingen mælk i Kbh", "Total trafikprop", "Færgerne kom tilbage", "Gratis bro i en uge"], a: 1, c: "Køen strakte sig helt til Odense. Folk holdt Nytår i deres biler på motorvejen." },
     
     // POLITIK & SAMFUND
-    { q: "Hvilken ministerpost blev nedlagt i 2025 som led i 'effektivisering'?", o: ["Kirkeministeren", "Digitaliseringsministeren", "Ældreministeren", "Nordisk Samarbejde"], a: 1 },
-    { q: "Hvad hedder den nye bydel i København, der officielt åbnede første etape i 2025?", o: ["Lynetteholm", "Jernbanebyen", "Nordhavn Vest", "Enghave Brygge"], a: 0 },
-    { q: "Hvilken valuta ramte sin laveste kurs nogensinde overfor den danske krone i 2025?", o: ["Svenske kroner", "Norske kroner", "US Dollar", "Pund"], a: 0 },
-    { q: "Hvem holdt årets mest omdiskuterede nytårstale ved indgangen til 2025?", o: ["Mette Frederiksen", "Kong Frederik X", "Lars Løkke", "Dronning Margrethe"], a: 1 },
+    { q: "Hvilken ministerpost blev nedlagt i 2025 som led i 'effektivisering'?", o: ["Kirkeministeren", "Digitaliseringsministeren", "Ældreministeren", "Nordisk Samarbejde"], a: 1, c: "AI overtog jobbet. Det viste sig, at ChatGPT var bedre til at lave PowerPoint-slides end ministeriet." },
+    { q: "Hvad hedder den nye bydel i København, der officielt åbnede første etape i 2025?", o: ["Lynetteholm", "Jernbanebyen", "Nordhavn Vest", "Enghave Brygge"], a: 0, c: "Jordpåfyldningen er endelig synlig over vandet. Kritikerne kalder det stadig 'Mudderøen', men nu kan man gå på den." },
+    { q: "Hvilken valuta ramte sin laveste kurs nogensinde overfor den danske krone i 2025?", o: ["Svenske kroner", "Norske kroner", "US Dollar", "Pund"], a: 0, c: "Det er blevet latterligt billigt at købe slik i Malmø. En svensk krone koster nu det samme som en 5-øre." },
+    { q: "Hvem holdt årets mest omdiskuterede nytårstale ved indgangen til 2025?", o: ["Mette Frederiksen", "Kong Frederik X", "Lars Løkke", "Dronning Margrethe"], a: 1, c: "Kong Frederik glemte manuskriptet og improviserede i 3 minutter om 'fede tider'. Folk elskede det!" },
 
     // KULTUR & GOSSIP
-    { q: "Hvilket dansk kendis-par gik fra hinanden i foråret 2025 og skabte forside-storm?", o: ["Remee & Mathilde", "Christopher & Cecilie", "Medina & Malo", "Nicklas Bendtner & Ny flamme"], a: 1 },
-    { q: "Hvad var årets mest streamede danske sang i 2025?", o: ["Stor Mand 2", "Tobias Rahim (Ny single)", "Gilli - 'Hjem'", "Artigeardit - 'Fri'"], a: 1 },
-    { q: "Hvilken gammel dansk TV-serie fik et 'reboot' på Netflix i 2025?", o: ["Rejseholdet", "Matador", "Taxa", "Klovn"], a: 2 },
-    { q: "Hvem vandt 'Vild med Dans' 2025?", o: ["En YouTuber", "En håndboldspiller", "En politiker", "En skuespiller"], a: 0 },
+    { q: "Hvilket dansk kendis-par gik fra hinanden i foråret 2025 og skabte forside-storm?", o: ["Remee & Mathilde", "Christopher & Cecilie", "Medina & Malo", "Nicklas Bendtner & Ny flamme"], a: 1, c: "Det knuste tusindvis af teenagehjerter (og et par voksenhjerter). De er dog stadig 'gode venner' på Instagram." },
+    { q: "Hvad var årets mest streamede danske sang i 2025?", o: ["Stor Mand 2", "Tobias Rahim (Ny single)", "Gilli - 'Hjem'", "Artigeardit - 'Fri'"], a: 1, c: "Tobias Rahim smed tøjet igen i videoen. Det virker åbenbart hver gang." },
+    { q: "Hvilken gammel dansk TV-serie fik et 'reboot' på Netflix i 2025?", o: ["Rejseholdet", "Matador", "Taxa", "Klovn"], a: 2, c: "Taxa vendte tilbage! Nu med elektriske biler og endnu mere drama på Nørrebro." },
+    { q: "Hvem vandt 'Vild med Dans' 2025?", o: ["En YouTuber", "En håndboldspiller", "En politiker", "En skuespiller"], a: 0, c: "De unge stemte som gale. Dommerne var sure, men SMS-stemmerne løj ikke." },
 
     // TECH & VIDENSKAB
-    { q: "Hvilken funktion fjernede Apple fra iPhone 17 (2025-modellen)?", o: ["Ladeporten", "Volumeknapperne", "Frontkameraet", "Siri"], a: 0 },
-    { q: "Hvad blev kåret som 'Årets Ord 2025' af Dansk Sprognævn?", o: ["AI-skam", "Klimatristhed", "Skærmfri", "Multiprise"], a: 0 },
-    { q: "Hvilken planet sendte NASA succesfuldt en ny type drone til i 2025?", o: ["Mars", "Venus", "Jupiter", "Saturn"], a: 1 },
-    { q: "Hvad kostede en liter benzin i gennemsnit i sommeren 2025?", o: ["11 kr.", "14 kr.", "17 kr.", "20 kr."], a: 2 },
+    { q: "Hvilken funktion fjernede Apple fra iPhone 17 (2025-modellen)?", o: ["Ladeporten", "Volumeknapperne", "Frontkameraet", "Siri"], a: 0, c: "Nu er det kun trådløs opladning. Held og lykke, hvis du glemmer din MagSafe-puck!" },
+    { q: "Hvad blev kåret som 'Årets Ord 2025' af Dansk Sprognævn?", o: ["AI-skam", "Klimatristhed", "Skærmfri", "Multiprise"], a: 0, c: "Følelsen af at bruge AI til at skrive en bryllupstale og blive opdaget. Det hedder 'AI-skam'." },
+    { q: "Hvilken planet sendte NASA succesfuldt en ny type drone til i 2025?", o: ["Mars", "Venus", "Jupiter", "Saturn"], a: 1, c: "Venus! Dronen overlevede syre-skyerne i hele 4 timer. Det er ny rekord." },
+    { q: "Hvad kostede en liter benzin i gennemsnit i sommeren 2025?", o: ["11 kr.", "14 kr.", "17 kr.", "20 kr."], a: 2, c: "17 kroner. Og folk brokkede sig stadig over, at elbiler er for dyre." },
 
     // BLANDET GODT
-    { q: "Hvilken dansk supermarkedskæde annoncerede, at de stopper med at sælge tobak i 2025?", o: ["Netto", "Rema 1000", "Coop 365", "Lidl"], a: 1 },
-    { q: "Hvilken farve var 'Årets Farve' i modebilledet 2025?", o: ["Limegrøn", "Elektrisk Blå", "Fersken", "Dyb Lilla"], a: 3 },
-    { q: "Hvad skete der med Parken (stadion) i 2025?", o: ["Nyt navn", "Udvidelse godkendt", "Nyt græstæppe", "Taget blæste af"], a: 1 },
-    { q: "Hvilken dansk by blev kåret til 'Europas Kulturhovedstad' (uformelt) af CNN?", o: ["Aarhus", "Odense", "Aalborg", "Esbjerg"], a: 1 },
+    { q: "Hvilken dansk supermarkedskæde annoncerede, at de stopper med at sælge tobak i 2025?", o: ["Netto", "Rema 1000", "Coop 365", "Lidl"], a: 1, c: "Rema 1000 tog teten. Ingen smøger til discountpriser længere!" },
+    { q: "Hvilken farve var 'Årets Farve' i modebilledet 2025?", o: ["Limegrøn", "Elektrisk Blå", "Fersken", "Dyb Lilla"], a: 3, c: "Alt var lilla. Tøj, tasker, selv biler. Prince ville have været stolt." },
+    { q: "Hvad skete der med Parken (stadion) i 2025?", o: ["Nyt navn", "Udvidelse godkendt", "Nyt græstæppe", "Taget blæste af"], a: 1, c: "Endelig! Der bliver plads til 50.000 mennesker. Naboerne er allerede sure over larmen." },
+    { q: "Hvilken dansk by blev kåret til 'Europas Kulturhovedstad' (uformelt) af CNN?", o: ["Aarhus", "Odense", "Aalborg", "Esbjerg"], a: 1, c: "H.C. Andersen byen rykkede! Letbanen virkede faktisk, og turisterne væltede ind." },
 
     // AFSLUTTENDE SPØRGSMÅL
-    { q: "Hvem scorede det afgørende mål i Champions League finalen 2025?", o: ["Haaland", "Mbappé", "Vinicius Jr.", "Højlund"], a: 1 },
-    { q: "Hvad hed den storm, der ramte Danmark i oktober 2025?", o: ["Bodil", "Gorm", "Ingolf", "Jytte"], a: 2 },
-    { q: "Hvilket socialt medie lukkede endegyldigt i 2025?", o: ["X (Twitter)", "Snapchat", "Threads", "Pinterest"], a: 0 },
-    { q: "Hvor mange Michelin-stjerner fik restaurant 'Jordnær' i 2025 guiden?", o: ["1", "2", "3", "Mistede alle"], a: 2 },
-    { q: "Hvem blev ny vært på 'X-Factor' i 2025?", o: ["Sofie Linde (retur)", "Melvin Kakooza", "Petra Nagel", "Martin Johannes Larsen"], a: 1 },
-    { q: "Hvad blev den mest populære hunderace i Danmark i 2025?", o: ["Labrador", "Fransk Bulldog", "Golden Retriever", "Cocker Spaniel"], a: 3 },
-    { q: "Hvor holdt Lukas Graham sin 'Comeback' koncert i 2025?", o: ["Royal Arena", "Boxen", "Christiania", "Refshaleøen"], a: 2 },
-    { q: "Hvilken drik afløste 'Aperol Spritz' som sommerens hit i 2025?", o: ["Limoncello Spritz", "Hugo", "Espresso Tonic", "White Port & Tonic"], a: 0 },
-    { q: "Hvad var navnet på DR's store julekalender i 2025?", o: ["Tidsrejsen 3", "Nissernes Ø", "Julefeber 2", "Gammel Jul"], a: 2 },
-    { q: "Sidste spørgsmål: Hvem vinder denne quiz?", o: ["Mig!", "Værten", "Sidemanden", "Ingen ved det"], a: 0 }
+    { q: "Hvem scorede det afgørende mål i Champions League finalen 2025?", o: ["Haaland", "Mbappé", "Vinicius Jr.", "Højlund"], a: 1, c: "Mbappé gjorde det for Real Madrid. Det var kedeligt, men effektivt." },
+    { q: "Hvad hed den storm, der ramte Danmark i oktober 2025?", o: ["Bodil", "Gorm", "Ingolf", "Jytte"], a: 2, c: "Ingolf var ikke så slem som frygtet, men havemøblerne fløj alligevel en tur til Sverige." },
+    { q: "Hvilket socialt medie lukkede endegyldigt i 2025?", o: ["X (Twitter)", "Snapchat", "Threads", "Pinterest"], a: 0, c: "Elon trak stikket. Det hele blev til en betalingsmur, og så skred brugerne." },
+    { q: "Hvor mange Michelin-stjerner fik restaurant 'Jordnær' i 2025 guiden?", o: ["1", "2", "3", "Mistede alle"], a: 2, c: "De fik den 3. stjerne! Det er nu officielt en af verdens bedste restauranter." },
+    { q: "Hvem blev ny vært på 'X-Factor' i 2025?", o: ["Sofie Linde (retur)", "Melvin Kakooza", "Petra Nagel", "Martin Johannes Larsen"], a: 1, c: "Melvin er overalt, og nu også på X-Factor. Han gør det nu meget godt." },
+    { q: "Hvad blev den mest populære hunderace i Danmark i 2025?", o: ["Labrador", "Fransk Bulldog", "Golden Retriever", "Cocker Spaniel"], a: 3, c: "Cocker Spanielen er tilbage! Alle vil have en Lady (fra Lady & Vagabonden)." },
+    { q: "Hvor holdt Lukas Graham sin 'Comeback' koncert i 2025?", o: ["Royal Arena", "Boxen", "Christiania", "Refshaleøen"], a: 2, c: "Back to the roots på Staden. Der var røg i luften, og det var ikke kun fra røgmaskinerne." },
+    { q: "Hvilken drik afløste 'Aperol Spritz' som sommerens hit i 2025?", o: ["Limoncello Spritz", "Hugo", "Espresso Tonic", "White Port & Tonic"], a: 0, c: "Limoncello er det nye sort. Surt, sødt og farligt let at drikke." },
+    { q: "Hvad var navnet på DR's store julekalender i 2025?", o: ["Tidsrejsen 3", "Nissernes Ø", "Julefeber 2", "Gammel Jul"], a: 2, c: "Mere julefeber til folket! Børnene elskede det, de voksne savnede Pyrus." },
+    { q: "Sidste spørgsmål: Hvem vinder denne quiz?", o: ["Mig!", "Værten", "Sidemanden", "Ingen ved det"], a: 0, c: "Det ved vi om 2 sekunder! Spændingen er ulidelig..." }
   ];
 
   const activeData = gameState.quiz_mode === 'test' ? testQuestions : realQuestions;
@@ -117,16 +115,32 @@ const QuizApp = () => {
   const submitAnswer = async (idx) => {
     if (hasAnswered || gameState.status !== 'active') return;
     setHasAnswered(true);
-    if (idx === activeData[gameState.current_question]?.a) {
-      const secondsPassed = (new Date() - new Date(gameState.question_started_at)) / 1000;
-      const speedBonus = Math.max(0, Math.floor(10 - secondsPassed));
-      const me = players.find(p => p.name === playerName);
-      if (me) await supabase.from('players').update({ score: (me.score || 0) + 10 + speedBonus, correct_count: (me.correct_count || 0) + 1, total_bonus: (me.total_bonus || 0) + speedBonus }).eq('id', me.id);
+    
+    // Gem svaret i databasen (uanset om det er rigtigt eller forkert)
+    const me = players.find(p => p.name === playerName);
+    if (me) {
+        let updateData = { last_answer: idx };
+        
+        // Hvis rigtigt, giv point
+        if (idx === activeData[gameState.current_question]?.a) {
+            const secondsPassed = (new Date() - new Date(gameState.question_started_at)) / 1000;
+            const speedBonus = Math.max(0, Math.floor(10 - secondsPassed));
+            updateData.score = (me.score || 0) + 10 + speedBonus;
+            updateData.correct_count = (me.correct_count || 0) + 1;
+            updateData.total_bonus = (me.total_bonus || 0) + speedBonus;
+        }
+        await supabase.from('players').update(updateData).eq('id', me.id);
     }
   };
 
   const updateGameStatus = async (status, idx = 0) => {
     if (idx >= activeData.length && status === 'active') status = 'finished';
+    
+    // Hvis vi starter et nyt spørgsmål, så nulstil "last_answer" for alle
+    if (status === 'active') {
+       await supabase.from('players').update({ last_answer: null }).gt('id', -1);
+    }
+
     const payload = { status, current_question: Math.min(idx, activeData.length - 1) };
     if (status === 'active') payload.question_started_at = new Date().toISOString();
     await supabase.from('quiz_rooms').update(payload).eq('room_code', roomCode);
@@ -165,8 +179,9 @@ const QuizApp = () => {
             <div className="relative bg-slate-900 rounded-full p-4 mb-6"><Zap className="text-amber-400" size={64} fill="currentColor" /></div>
           </div>
           <h1 className="text-6xl font-black mb-10 italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 drop-shadow-lg">
-  H. Schneekloths<br/>NYTÅRS<br/>BATTLE<br/>2025
-</h1>
+            H. Schneekloths<br/>NYTÅRS<br/>BATTLE<br/>2025
+          </h1>
+          
           <div className="w-full space-y-4">
             <button onClick={() => { setRole('host'); setView('game'); }} className="w-full bg-slate-800/50 text-indigo-200 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 border border-slate-700 hover:bg-slate-700 transition-all">
               <Monitor size={20} /> Start som Vært
@@ -241,7 +256,12 @@ const QuizApp = () => {
                   {opt}
                 </button>
               ) : (
-                <div key={i} className="bg-slate-800 p-6 rounded-2xl text-xl font-bold text-center border-b-4 border-slate-900 text-slate-300">{opt}</div>
+                <div key={i} className="bg-slate-800 p-6 rounded-2xl text-xl font-bold text-center border-b-4 border-slate-900 text-slate-300 flex flex-col justify-center items-center">
+                    <span>{opt}</span>
+                    <div className="mt-2 flex gap-1 flex-wrap justify-center">
+                        {players.filter(p => p.last_answer === null).length > 0 && <span className="text-[10px] text-slate-500 animate-pulse">Venter på svar...</span>}
+                    </div>
+                </div>
               )
             ))}
           </div>
@@ -253,30 +273,48 @@ const QuizApp = () => {
 
       {/* SHOWING ANSWER */}
       {gameState.status === 'showing_answer' && currentQ && (
-        <div className="flex-grow flex flex-col items-center justify-center text-center">
-          <div className="mb-8 relative">
-             <div className="absolute inset-0 bg-emerald-500 blur-2xl opacity-20 rounded-full"></div>
-             <CheckCircle2 size={80} className="relative text-emerald-400 mx-auto mb-4" />
-             <div className="bg-emerald-500 text-black p-8 rounded-3xl text-3xl font-black shadow-2xl rotate-1 mx-4">{currentQ.o[currentQ.a]}</div>
+        <div className="flex-grow flex flex-col items-center justify-start text-center overflow-y-auto">
+          {/* DET RIGTIGE SVAR + CONTEXT */}
+          <div className="mb-6 w-full max-w-2xl mx-auto">
+             <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4 border border-emerald-500/20">
+                <CheckCircle2 size={14} /> Det rigtige svar
+             </div>
+             <h2 className="text-3xl md:text-4xl font-black text-white mb-4 leading-tight">{currentQ.o[currentQ.a]}</h2>
+             
+             {/* HER ER DEN NYE CONTEXT BOKS */}
+             {currentQ.c && (
+                <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-slate-300 text-sm md:text-base italic leading-relaxed shadow-sm max-w-lg mx-auto">
+                    " {currentQ.c} "
+                </div>
+             )}
           </div>
 
-          <div className="w-full bg-slate-800/80 rounded-2xl p-4 border border-slate-700 backdrop-blur-md">
-            <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-3 text-left">Top 3 lige nu</h3>
-            {players.slice(0, 3).map((p, i) => (
-              <div key={i} className="flex justify-between items-center py-2 border-b border-slate-700/50 last:border-0">
-                 {/* FIX: Mellemrum i Top 3 */}
-                 <div className="flex items-center gap-3 overflow-hidden">
-                    <span className="font-bold text-slate-400 w-5">{i + 1}.</span>
-                    <span className="font-bold text-slate-200 truncate">{p.name}</span>
-                 </div>
-                 <div className="font-black text-indigo-400 pl-4 whitespace-nowrap">
-                    {p.score} pts
-                 </div>
-              </div>
-            ))}
+          {/* HVEM SVAREDE HVAD? */}
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+             {currentQ.o.map((opt, i) => {
+                const isCorrect = i === currentQ.a;
+                const votedHere = players.filter(p => p.last_answer === i);
+                
+                return (
+                    <div key={i} className={`p-3 rounded-xl border-2 flex flex-col ${isCorrect ? 'bg-emerald-900/30 border-emerald-500/50' : 'bg-slate-800/50 border-slate-800'}`}>
+                        <div className="flex justify-between items-center mb-2">
+                            <span className={`font-bold text-sm ${isCorrect ? 'text-emerald-400' : 'text-slate-400'}`}>{opt}</span>
+                            {isCorrect && <CheckCircle2 size={16} className="text-emerald-500" />}
+                        </div>
+                        {/* LISTE OVER SPILLERE */}
+                        <div className="flex flex-wrap gap-1 mt-auto">
+                            {votedHere.map((p, idx) => (
+                                <span key={idx} className={`text-[10px] px-2 py-0.5 rounded-md font-bold truncate max-w-[100px] ${isCorrect ? 'bg-emerald-500 text-black' : 'bg-slate-700 text-slate-300'}`}>
+                                    {p.name}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )
+             })}
           </div>
 
-          {role === 'host' && <button onClick={() => updateGameStatus('active', gameState.current_question + 1)} className="mt-8 w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-xl flex items-center justify-center gap-2">NÆSTE <ChevronRight /></button>}
+          {role === 'host' && <button onClick={() => updateGameStatus('active', gameState.current_question + 1)} className="mt-auto w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/50">NÆSTE <ChevronRight /></button>}
         </div>
       )}
 
@@ -304,11 +342,6 @@ const QuizApp = () => {
                 {i===0 && <div className="absolute -top-2 -right-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-bounce">VINDER!</div>}
               </div>
             ))}
-          </div>
-
-          <div className="bg-slate-800/50 p-4 rounded-xl text-xs text-slate-400 border border-slate-700 mt-auto">
-             <span className="block font-bold text-slate-300 mb-1">🤓 Sådan fik I point:</span>
-             10 point pr. rigtigt svar + op til 10 bonuspoint for hastighed.
           </div>
           
           {role === 'host' && (
