@@ -37,7 +37,7 @@ const QuizApp = () => {
     { q: "RUNDE 3 TEST (SPICY): Skal vi i seng?", o: ["Nu", "Aldrig", "Om lidt", "I morgen"], a: 0, c: "Godnat!" }
   ];
 
-  // --- DATA: RUNDE 1 (30 SPØRGSMÅL - ORIGINAL) ---
+  // --- DATA: RUNDE 1 (30 SPØRGSMÅL) ---
   const realQuestions1 = [
     // SPORT & BEGIVENHEDER
     { q: "Hvem vandt Tour de France i sommeren 2025?", o: ["Jonas Vingegaard", "Tadej Pogacar", "Remco Evenepoel", "Primoz Roglic"], a: 0, c: "Vingegaard smadrede dem på Mont Ventoux. Der var slet ingen tvivl i år – Glyngøres stolthed er tilbage på tronen!" },
@@ -125,46 +125,25 @@ const QuizApp = () => {
     { q: "SUNDHED?: Hvad er 'Drunk Yoga', som alle fitnesscentre tilbyder nu?", o: ["Yoga i spiritus", "Yoga mens man drikker", "Yoga mod tømmermænd", "Yoga på en bar"], a: 1, c: "Man drikker rosévin mens man står i 'Hunden'. Balancen er elendig, men humøret er højt." },
     { q: "RELATIONER: Hvad er 'Situationship 2.0', som de unge dyrker?", o: ["Kun digitale kærester", "Kærester på deltid", "Man deler en hund", "Man bor sammen uden sex"], a: 1, c: "Man er kærester mandag til onsdag. Resten af ugen er man single. Effektiv tidsstyring." },
     { q: "TV: Hvilket program blev taget af skærmen pga. for meget nøgenhed?", o: ["Gift ved første blik", "Robinson", "Date mig nøgen", "Luksusfælden"], a: 2, c: "Date mig nøgen blev for meget. Deltagerne begyndte at lave ting, der ikke må vises før kl. 24." },
-    { q: "NATTELIV: Hvadl i Champions League finalen 2025?", o: ["Haaland", "Mbappé", "Vinicius Jr.", "Højlund"], a: 1, c: "Mbappé gjorde det for Real Madrid. Det var kedeligt, men effektivt." },
-    { q: "Hvad hed den storm, der ramte Danmark i oktober 2025?", o: ["Bodil", "Gorm", "Ingolf", "Jytte"], a: 2, c: "Ingolf var ikke så slem som frygtet, men havemøblerne fløj alligevel en tur til Sverige." },
-    { q: "Hvilket socialt medie lukkede endegyldigt i 2025?", o: ["X (Twitter)", "Snapchat", "Threads", "Pinterest"], a: 0, c: "Elon trak stikket. Det hele blev til en betalingsmur, og så skred brugerne." },
-    { q: "Hvor mange Michelin-stjerner fik restaurant 'Jordnær' i 2025 guiden?", o: ["1", "2", "3", "Mistede alle"], a: 2, c: "De fik den 3. stjerne! Det er nu officielt en af verdens bedste restauranter." },
-    { q: "Hvem blev ny vært på 'X-Factor' i 2025?", o: ["Sofie Linde (retur)", "Melvin Kakooza", "Petra Nagel", "Martin Johannes Larsen"], a: 1, c: "Melvin er overalt, og nu også på X-Factor. Han gør det nu meget godt." },
-    { q: "Hvor holdt Lukas Graham sin 'Comeback' koncert i 2025?", o: ["Royal Arena", "Boxen", "Christiania", "Refshaleøen"], a: 2, c: "Back to the roots på Staden. Der var røg i luften, og det var ikke kun fra røgmaskinerne." },
-    { q: "Hvilken drik afløste 'Aperol Spritz' som sommerens hit i 2025?", o: ["Limoncello Spritz", "Hugo", "Espresso Tonic", "White Port & Tonic"], a: 0, c: "Limoncello er det nye sort. Surt, sødt og farligt let at drikke." },
-    { q: "Hvad var navnet på DR's store julekalender i 2025?", o: ["Tidsrejsen 3", "Nissernes Ø", "Julefeber 2", "Gammel Jul"], a: 2, c: "Mere julefeber til folket! Børnene elskede det, de voksne savnede Pyrus." }
-  ];
-
-  // --- DATA: RUNDE 2 (20 NYE SPØRGSMÅL - EKSTRA) ---
-  const realQuestions2 = [
-    { q: "MAD: Hvad hed den 'superfood' alle spiste i 2025?", o: ["Kaktus-juice", "Fårekyllinge-mel", "Tang-bacon", "Svampe-kaffe"], a: 3, c: "Kaffe lavet på svampe. Det smager af jord, men hipsterne elsker det." },
-    { q: "RUMMET: Hvad fandt man på Månen i 2025?", o: ["Vand i store mængder", "Aliens", "En gammel cola-dåse", "Guld"], a: 0, c: "Kæmpe underjordiske søer. Nu skal vi bare finde ud af, hvordan vi får det ned i en sodavandsmaskine." },
-    { q: "SPROG: Hvilket jysk udtryk kom i ordbogen i 2025?", o: ["Træls", "Mojn", "Kavt", "Pyt-knap"], a: 2, c: "'Kavt' er nu officielt dansk. Det beskriver perfekt stemningen, når man møder sin eks i Netto." },
-    { q: "FILM: Hvem spillede den nye James Bond i 2025?", o: ["Aaron Taylor-Johnson", "Idris Elba", "Tom Holland", "Mads Mikkelsen"], a: 0, c: "Han fik rollen! Han ser godt ud i smoking, men kan han drikke Martinis?" },
-    { q: "TEKNOLOGI: Hvad kan din mikrobølgeovn nu i 2025?", o: ["Flyve", "Bestille pizza", "Scanne kalorier", "Spille musik"], a: 2, c: "Den tæller kalorierne i din lasagne, mens den varmer den. Verdens mest deprimerende feature." },
-    { q: "DANMARK: Hvilken by fik endelig sin letbane til at virke i 2025?", o: ["Odense", "Aarhus", "København (Ring 3)", "Aalborg"], a: 2, c: "Ring 3 letbanen kører! Den larmer lidt, men den kører faktisk til tiden (nogle gange)." },
-    { q: "MODE: Hvad kom tilbage på mode for mænd i 2025?", o: ["Høje hatte", "Monokler", "Overskæg", "Lange kapper"], a: 3, c: "Kapper er in! Folk ligner en blanding af Batman og en Harry Potter-karakter på Strøget." },
-    { q: "SPORT: Hvilken sportsgren blev OL-disciplin i 2025?", o: ["E-sport (CS:GO)", "Padel Tennis", "Dødvægtløft", "Øl-bowling"], a: 1, c: "Padel er nu OL-sport. Alle mellemledere i Danmark jubler og køber nyt udstyr." },
-    { q: "NATUREN: Hvad skete der med Gudenåen i foråret 2025?", o: ["Den tørrede ud", "Den gik over sine bredder (igen)", "Den frøs til is", "Den skiftede farve"], a: 1, c: "Oversvømmelse igen. Silkeborg var kortvarigt Nordens Venedig." },
-    { q: "MUSIK: Hvilket legendarisk band blev genforenet (som hologrammer) i 2025?", o: ["Gasolin'", "Oasis", "The Beatles", "Spice Girls"], a: 0, c: "Kim Larsen som hologram i Parken. Det var smukt, men også lidt uhyggeligt." },
-    { q: "HVERDAG: Hvad blev forbudt i offentlig transport i 2025?", o: ["At tale i telefon", "At spise kebab", "Højttaler-musik", "At have sko på"], a: 2, c: "Endelig! Bøde på 1000 kr. for at spille TikTok-videoer uden høretelefoner." },
-    { q: "GAMING: Hvad kostede den nye PlayStation 6, da den udkom i 2025?", o: ["4.000 kr.", "6.000 kr.", "8.500 kr.", "12.000 kr."], a: 2, c: "8.500 kr. Og du skal stadig betale ekstra for at spille online. Av." },
-    { q: "USA: Hvad indførte USA som noget nyt i 2025?", o: ["Gratis tandlæge", "4 dages arbejdsuge", "Skat på robotter", "Forbud mod TikTok"], a: 3, c: "TikTok røg. Influencere græd på åben skærm (på Instagram i stedet)." },
-    { q: "BIZARRE NEWS: En mand i Jylland blev berømt for at samle på...?", o: ["Navleuld", "Gamle Nokiaer", "Tomme mælkekartoner", "Regnvand"], a: 1, c: "Han havde 5.000 stk Nokia 3310. Han bygger nu et hus af dem." },
-    { q: "DRKULTUR: Hvem blev ny dommer i 'Den Store Bagedyst' 2025?", o: ["En AI-robot", "Dronning Mary", "En fransk konditor", "Casper Christensen"], a: 2, c: "En sur franskmand, der hader alt med fondant. Det er fantastisk TV." },
-    { q: "VEJRET: Sommeren 2025 slog rekord i...?", o: ["Regn", "Solskinstimer", "Hagl", "Vindstød"], a: 0, c: "Det regnede i 40 dage i træk. Roskilde Festival var ét stort mudderbad." },
-    { q: "ARBEJDSLIV: Hvad blev det nye store frynsegode i 2025?", o: ["Gratis massage", "Søvn-pod på kontoret", "Ubegrænset ferie", "Betalt terapi"], a: 1, c: "Du kan nu tage en lur i arbejdstiden. Chefen kalder det 'Power Napping Optimization'." },
-    { q: "ROYALT: Hvad fik Prins Christian i 20-års fødselsdagsgave af Folketinget?", o: ["En ø", "En hest", "Et jagtgevær", "En elcykel"], a: 2, c: "Et håndlavet jagtgevær. De Gamle Værdier lever stadig." },
-    { q: "TREND: Hvad erstattede 'Cold Plunge' (isbad) som sundhedstrend i 2025?", o: ["Sauna-dragter", "Sand-badning", "Lyd-terapi", "At skrige i skoven"], a: 1, c: "At blive begravet i varmt sand. Det kradser alle vegne, men det skulle være sundt." },
-    { q: "SIDSTE SPØRGSMÅL (RUNDE 2): Skal vi tage en runde 3?", o: ["JA!", "NEJ, jeg skal tisse", "Kun hvis der er shots", "Jeg vil hjem"], a: 0, c: "Desværre venner, koden stopper her. Men baren er stadig åben! SKÅL!" }
+    { q: "NATTELIV: Hvad koster en Gin & Tonic på en natklub i Kbh i 2025?", o: ["120 kr.", "150 kr.", "185 kr.", "250 kr."], a: 2, c: "185 kroner. Og så er der ikke engang agurk i. Det er røveri ved højlys dag." },
+    { q: "DRKULTUR: Hvem chokerede alle ved at smide tøjet til en prisfest?", o: ["Ghita Nørby", "Pilou Asbæk", "Trine Dyrholm", "Sofie Linde"], a: 1, c: "Pilou mødte op i bar overkrop og læderbukser. Han sagde det var 'kunst'." },
+    { q: "LITTERATUR: Hvilken type bøger solgte bedst i 2025?", o: ["Krimier", "Erotiske noveller", "Kogebøger", "Selvhjælp"], a: 1, c: "'Spicy Books' er det nye sort. Alle læser husmoderporno i toget nu." },
+    { q: "APP: Hvilken app advarer dig mod at sms'e din eks når du er fuld?", o: ["Drunk-Block", "Ex-Guard", "Stop-It", "No-Regrets"], a: 0, c: "Drunk-Block låser dine kontakter efter kl. 02. Den har reddet mange ægteskaber." },
+    { q: "PARFORHOLD: Hvad er den hyppigste årsag til skænderier i 2025?", o: ["Penge", "Opvasken", "Hvem der har ChatGPT", "Netflix-koden"], a: 2, c: "Jalousi over, hvem ChatGPT taler pænest til. 'Hvorfor er den sødere ved dig?!'" },
+    { q: "FAMILIE: Hvad blev lovligt at kalde sit barn i 2025?", o: ["Emoji", "iPhone", "Wifi", "Skibidi"], a: 3, c: "Ja, du kan nu døbe din søn Skibidi. Stakkels barn." },
+    { q: "SIDSTE SPØRGSMÅL: Hvem er selskabets mest 'spicy' person?", o: ["Værten", "Mig selv", "Personen til højre", "Ingen kommentar"], a: 0, c: "Det må være værten! Tak for i aften, I er for vilde! 🎆🔥" }
   ];
 
   // Logik til at vælge spørgsmål
   let activeData = [];
+  // TEST MODES
   if (gameState.quiz_mode === 'test') activeData = testQuestions1;
   else if (gameState.quiz_mode === 'test_2') activeData = testQuestions2;
+  else if (gameState.quiz_mode === 'test_3') activeData = testQuestions3;
+  // REAL MODES
   else if (gameState.quiz_mode === 'real') activeData = realQuestions1;
   else if (gameState.quiz_mode === 'real_2') activeData = realQuestions2;
+  else if (gameState.quiz_mode === 'real_3') activeData = realQuestions3;
   else activeData = realQuestions1; // Fallback
 
   // --- SUPABASE & LOGIC ---
@@ -262,7 +241,22 @@ const QuizApp = () => {
 
   // HER ER FIXET: VI BRUGER room_id TIL AT SLETTE POINT
   const startMoreQuestions = async () => {
-    if (!window.confirm("Er du klar til RUNDE 2? Dette nulstiller pointene for den nye runde!")) return;
+    // Find ud af hvilken mode vi er i, og hvad den næste er
+    const currentBase = gameState.quiz_mode.includes('test') ? 'test' : 'real';
+    let nextMode = '';
+    let promptText = '';
+
+    if (gameState.quiz_mode === currentBase) {
+        nextMode = currentBase + '_2';
+        promptText = "Klar til RUNDE 2? Pointene nulstilles!";
+    } else if (gameState.quiz_mode === currentBase + '_2') {
+        nextMode = currentBase + '_3';
+        promptText = "Klar til RUNDE 3 (FINALEN)? Pointene nulstilles!";
+    } else {
+        return; // Ingen flere runder
+    }
+
+    if (!window.confirm(promptText)) return;
     
     // 1. Find ID på rummet
     const { data: room } = await supabase.from('quiz_rooms').select('id').eq('room_code', roomCode).single();
@@ -279,8 +273,6 @@ const QuizApp = () => {
         }
     }
 
-    const currentBase = gameState.quiz_mode.includes('test') ? 'test' : 'real';
-    const nextMode = currentBase + '_2'; 
     await supabase.from('quiz_rooms').update({ quiz_mode: nextMode, current_question: 0, status: 'lobby' }).eq('room_code', roomCode);
   };
 
@@ -331,12 +323,19 @@ const QuizApp = () => {
   const myData = players.find(p => p.name === playerName);
   const iHaveAnsweredThisSpecificQuestion = myData && myData.last_q_index === gameState.current_question;
 
+  // Header Title Helper
+  const getRoundTitle = () => {
+      if (gameState.quiz_mode.includes('3')) return "RUNDE 3 🔥";
+      if (gameState.quiz_mode.includes('2')) return "RUNDE 2 🚀";
+      return "QUIZ'25";
+  };
+
   return (
     <MainLayout quizMode={gameState.quiz_mode}>
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6 bg-slate-800/50 p-4 rounded-2xl backdrop-blur-sm border border-slate-700/50">
         <div className="font-black text-xl italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
-            {gameState.quiz_mode.includes('2') ? "RUNDE 2 🚀" : "QUIZ'25"}
+            {getRoundTitle()}
         </div>
         <div className="flex items-center gap-3">
           {role === 'host' && <button onClick={fullReset} className="text-rose-400 p-2"><Trash2 size={20} /></button>}
@@ -348,7 +347,7 @@ const QuizApp = () => {
       {gameState.status === 'lobby' && (
         <div className="flex-grow flex flex-col text-center">
           <h2 className="text-4xl font-black mb-2 text-white">
-            {gameState.quiz_mode.includes('2') ? "Klar til Runde 2?" : "Lobbyen er åben!"}
+            {gameState.quiz_mode.includes('3') ? "Klar til SPICY runde? 🌶️" : (gameState.quiz_mode.includes('2') ? "Klar til Runde 2?" : "Lobbyen er åben!")}
           </h2>
           <p className="text-slate-400 mb-8 text-sm">Find jeres pladser...</p>
           
@@ -478,7 +477,7 @@ const QuizApp = () => {
           <div className="text-center mb-8">
              <Trophy size={64} className="mx-auto text-amber-400 mb-2 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]" />
              <h2 className="text-4xl font-black text-white italic">RESULTATER</h2>
-             {gameState.quiz_mode.includes('2') && <div className="text-amber-300 font-bold mt-2">RUNDE 2 AFSLUTTET</div>}
+             <div className="text-amber-300 font-bold mt-2 uppercase">{getRoundTitle()} AFSLUTTET</div>
           </div>
 
           <div className="space-y-3 mb-8">
@@ -501,10 +500,10 @@ const QuizApp = () => {
           
           {role === 'host' && (
             <div className="mt-auto space-y-4">
-                {/* KNAPPEN TIL RUNDE 2 (VISES KUN HVIS VI IKKE ALLEREDE ER I RUNDE 2) */}
-                {!gameState.quiz_mode.includes('2') && (
+                {/* KNAPPEN TIL NÆSTE RUNDE (VISES KUN HVIS VI IKKE ALLEREDE ER I RUNDE 3) */}
+                {!gameState.quiz_mode.includes('3') && (
                     <button onClick={startMoreQuestions} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl animate-pulse hover:scale-[1.02] transition-transform flex items-center justify-center gap-3">
-                         MERE!!! <FastForward fill="currentColor" />
+                         {gameState.quiz_mode.includes('2') ? "SPICY RUNDE 3!!!" : "MERE!!!"} <Flame fill="currentColor" />
                     </button>
                 )}
                 
