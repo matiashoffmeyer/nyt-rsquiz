@@ -170,7 +170,11 @@ const QuizApp = () => {
         }
     }
   }, [players, gameState.status, role]);
-
+// --- BUG FIX: Sørg for at nulstille knapperne ved nyt spørgsmål ---
+  useEffect(() => {
+     setHasAnswered(false);
+  }, [gameState.current_question, gameState.quiz_mode]);
+  
   const submitAnswer = async (idx) => {
     if (hasAnswered || gameState.status !== 'active') return;
     setHasAnswered(true);
