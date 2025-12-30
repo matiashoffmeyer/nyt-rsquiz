@@ -39,83 +39,87 @@ const QuizApp = () => {
 
   // --- DATA: RUNDE 1 (FAKTA & KALENDER 2025) ---
   const realQuestions1 = [
-    // SPORT & BEGIVENHEDER
-    { q: "Hvilken by er officielt bekræftet som startby for Tour de France 2025?", o: ["København", "Lille (Frankrig)", "Barcelona", "London"], a: 1, c: "Touren starter i det nordfranske (Lille) d. 5. juli 2025. Ingen udenlandsk start i år." },
-    { q: "Hvor skal Champions League finalen spilles d. 31. maj 2025?", o: ["Wembley (London)", "Parken (Kbh)", "Allianz Arena (München)", "Stade de France (Paris)"], a: 2, c: "München er værtsbyen. Det er bekræftet af UEFA for længe siden." },
-    { q: "Hvilken by vandt værtskabet for Eurovision Song Contest 2025?", o: ["Zürich", "Geneve", "Basel", "Bern"], a: 2, c: "Basel i Schweiz vandt kampen. Det bliver afholdt i St. Jakobshalle i maj." },
-    { q: "Hvilket stort mesterskab afholdes i Schweiz i sommeren 2025?", o: ["VM i Cykling", "Kvindernes EM i Fodbold", "OL", "VM i Håndbold"], a: 1, c: "Schweiz har et vildt år. Både Melodi Grand Prix og EM i kvindefodbold på én sommer." },
+    // DE 5 NYE STARTSPØRGSMÅL
+    { q: "Hvilke lande delte værtsskabet for VM i Herrehåndbold i januar 2025?", o: ["Danmark, Sverige, Norge", "Danmark, Norge, Kroatien", "Tyskland, Polen, Danmark", "Frankrig, Spanien, Portugal"], a: 1, c: "Det var Danmark, Norge og Kroatien. Vi startede året med harpiks på hænderne!" },
+    { q: "Hvilken historisk begivenhed fandt sted i Washington D.C. d. 20. januar 2025?", o: ["Super Bowl", "Donald Trump blev indsat", "Det Hvide Hus brændte", "En fredsaftale blev underskrevet"], a: 1, c: "Donald Trump blev officielt indsat som USA's 47. præsident. Det var en dag, der fyldte meget i nyhederne." },
+    { q: "Hvilken Formel 1-kører skiftede sensationelt til Ferrari og kørte sin første sæson i rødt i 2025?", o: ["Max Verstappen", "Lando Norris", "Lewis Hamilton", "Kevin Magnussen"], a: 2, c: "Lewis Hamilton chokerede alle med skiftet. Det var mærkeligt at se ham uden Mercedes-logoet." },
+    { q: "Hvilken kæmpe kunstner optrådte ved Super Bowl Halftime Show i februar 2025?", o: ["Taylor Swift", "Kendrick Lamar", "Drake", "Justin Bieber"], a: 1, c: "Kendrick Lamar indtog scenen i New Orleans. Det var et show, der delte vandene!" },
+    { q: "Hvad skete der endelig med det britiske band Oasis i sommeren 2025?", o: ["De udgav en jazz-plade", "De blev uvenner igen", "De spillede reunion-koncerter", "Liam Gallagher blev munk"], a: 2, c: "Miraklet skete! Brødrene sluttede fred og spillede en kæmpe turné i UK og Irland." },
+
+    // SPORT & BEGIVENHEDER (Fortsat)
+    { q: "Hvilken by var startby for Tour de France 2025?", o: ["København", "Lille (Frankrig)", "Barcelona", "London"], a: 1, c: "Touren startede i det nordfranske (Lille) d. 5. juli. Ingen udenlandske eventyr i år, det hele foregik i Frankrig." },
+    { q: "Hvor blev Champions League finalen spillet d. 31. maj 2025?", o: ["Wembley (London)", "Parken (Kbh)", "Allianz Arena (München)", "Stade de France (Paris)"], a: 2, c: "München var værtsbyen. Tyskerne lavede en kæmpe folkefest." },
+    { q: "Hvilken by var vært for Eurovision Song Contest i maj 2025?", o: ["Zürich", "Geneve", "Basel", "Bern"], a: 2, c: "Basel vandt værtskabet. Det var dyrt at være gæst i Schweiz, men showet var flot!" },
     
     // POLITIK & SAMFUND
-    { q: "Hvilken dato skal vi til stemmeurnerne til Kommunalvalget 2025?", o: ["1. november", "18. november", "21. november", "4. december"], a: 1, c: "Valgdatoen ligger fast i loven: Tredje tirsdag i november. Altså d. 18. november 2025." },
-    { q: "Hvilken rolle overtager Danmark i EU fra d. 1. juli 2025?", o: ["Formandskabet", "Forsvars-ledelsen", "Landbrugsstyrelsen", "Ingen"], a: 0, c: "Danmark har EU-formandskabet i andet halvår af 2025. Mette F. skal styre møderne." },
-    { q: "Hvem bliver indsat som USA's præsident d. 20. januar 2025?", o: ["Donald Trump", "Kamala Harris", "Joe Biden", "J.D. Vance"], a: 0, c: "Donald Trump vandt valget i '24 og bliver nr. 47. Det er et faktum." },
-    { q: "Hvad sker der med statsradiofonien i 2025?", o: ["DR lukker P3", "TV2 bliver reklamefri", "DR fylder 100 år", "Licensen stiger"], a: 2, c: "Statsradiofonien (DR) blev grundlagt 1. april 1925. De fylder 100 år!" },
+    { q: "Hvilken dato gik vi til stemmeurnerne til Kommunalvalget 2025?", o: ["1. november", "18. november", "21. november", "4. december"], a: 1, c: "Valgdatoen lå fast: Tredje tirsdag i november. Altså d. 18. november." },
+    { q: "Hvilken rolle overtog Danmark i EU fra d. 1. juli 2025?", o: ["Formandskabet", "Forsvars-ledelsen", "Landbrugsstyrelsen", "Ingen"], a: 0, c: "Danmark havde EU-formandskabet i det sidste halve år. Der var mange topmøder i København." },
+    { q: "Hvad skete der med statsradiofonien (DR) den 1. april 2025?", o: ["De lukkede P3", "De blev reklamefinansieret", "De fyldte 100 år", "Licensen steg til 5000 kr"], a: 2, c: "DR fejrede 100 års jubilæum! Gamle klip rullede over skærmen hele foråret." },
 
     // KULTUR & SHOWBIZ
-    { q: "Hvilket britisk band har officielt meldt ud, at de genforenes i 2025?", o: ["Pink Floyd", "Oasis", "The Smiths", "One Direction"], a: 1, c: "Liam og Noel Gallagher har sluttet fred (for nu). Oasis spiller store koncerter i UK sommeren '25." },
-    { q: "Hvem er bekræftet som vært for Oscar-uddelingen i marts 2025?", o: ["Jimmy Kimmel", "Conan O'Brien", "Ricky Gervais", "Kevin Hart"], a: 1, c: "Conan O'Brien tager tjansen. Det er officielt bekræftet af akademiet." },
-    { q: "Hvilken verdensstjerne har annonceret, at han kører Formel 1 for Ferrari i 2025?", o: ["Max Verstappen", "Lewis Hamilton", "Kevin Magnussen", "Fernando Alonso"], a: 1, c: "Det største skifte i F1-historien. Hamilton i rødt fra 2025-sæsonen." },
-    { q: "Hvilket dansk rockband spiller 4 udsolgte koncerter i Parken i juni 2025?", o: ["Volbeat", "D-A-D", "The Minds of 99", "Nik & Jay"], a: 2, c: "Minds of 99 slår alle rekorder med fire koncerter i nationalarenaen." },
+    { q: "Hvem var vært for Oscar-uddelingen i marts 2025?", o: ["Jimmy Kimmel", "Conan O'Brien", "Ricky Gervais", "Kevin Hart"], a: 1, c: "Conan O'Brien styrede showet for første gang. Det var en frisk udskiftning efter mange år med Kimmel." },
+    { q: "Hvilket dansk rockband spillede hele 4 udsolgte koncerter i Parken i juni 2025?", o: ["Volbeat", "D-A-D", "The Minds of 99", "Nik & Jay"], a: 2, c: "Minds of 99 slog alle rekorder. Fire aftener i træk med fællessang i nationalarenaen." },
+    { q: "Hvilken sangerinde afsluttede sin 'Eras Tour' (verdens største tour) i 2024/2025?", o: ["Beyoncé", "Taylor Swift", "Adele", "Dua Lipa"], a: 1, c: "Taylor Swift. Det virkede som om den tour varede i 5 år, men nu er den slut." },
 
     // TECH & TING
-    { q: "Hvilket gigantisk spil har Rockstar bekræftet udkommer i efteråret 2025?", o: ["GTA VI", "Red Dead 3", "FIFA 26", "Sims 5"], a: 0, c: "Grand Theft Auto VI. Traileren sagde 2025, og Rockstar fastholder 'Fall 2025'." },
-    { q: "Hvilket Microsoft-styresystem mister officielt supporten i oktober 2025?", o: ["Windows 10", "Windows 11", "Windows XP", "Windows 8"], a: 0, c: "Windows 10 dør d. 14. oktober 2025. Ingen flere sikkerhedsopdateringer." },
-    { q: "Hvilken oplader-standard blev lovpligtig for alle nye telefoner i EU ved udgangen af 24/25?", o: ["Lightning", "USB-C", "Trådløs", "Micro-USB"], a: 1, c: "USB-C. Apple måtte bøje sig. Nu har selv iPhone 16/17 det stik." },
-    { q: "Hvilken artist er bekræftet til Super Bowl Halftime Show i feb 2025?", o: ["Kendrick Lamar", "Taylor Swift", "Justin Bieber", "Drake"], a: 0, c: "Kendrick Lamar skal optræde i New Orleans. Det blev annonceret i september." },
+    { q: "Hvad skete der med 'Grand Theft Auto VI' (GTA 6) i efteråret 2025?", o: ["Det udkom og slog alle rekorder", "Det blev gratis", "Det blev udskudt til 2026", "Det blev aflyst"], a: 2, c: "Gamerne græd. Rockstar meldte ud, at vi må vente til 2026 for at få den fulde oplevelse." },
+    { q: "Hvilket Microsoft-styresystem mistede officielt supporten i oktober 2025?", o: ["Windows 10", "Windows 11", "Windows XP", "Windows 8"], a: 0, c: "Det var farvel til Windows 10 d. 14. oktober. Millioner af PC'er skulle opdateres eller skrottes." },
+    { q: "Hvilken type stik blev det eneste lovlige til nye telefoner i EU i 2025?", o: ["Lightning", "USB-C", "Trådløs", "Micro-USB"], a: 1, c: "USB-C. Nu kan du endelig låne en oplader af din ven med Android (eller omvendt)." },
+    { q: "Hvad var det særlige ved iPhone 17 'Air' modellen, der kom i september?", o: ["Den var gennemsigtig", "Den var ekstremt tynd", "Den kunne foldes", "Den havde intet kamera"], a: 1, c: "Den var ultratynd. Apple satsede alt på designet i år." },
 
     // DYR & NATUR
-    { q: "Hvilket rovdyr har etableret sig fast med hvalpe i Jylland (status 2024/25)?", o: ["Guldsjakal", "Ulv", "Los", "Bjørn"], a: 1, c: "Ulven er her for at blive. Der er flere dokumenterede hvalpekuld nu." },
-    { q: "Hvilken invasiv snegl er stadig den største plage i danske haver?", o: ["Voldsneglen", "Dræbersneglen", "Plettet voldsnegl", "Vinbjergsneglen"], a: 1, c: "Den iberiske skovsnegl (dræbersneglen). Kampen fortsætter også i 2025." },
-    { q: "Hvilken hunderace var den mest populære i Danmark ved seneste optælling?", o: ["Fransk Bulldog", "Labrador Retriever", "Golden Retriever", "Cocker Spaniel"], a: 1, c: "Labradoren er stadig danskernes foretrukne familiehund." },
-    { q: "Hvad skete der med Dronning Margrethe for præcis et år siden (nytår 23/24)?", o: ["Hun abdicerede", "Hun fik en hund", "Hun flyttede", "Hun fik kørekort"], a: 0, c: "Det var i sin nytårstale for et år siden, hun chokerede alle. Nu har vi Kong Frederik." }
+    { q: "Hvilket rovdyr etablerede sig endnu mere fast i Jylland i løbet af 2025?", o: ["Guldsjakal", "Ulv", "Los", "Bjørn"], a: 1, c: "Ulven er her for at blive. Der blev spottet flere hvalpe, og debatten rasede som altid." },
+    { q: "Hvilken invasiv snegl var stadig den største plage i de danske haver i 2025?", o: ["Voldsneglen", "Dræbersneglen", "Plettet voldsnegl", "Vinbjergsneglen"], a: 1, c: "Den iberiske skovsnegl (dræbersneglen). Heller ikke i år fandt vi mirakelkuren." },
+    { q: "Hvilken hunderace var den mest populære i Danmark (igen) i 2025?", o: ["Fransk Bulldog", "Labrador Retriever", "Golden Retriever", "Cocker Spaniel"], a: 1, c: "Labradoren er stadig danskernes foretrukne familiehund. Den er bare sød og glad for mad." },
+    { q: "Hvad var det, Dronning Margrethe gjorde for præcis to år siden (nytår 23/24)?", o: ["Hun abdicerede", "Hun fik en hund", "Hun flyttede", "Hun fik kørekort"], a: 0, c: "Det var bomben i nytårstalen for to år siden. I år har vi vænnet os til Kong Frederik." }
   ];
 
   // --- DATA: RUNDE 2 (BLANDET MIX 2025) ---
   const realQuestions2 = [
-    { q: "FILM: Hvilken stor film med Jason Momoa og Jack Black har premiere i april 2025?", o: ["Minecraft: The Movie", "Jumanji 4", "Aquaman 3", "Fast & Furious 12"], a: 0, c: "En Minecraft-film med rigtige mennesker. Traileren fik... blandede modtagelser." },
-    { q: "ROYALT: Hvem fylder 20 år d. 15. oktober 2025?", o: ["Prins Christian", "Prinsesse Isabella", "Grev Nikolai", "Prins Joachim"], a: 0, c: "Kronprins Christian rundede de 18 i '23, så han rammer 20'erne i 2025." },
-    { q: "SPORT: Hvem er ny dansk landstræner i herrefodbold (ansat slut 24)?", o: ["Kasper Hjulmand", "Brian Riemer", "Thomas Frank", "Michael Laudrup"], a: 1, c: "Brian Riemer fik jobbet i efteråret 2024 og skal lede holdet i 2025." },
-    { q: "MUSIK: Hvilken dansk sanger annoncerede en pause på ubestemt tid i 2024?", o: ["Christopher", "Jada", "Thomas Helmig", "Medina"], a: 2, c: "Thomas Helmig meldte ud, at han trækker stikket til koncerter på ubestemt tid." },
-    { q: "PARK: Hvilken forlystelse i Tivoli lukkede/ombygges fra 2025?", o: ["Dæmonen", "Den Gamle Rutschebane", "Snurretoppen", "Ballongyngerne"], a: 2, c: "Snurretoppen blev pillet ned for at gøre plads til noget nyt. RIP til kvalmen." },
-    { q: "TREND: Hvad er 'Coolcation', som rejsebureauerne melder om?", o: ["Ferie i kolde lande", "Ferie alene", "Ferie uden mobil", "Ferie med is"], a: 0, c: "Folk flygter fra hedebølgen i Sydeuropa. Norge og Sverige er det nye Mallorca." },
-    { q: "JUBILÆUM: Hvad fylder 50 år i 2025 (dansk film)?", o: ["Olsen Banden", "Matador", "Olsen Banden på Sporet", "Huset på Christianshavn"], a: 2, c: "'Olsen Banden på Sporet' (den med det lille tog) havde premiere i 1975." },
-    { q: "BYGGERI: Hvilken ø i København åbner mere og mere op i 2025?", o: ["Lynetteholm", "Papirøen", "Refshaleøen", "Trekroner"], a: 1, c: "Vandkulturhuset på Papirøen forventes færdigt. Det bliver byens nye dyre hæng-ud sted." },
-    { q: "SERIE: Hvilken Netflix-serie afslutter med sin 5. og sidste sæson i 2025?", o: ["Stranger Things", "Bridgerton", "The Crown", "Squid Game"], a: 0, c: "Stranger Things slutter endelig. Børnene er snart 30 år gamle i virkeligheden." },
-    { q: "VIRKELIGHED: Hvad blev indført for turister i Venedig i 2024/25?", o: ["Entré-gebyr", "Forbud mod kufferter", "Svømme-forbud", "Ingen selfies"], a: 0, c: "Man skal betale 5 Euro for at komme ind i byen på travle dage. Slut med gratis kultur." },
-    { q: "DANMARK: Hvilket nyt navn fik 'Bededag' i kalenderen?", o: ["Arbejdsdag", "Almindelig fredag", "Mette-dag", "Fridag"], a: 1, c: "Den findes ikke mere. Det er bare en almindelig fredag nu. Tak for det." },
-    { q: "BIL: Hvilket bilmærke blev det mest solgte i DK i 2024 (og nok også 25)?", o: ["Tesla", "VW", "Toyota", "Peugeot"], a: 0, c: "Tesla (især Model Y) sidder tungt på markedet. De er overalt." },
-    { q: "SUNDHED: Hvad er navnet på den slankemedicin, der eksploderede i 24/25?", o: ["Wegovy", "Ozempic", "Begge dele", "NovoSlim"], a: 2, c: "Wegovy (til vægttab) og Ozempic (til diabetes) er det samme stof. Novo Nordisk ejer verden nu." },
-    { q: "RUMMET: Hvad hedder den NASA-mission, der skal flyve rundt om månen i sep 2025?", o: ["Artemis II", "Apollo 18", "Moonraker", "Starship"], a: 0, c: "Artemis II. Fire astronauter skal ud på en tur rundt om månen. Første gang i 50 år." },
-    { q: "JOB: Hvad betyder begrebet 'Coffee Badging'?", o: ["Møde ind, hente kaffe, skride hjem", "Lave god kaffe", "Spilde kaffe", "Drikke te"], a: 0, c: "Man møder fysisk op på kontoret bare for at vise ansigt (og få kaffe), og så kører man hjem igen." },
-    { q: "SPORT: Hvem vandt EM i Håndbold for herrer i jan 2024 (og er favoritter i VM 25)?", o: ["Frankrig", "Danmark", "Sverige", "Tyskland"], a: 0, c: "Frankrig slog Danmark i finalen. Vi satser på revanche til VM i januar 2025!" },
-    { q: "FERIE: Hvilket land kræver nu en 'ETA' (indrejse-godkendelse) for danskere?", o: ["UK (Storbritannien)", "Tyskland", "Norge", "Sverige"], a: 0, c: "Fra april 2025 skal europæere betale og registrere sig før de rejser til London." },
-    { q: "NET: Hvad hedder det sociale medie, Elon Musk ejer (som stadig skaber kaos)?", o: ["Twitter", "X", "Y", "Z"], a: 1, c: "Det hedder X. Men vi kalder det alle sammen stadig for Twitter." },
-    { q: "KALENDER: Hvilken ugedag falder Juleaften på i 2025?", o: ["Tirsdag", "Onsdag", "Torsdag", "Fredag"], a: 1, c: "Onsdag d. 24. december. En klassisk 'midt i ugen' jul." },
+    { q: "FILM: Hvilken spil-baseret film med Jack Black havde premiere i foråret 2025?", o: ["Minecraft: The Movie", "Fortnite: The Movie", "Zelda", "Mario 2"], a: 0, c: "A Minecraft Movie. Det så meget mærkeligt ud med rigtige mennesker i en firkantet verden." },
+    { q: "ROYALT: Hvem rundede et skarpt hjørne og fyldte 20 år d. 15. oktober 2025?", o: ["Prins Christian", "Prinsesse Isabella", "Grev Nikolai", "Prins Joachim"], a: 0, c: "Kronprins Christian forlod teenager-årene. Han er nu en voksen mand på 20." },
+    { q: "SPORT: Hvem stod i spidsen for herrelandsholdet i fodbold gennem 2025?", o: ["Kasper Hjulmand", "Brian Riemer", "Thomas Frank", "Michael Laudrup"], a: 1, c: "Brian Riemer. Han overtog roret i slutningen af '24 og har styret holdet i år." },
+    { q: "PARK: Hvilken klassisk forlystelse i Tivoli var lukket/under ombygning i 2025?", o: ["Dæmonen", "Den Gamle Rutschebane", "Snurretoppen", "Ballongyngerne"], a: 2, c: "Snurretoppen blev pillet ned for at gøre plads til noget nyt. Mange savnede kvalmen." },
+    { q: "REJSE: Hvad var 'Coolcation', som mange danskere tog på i sommeren 2025?", o: ["Ferie i kolde lande", "Ferie alene", "Ferie uden mobil", "Ferie med is"], a: 0, c: "Folk orkede ikke 45 grader i Sydeuropa. Norge og Sverige fik masser af turister, der ville køles ned." },
+    { q: "JUBILÆUM: Hvilken klassisk dansk film fyldte 50 år i efteråret 2025?", o: ["Olsen Banden på Sporet", "Matador", "Zappa", "Huset på Christianshavn"], a: 0, c: "'Olsen Banden på Sporet' er fra 1975. Det er den med det lille tog og Børge som lærling." },
+    { q: "BYGGERI: Hvilket stort vandkulturhus åbnede endelig dørene i København i 2025?", o: ["Vandhuset på Papirøen", "Lynetteholm Badet", "Amager Strandhus", "Nordhavn Spa"], a: 0, c: "Papirøens vandkulturhus. Det har været undervejs længe, men nu kan man endelig bade der." },
+    { q: "SERIE: Hvilken kæmpe Netflix-serie sendte sin sidste sæson i 2025?", o: ["Stranger Things", "Bridgerton", "The Crown", "Squid Game"], a: 0, c: "Stranger Things. Børnene var blevet voksne, men de fik endelig afsluttet kampen mod Vecna." },
+    { q: "TURISME: Hvad skulle man betale for at besøge Venedig på travle dage i 2025?", o: ["5 Euro i entré", "Ingenting", "100 Euro", "Man skulle booke 1 år før"], a: 0, c: "Entré-gebyret blev permanent. Man kan ikke bare vade ind på Markuspladsen gratis længere." },
+    { q: "DANMARK: Hvad hed den helligdag, vi heller ikke havde i foråret 2025?", o: ["Store Bededag", "Kristi Himmelfart", "2. Pinsedag", "Grundlovsdag"], a: 0, c: "Store Bededag. Vi har stadig ikke fået den tilbage. Det var bare en almindelig fredag." },
+    { q: "BIL: Hvilket bilmærke var det mest solgte i Danmark igen i 2025?", o: ["Tesla", "VW", "Toyota", "Peugeot"], a: 0, c: "Tesla. Især Model Y var overalt på de danske veje." },
+    { q: "SUNDHED: Hvilken medicin var der stadig kæmpe efterspørgsel på i 2025?", o: ["Wegovy (Vægttab)", "Panodil", "Ipren", "Hostesaft"], a: 0, c: "Wegovy. Novo Nordisk havde endnu et vildt år, fordi hele verden ville tabe sig." },
+    { q: "RUMMET: Hvad gjorde fire astronauter med Artemis II missionen i september 2025?", o: ["Fløj rundt om månen", "Landede på Mars", "Byggede en base", "Intet"], a: 0, c: "De fløj rundt om månen og hjem igen. Det var første gang i over 50 år, mennesker var så langt væk." },
+    { q: "JOB: Hvad gik trenden 'Coffee Badging' ud på i 2025?", o: ["Møde ind, hente kaffe, skride hjem", "Lave god kaffe", "Spilde kaffe", "Drikke te"], a: 0, c: "At møde op på kontoret, scanne sit kort, hente en kaffe (så chefen så en) og så køre hjem igen." },
+    { q: "SPORT: Hvem vandt Kvindernes EM i fodbold i sommeren 2025 (Schweiz)?", o: ["Spanien", "England", "Tyskland", "Danmark"], a: 1, c: "England (Lionesses) tog trofæet (eller var favoritter). Kvindefodbold var større end nogensinde." },
+    { q: "REJSE: Hvad skulle danskere have klar for at rejse til London i 2025?", o: ["En ETA (Elektronisk tilladelse)", "Et visum på papir", "Vaccinepas", "Ingenting"], a: 0, c: "Det britiske ETA-system trådte i kraft. Man skulle registreres og betale online før afrejse." },
+    { q: "NET: Hvad kalder vi stadig det sociale medie X, selvom det har heddet X længe?", o: ["Twitter", "Facebook", "Insta", "Tokken"], a: 0, c: "Twitter. Ingen har vænnet sig til at sige 'Jeg har lagt et opslag på X'. Det lyder forkert." },
+    { q: "KALENDER: Hvilken ugedag faldt Juleaften på i år (2025)?", o: ["Onsdag", "Torsdag", "Fredag", "Lørdag"], a: 0, c: "Det var en onsdag. En rigtig 'midt i ugen' jul, så man fik en kort arbejdsuge." },
+    { q: "TECH: Hvilken ny konsol annoncerede Nintendo endelig i 2025?", o: ["Switch 2", "GameBoy 2025", "Wii 3", "DS 2025"], a: 0, c: "Efterfølgeren til Switchen! Gamerne har ventet på den i årevis, og i år hørte vi endelig nyt." },
     { q: "BONUS: Er vi klar til den SPICY runde?", o: ["JA!", "Nej", "Måske", "Hvad?"], a: 0, c: "Så stram ballerne, for nu gælder det trends og TikTok-sprog!" }
   ];
 
-  // --- DATA: RUNDE 3 (SPICY TRENDS & BEGREBER 2024/25) ---
+  // --- DATA: RUNDE 3 (SPICY TRENDS & BEGREBER 2025) ---
   const realQuestions3 = [
-    { q: "TREND: Hvad er 'Rawdogging' på en flyvetur (Viral trend)?", o: ["Ingen skærm/mad/søvn", "At flyve nøgen", "At spise råt kød", "At stå op"], a: 0, c: "At sidde og stirre ud i luften i 7 timer. Ingen film, ingen musik, intet vand. Kun ren viljestyrke." },
-    { q: "SLANG: Hvad betyder det, hvis nogen har 'Rizz'?", o: ["Charme/Score-evne", "Risengrød", "Penge", "Dårlig stil"], a: 0, c: "Forkortelse for Charisma. Har du Rizz, kan du score. Har du ikke... så er det op ad bakke." },
-    { q: "SOMMER: Hvad var 'Brat Summer' (startet af Charli XCX)?", o: ["Neon-grøn, fest og kaos", "Barbie-pink", "Rolig sommer", "Kedelig sommer"], a: 0, c: "Det var overalt. 'Brat' betød at være lidt rodet, festlig og ligeglad. Farven var syre-grøn." },
-    { q: "FÆNOMEN: Hvad er 'Hawk Tuah' pigen kendt for?", o: ["Et viralt interview om sex", "At synge opera", "At bage kage", "At spille fodbold"], a: 0, c: "Et interview på gaden i Nashville, der gik verden rundt. Vi siger ikke mere." },
-    { q: "FORHOLD: Hvad er et 'Situationship'?", o: ["Mere end venner, ikke kærester", "Et forhold på en båd", "Når man bor sammen", "Kærester kun i weekenden"], a: 0, c: "Den grå zone. Man dater, men man har ikke 'defineret' det. Det er opskriften på forvirring." },
-    { q: "LIVSSTIL: Hvad går trenden 'Bed Rotting' ud på?", o: ["At ligge i sengen hele dagen", "At spise gammel mad", "At sove 24 timer", "At ødelægge sin seng"], a: 0, c: "At ligge under dynen med sin telefon en hel dag og lave absolut intet. Gen Z kalder det 'Self Care'." },
-    { q: "UDSEENDE: Hvad er 'Mewing' (som drenge laver i skolen)?", o: ["Presser tungen op for kæbelinje", "Laver kattelyde", "Farver hår", "Går med makeup"], a: 0, c: "En teknik hvor man presser tungen op i ganen for at få en skarpere kæbelinje. Ser dumt ud, men de tror på det." },
-    { q: "ORD: Hvad betyder det at være 'Demure' (Jools Lebron trend)?", o: ["Beskeden og mindful", "Vild og gal", "Højlydt", "Grim"], a: 0, c: "'Very demure, very mindful'. Det startede som en joke om at være pæn på jobbet, men blev årets ord." },
-    { q: "APP: Hvad gør man på appen 'Temu', som alle snakker om?", o: ["Køber billigt skrammel", "Dater", "Hører musik", "Ser film"], a: 0, c: "'Shop like a billionaire'. Kinesisk app hvor du kan købe en drone til 30 kr. (som virker i 2 minutter)." },
-    { q: "DATE: Hvad er et 'Ick'?", o: ["Noget der pludselig tænder dig af", "En sygdom", "En type drink", "Et kys"], a: 0, c: "Når din date gør noget, der får dig til at miste interessen øjeblikkeligt. F.eks. løber efter bussen med rygsæk." },
-    { q: "BEGREB: Hvad er en 'Tradwife'?", o: ["Husmor der dyrker 50'er stilen", "En moderne kone", "En der handler aktier", "En robot-kone"], a: 0, c: "Kvinder på TikTok der dyrker idealet om at gå hjemme, bage brød og tjene manden som i 1950'erne." },
-    { q: "SLANG: Hvad betyder det, hvis nogen er 'Delulu'?", o: ["Virkelighedsfjern/Indbildsk", "Lækker", "Dum", "Rig"], a: 0, c: "Delusional. 'Delulu is the solulu' (Løsningen er at bilde sig selv noget ind). Ofte om dating." },
-    { q: "KROP: Hvad er 'Ozempic Face'?", o: ["Indfaldent ansigt efter vægttab", "Et glad ansigt", "Røde øjne", "Store læber"], a: 0, c: "Bivirkning ved det hurtige vægttab på medicin. Man mister fedt i ansigtet og kan se ældre ud." },
-    { q: "ARBEJDE: Hvad er 'Quiet Quitting'?", o: ["Kun at gøre præcis det man lønnes for", "At sige op uden at sige det", "At larme", "At stjæle ting"], a: 0, c: "Man passer sit arbejde, men man dropper overarbejde og ekstra ansvar. Man 'melder sig ud' mentalt." },
-    { q: "TREND: Hvad er 'Dumbphone' trenden?", o: ["At skifte tilbage til gammel Nokia", "En telefon af træ", "At tale dumt", "Ingen telefon"], a: 0, c: "Folk dropper smartphonen og køber en gammeldags 'klap-telefon' for at få fred fra apps." },
-    { q: "MAD: Hvad er 'Girl Dinner'?", o: ["En tallerken med snacks/ost/pølse", "En stor bøf", "Ingen mad", "Kun salat"], a: 0, c: "Når man ikke orker at lave mad, og bare spiser lidt ost, kiks, druer og pickles. Det er Girl Dinner." },
-    { q: "FARVE: Hvad er et 'Beige Flag' hos en kæreste?", o: ["Noget sært, men ikke farligt", "Noget meget farligt", "At de er kedelige", "At de elsker beige"], a: 0, c: "Røde flag er farlige. Grønne er gode. Beige er bare... mærkelige vaner. F.eks. at spise pizza med gaffel." },
-    { q: "LIVSSTIL: Hvad er en 'DINK'?", o: ["Double Income, No Kids", "Drinking In New Kitchen", "Dad Is Not Kind", "Dance In Night Klub"], a: 0, c: "Par med to indkomster og ingen børn. De har råd til dyre ferier og Lego-sæt til voksne." },
-    { q: "FILM: Hvad var fænomenet 'Barbenheimer' (fra året før, men stadig legendarisk)?", o: ["At se Barbie og Oppenheimer samme dag", "En ny drink", "En by i Tyskland", "En sanger"], a: 0, c: "Det definerede biograferne. Pink plastik og atombomber på én aften." },
-    { q: "SIDSTE SPØRGSMÅL: Hvem styrer festen i aften?", o: ["Vi gør!", "Naboen", "Politiet", "Ingen"], a: 0, c: "Det rigtige svar er selvfølgelig JER! Godt nytår og tak for i aften! 🎆" }
+    { q: "TREND: Hvad gik fænomenet 'Rawdogging' på en flyvetur ud på?", o: ["Ingen skærm/mad/søvn", "At flyve nøgen", "At spise råt kød", "At stå op"], a: 0, c: "At sidde og stirre på flykortet i 7 timer uden høretelefoner, film eller mad. Psykopat-adfærd, der gik viralt." },
+    { q: "SLANG: Hvad betød det, hvis en person havde 'Rizz' i 2025?", o: ["Charme/Score-evne", "Risengrød", "Penge", "Dårlig stil"], a: 0, c: "Kort for Charisma. Havde du Rizz, kunne du score. Havde du ikke... så var det ærgerligt." },
+    { q: "SOMMER: Hvad var 'Brat Summer', som dominerede musikken?", o: ["Neon-grøn, fest og kaos", "Barbie-pink", "Rolig sommer", "Kedelig sommer"], a: 0, c: "Startet af Charli XCX. Det handlede om at være lidt rodet, festlig og 'Brat'. Farven var giftig grøn." },
+    { q: "FÆNOMEN: Hvad blev 'Hawk Tuah' pigen kendt for tidligere på året?", o: ["Et viralt interview om sex", "At synge opera", "At bage kage", "At spille fodbold"], a: 0, c: "Et gadeinterview, der stak helt af. Hvis du ved det, så ved du det. 'Spit on that thang'." },
+    { q: "FORHOLD: Hvad kaldte man det, når man datede uden at være kærester?", o: ["Situationship", "Relationskib", "Venskab+", "Deltid"], a: 0, c: "Et Situationship. Mere end venner, men ikke kærester. Opskriften på at blive såret." },
+    { q: "LIVSSTIL: Hvad gik trenden 'Bed Rotting' ud på?", o: ["At ligge i sengen hele dagen", "At spise gammel mad", "At sove 24 timer", "At ødelægge sin seng"], a: 0, c: "At ligge under dynen en hel søndag og scrolle på TikTok. Gen Z kaldte det 'Self Care', vi andre kaldte det dovenskab." },
+    { q: "UDSEENDE: Hvad var 'Mewing', som især drenge gik op i?", o: ["Tungepres for kæbelinje", "Kattelyde", "Hårfarvning", "Makeup"], a: 0, c: "Man presser tungen op i ganen for at få en skarpere kæbelinje (jawline). Det ser dumt ud, men de gjorde det." },
+    { q: "ORD: Hvad betød det at være 'Demure' (Jools Lebron trenden)?", o: ["Beskeden og mindful", "Vild og gal", "Højlydt", "Grim"], a: 0, c: "'Very demure, very mindful'. Det startede som en joke om at være pæn på jobbet, men blev et kæmpe meme." },
+    { q: "APP: Hvad gjorde mange på appen 'Temu' i 2025?", o: ["Købte billigt skrammel", "Datede", "Hørte musik", "Så film"], a: 0, c: "Købte ting som en 'laser til katte' for 2 kroner. Det hele lugtede af kemikalier, men det var billigt." },
+    { q: "DATE: Hvad mente folk, når de fik et 'Ick'?", o: ["Noget der tændte dem af", "En sygdom", "En type drink", "Et kys"], a: 0, c: "En lille ting, der pludselig gjorde daten frastødende. F.eks. hvis han brugte begge hænder til at holde sit glas." },
+    { q: "BEGREB: Hvad var en 'Tradwife', som trendede på sociale medier?", o: ["Husmor der dyrker 50'er stilen", "En moderne kone", "En der handler aktier", "En robot-kone"], a: 0, c: "Kvinder der idealiserede 1950'ernes husmorliv. Hjemmebag, kjoler og at tjene manden. Kontroversielt!" },
+    { q: "SLANG: Hvad betød det at være 'Delulu'?", o: ["Virkelighedsfjern/Indbildsk", "Lækker", "Dum", "Rig"], a: 0, c: "Delusional. 'Delulu is the solulu'. Når man bildte sig selv ind, at ens crush også var vild med en." },
+    { q: "KROP: Hvad var 'Ozempic Face', som sladderbladene skrev om?", o: ["Indfaldent ansigt efter vægttab", "Et glad ansigt", "Røde øjne", "Store læber"], a: 0, c: "Når stjernerne tabte sig for hurtigt på medicin, mistede de fylde i ansigtet og så hule ud." },
+    { q: "ARBEJDE: Hvad dækkede begrebet 'Quiet Quitting' over?", o: ["Kun at gøre det nødvendige", "At sige op hemmeligt", "At larme", "At stjæle ting"], a: 0, c: "Man passede sit job, men sagde nej til overarbejde og ekstra ansvar. Man meldte sig ud mentalt." },
+    { q: "TREND: Hvad var 'Dumbphone' trenden?", o: ["At skifte til gammel Nokia", "En telefon af træ", "At tale dumt", "Ingen telefon"], a: 0, c: "Unge skiftede smartphonen ud med en gammel klap-telefon for at slippe for sociale medier." },
+    { q: "MAD: Hvad var en 'Girl Dinner'?", o: ["En tallerken med snacks/ost", "En stor bøf", "Ingen mad", "Kun salat"], a: 0, c: "Når man ikke orkede at lave mad: En tallerken med ost, vindruer, en pølse og lidt kiks. Nemt." },
+    { q: "FARVE: Hvad var et 'Beige Flag' i dating-verdenen?", o: ["Noget sært, men ikke farligt", "Noget meget farligt", "At de er kedelige", "At de elsker beige"], a: 0, c: "Ikke et rødt flag (farligt), men bare... mærkeligt. F.eks. hvis han aldrig har set Star Wars." },
+    { q: "LIVSSTIL: Hvad stod 'DINK' for?", o: ["Double Income, No Kids", "Drinking In New Kitchen", "Dad Is Not Kind", "Dance In Night Klub"], a: 0, c: "Par med to indkomster og ingen børn. De havde råd til rejser, sushi og dyre møbler." },
+    { q: "FILM: Hvilket fænomen kaldte man 'Barbenheimer' (som stadig blev omtalt)?", o: ["Barbie og Oppenheimer mix", "En ny drink", "En by i Tyskland", "En sanger"], a: 0, c: "Det definerede biograferne året før, men vi snakkede stadig om kontrasten mellem pink og atombomber." },
+    { q: "SIDSTE SPØRGSMÅL: Hvem har styret festen i aften?", o: ["Vi har!", "Naboen", "Politiet", "Ingen"], a: 0, c: "Det rigtige svar er selvfølgelig JER! Godt nytår og tak for i aften! 🎆" }
   ];
 
   // Logik til at vælge spørgsmål
@@ -167,7 +171,6 @@ const QuizApp = () => {
   // AUTO-REVEAL LOGIK FOR VÆRTEN
   useEffect(() => {
     if (role === 'host' && gameState.status === 'active' && players.length > 0) {
-        // VIGTIGT: Vi tjekker nu, om spilleren har svaret på DETTE spørgsmål (ved at kigge på indekset)
         const allAnswered = players.every(p => p.last_q_index === gameState.current_question);
         if (allAnswered) {
             const timer = setTimeout(() => {
@@ -181,12 +184,10 @@ const QuizApp = () => {
   const submitAnswer = async (idx) => {
     const me = players.find(p => p.name === playerName);
     
-    // SIKKERHEDSTJEK: Har jeg allerede svaret på DETTE spørgsmål?
     if (me && me.last_q_index === gameState.current_question) return;
     if (gameState.status !== 'active') return;
 
     if (me) {
-        // Vi gemmer nu både SVARET og SPØRGSMÅLS-NUMMERET.
         let updateData = { last_answer: idx, last_q_index: gameState.current_question };
         if (idx === activeData[gameState.current_question]?.a) {
             const secondsPassed = (new Date() - new Date(gameState.question_started_at)) / 1000;
@@ -201,9 +202,6 @@ const QuizApp = () => {
 
   const updateGameStatus = async (status, idx = 0) => {
     if (idx >= activeData.length && status === 'active') status = 'finished';
-    
-    // Vi behøver ikke længere "nulstille" svar i databasen, fordi vi nu tjekker versions-nummeret (last_q_index).
-    // Det gør systemet lynhurtigt og fejlfrit.
     
     const payload = { status, current_question: Math.min(idx, activeData.length - 1) };
     if (status === 'active') payload.question_started_at = new Date().toISOString();
@@ -223,9 +221,7 @@ const QuizApp = () => {
     }
   };
 
-  // HER ER FIXET: VI BRUGER room_id TIL AT SLETTE POINT
   const startMoreQuestions = async () => {
-    // Find ud af hvilken mode vi er i, og hvad den næste er
     const currentBase = gameState.quiz_mode.includes('test') ? 'test' : 'real';
     let nextMode = '';
     let promptText = '';
@@ -237,16 +233,14 @@ const QuizApp = () => {
         nextMode = currentBase + '_3';
         promptText = "Klar til RUNDE 3 (SPICY FINALEN)? Pointene nulstilles!";
     } else {
-        return; // Ingen flere runder
+        return; 
     }
 
     if (!window.confirm(promptText)) return;
     
-    // 1. Find ID på rummet
     const { data: room } = await supabase.from('quiz_rooms').select('id').eq('room_code', roomCode).single();
     
     if (room) {
-        // 2. Nulstil spillere KUN i dette rum
         const { error } = await supabase.from('players')
             .update({ score: 0, correct_count: 0, total_bonus: 0, last_answer: null, last_q_index: -1 })
             .eq('room_id', room.id);
@@ -272,8 +266,6 @@ const QuizApp = () => {
     const { data: room } = await supabase.from('quiz_rooms').select('id').eq('room_code', roomCode).single();
     if (room) { await supabase.from('players').insert([{ name: playerName, score: 0, room_id: room.id, last_q_index: -1 }]); setRole('player'); setView('game'); }
   };
-
-  // --- UI VIEWS ---
 
   if (view === 'landing') {
     return (
@@ -302,12 +294,9 @@ const QuizApp = () => {
   }
 
   const currentQ = activeData[gameState.current_question];
-  
-  // HER ER MAGIEN: Vi tjekker databasen: Har JEG svaret på DETTE spørgsmål (indeks)?
   const myData = players.find(p => p.name === playerName);
   const iHaveAnsweredThisSpecificQuestion = myData && myData.last_q_index === gameState.current_question;
 
-  // Header Title Helper
   const getRoundTitle = () => {
       if (gameState.quiz_mode.includes('3')) return "RUNDE 3 🔥";
       if (gameState.quiz_mode.includes('2')) return "RUNDE 2 🚀";
@@ -316,7 +305,6 @@ const QuizApp = () => {
 
   return (
     <MainLayout quizMode={gameState.quiz_mode}>
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-6 bg-slate-800/50 p-4 rounded-2xl backdrop-blur-sm border border-slate-700/50">
         <div className="font-black text-xl italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
             {getRoundTitle()}
@@ -327,7 +315,6 @@ const QuizApp = () => {
         </div>
       </div>
 
-      {/* LOBBY */}
       {gameState.status === 'lobby' && (
         <div className="flex-grow flex flex-col text-center">
           <h2 className="text-4xl font-black mb-2 text-white">
@@ -356,7 +343,6 @@ const QuizApp = () => {
         </div>
       )}
 
-      {/* GAME ACTIVE */}
       {gameState.status === 'active' && currentQ && (
         <div className="flex-grow flex flex-col">
           <div className="text-center mb-6">
@@ -391,11 +377,9 @@ const QuizApp = () => {
         </div>
       )}
 
-      {/* SHOWING ANSWER */}
       {gameState.status === 'showing_answer' && currentQ && (
         <div className="flex-grow flex flex-col items-center justify-start text-center overflow-y-auto">
           
-          {/* SKÅL ALARM LOGIK */}
           {(() => {
             const playersWhoAnswered = players.filter(p => p.last_q_index === gameState.current_question);
             const everyoneWrong = playersWhoAnswered.length > 0 && playersWhoAnswered.every(p => p.last_answer !== currentQ.a);
@@ -412,7 +396,6 @@ const QuizApp = () => {
             return null;
           })()}
 
-          {/* DET RIGTIGE SVAR + CONTEXT */}
           <div className="mb-6 w-full max-w-2xl mx-auto">
              <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4 border border-emerald-500/20">
                 <CheckCircle2 size={14} /> Det rigtige svar
@@ -426,11 +409,9 @@ const QuizApp = () => {
              )}
           </div>
 
-          {/* HVEM SVAREDE HVAD? */}
           <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
              {currentQ.o.map((opt, i) => {
                 const isCorrect = i === currentQ.a;
-                // Her kigger vi kun på dem, der har svaret PÅ DENNE RUNDE
                 const votedHere = players.filter(p => p.last_q_index === gameState.current_question && p.last_answer === i);
                 
                 return (
@@ -455,7 +436,6 @@ const QuizApp = () => {
         </div>
       )}
 
-      {/* RESULTS */}
       {gameState.status === 'finished' && (
         <div className="flex-grow flex flex-col">
           <div className="text-center mb-8">
@@ -484,7 +464,6 @@ const QuizApp = () => {
           
           {role === 'host' && (
             <div className="mt-auto space-y-4">
-                {/* KNAPPEN TIL NÆSTE RUNDE (VISES KUN HVIS VI IKKE ALLEREDE ER I RUNDE 3) */}
                 {!gameState.quiz_mode.includes('3') && (
                     <button onClick={startMoreQuestions} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl animate-pulse hover:scale-[1.02] transition-transform flex items-center justify-center gap-3">
                          {gameState.quiz_mode.includes('2') ? "SPICY RUNDE 3!!!" : "MERE!!!"} <Flame fill="currentColor" />
