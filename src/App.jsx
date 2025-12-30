@@ -215,12 +215,27 @@ const QuizApp = () => {
     }
   };
 
+  // HER ER FIXET: VI BRUGER room_id TIL AT SLETTE POINT
   const startMoreQuestions = async () => {
     if (!window.confirm("Er du klar til RUNDE 2? Dette nulstiller pointene for den nye runde!")) return;
+    
+    // 1. Find ID på rummet
+    const { data: room } = await supabase.from('quiz_rooms').select('id').eq('room_code', roomCode).single();
+    
+    if (room) {
+        // 2. Nulstil spillere KUN i dette rum
+        const { error } = await supabase.from('players')
+            .update({ score: 0, correct_count: 0, total_bonus: 0, last_answer: null, last_q_index: -1 })
+            .eq('room_id', room.id);
+            
+        if (error) {
+            alert("Fejl: Kunne ikke nulstille point. Tjek internettet.");
+            return;
+        }
+    }
+
     const currentBase = gameState.quiz_mode.includes('test') ? 'test' : 'real';
     const nextMode = currentBase + '_2'; 
-    // Vi nulstiller også 'last_q_index' til -1, så folk kan starte forfra
-    await supabase.from('players').update({ score: 0, correct_count: 0, total_bonus: 0, last_answer: null, last_q_index: -1 }).gt('id', -1);
     await supabase.from('quiz_rooms').update({ quiz_mode: nextMode, current_question: 0, status: 'lobby' }).eq('room_code', roomCode);
   };
 
