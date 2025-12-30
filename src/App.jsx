@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Users, Play, Trophy, Monitor, ChevronRight, CheckCircle2, Zap, Trash2, RefreshCcw, AlertTriangle } from 'lucide-react';
+import { Users, Play, Trophy, Monitor, ChevronRight, CheckCircle2, Zap, Trash2, RefreshCcw, AlertTriangle, FastForward } from 'lucide-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const MainLayout = ({ children, quizMode }) => (
-  <div className={`min-h-screen text-slate-100 font-sans transition-colors duration-500 flex flex-col ${quizMode === 'test' ? 'bg-slate-900 border-t-8 border-amber-500' : 'bg-[#0f172a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/40 via-slate-900 to-slate-900'}`}>
-    {quizMode === 'test' && <div className="bg-amber-500 text-black font-black text-center text-xs py-1">TEST MODE (DEV)</div>}
+  <div className={`min-h-screen text-slate-100 font-sans transition-colors duration-500 flex flex-col ${quizMode.includes('test') ? 'bg-slate-900 border-t-8 border-amber-500' : 'bg-[#0f172a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/40 via-slate-900 to-slate-900'}`}>
+    {quizMode.includes('test') && <div className="bg-amber-500 text-black font-black text-center text-xs py-1">TEST MODE {quizMode.includes('2') ? '2' : '1'} (DEV)</div>}
     <div className="w-full max-w-md md:max-w-4xl mx-auto p-4 md:p-6 flex-grow flex flex-col">
       {children}
     </div>
@@ -24,14 +24,20 @@ const QuizApp = () => {
   const [gameState, setGameState] = useState({ status: 'lobby', current_question: 0, question_started_at: null, quiz_mode: 'real' });
   const [hasAnswered, setHasAnswered] = useState(false);
 
-  // --- DATA: TEST MILJØ ---
-  const testQuestions = [
-    { q: "TEST 1: Virker knapperne?", o: ["Ja", "Nej", "Måske", "Ved ikke"], a: 0, c: "Hvis du kan læse dette, så virker koden! Det er ren magi (og lidt JavaScript)." },
-    { q: "TEST 2: Hvad hedder Matias' kat?", o: ["Plet", "Mina", "Speck", "Felix"], a: 2, c: "Speck styrer showet. Det ved alle, der har mødt ham." }
+  // --- DATA: TEST RUNDE 1 ---
+  const testQuestions1 = [
+    { q: "TEST 1: Virker knapperne?", o: ["Ja", "Nej", "Måske", "Ved ikke"], a: 0, c: "Hvis du kan læse dette, så virker koden! Det er ren magi." },
+    { q: "TEST 2: Hvad hedder Matias' kat?", o: ["Plet", "Mina", "Speck", "Felix"], a: 2, c: "Speck styrer showet." }
   ];
 
-  // --- DATA: NYTÅRS QUIZ 2025 (MED DYR & NATUR) ---
-  const realQuestions = [
+  // --- DATA: TEST RUNDE 2 ---
+  const testQuestions2 = [
+    { q: "RUNDE 2 TEST: Er vi videre?", o: ["Ja da", "Nej", "Hvad?", "Måske"], a: 0, c: "Velkommen til runde 2! Det virker sgu." },
+    { q: "RUNDE 2 TEST: Hvad drikker vi?", o: ["Vand", "Mælk", "Champagne", "Gift"], a: 2, c: "Skål! 🥂" }
+  ];
+
+  // --- DATA: RUNDE 1 (30 SPØRGSMÅL - ORIGINAL) ---
+  const realQuestions1 = [
     // SPORT & BEGIVENHEDER
     { q: "Hvem vandt Tour de France i sommeren 2025?", o: ["Jonas Vingegaard", "Tadej Pogacar", "Remco Evenepoel", "Primoz Roglic"], a: 0, c: "Vingegaard smadrede dem på Mont Ventoux. Der var slet ingen tvivl i år – Glyngøres stolthed er tilbage på tronen!" },
     { q: "Hvilken dansk festival meldte 'Alt Udsolgt' på rekordtid (4 minutter) i 2025?", o: ["Roskilde Festival", "Smukfest", "NorthSide", "Copenhell"], a: 1, c: "Smukfest billetterne røg hurtigere end man kan drikke en fadøl i Bøgeskoven. Serverne nedsmeltede totalt." },
@@ -62,7 +68,7 @@ const QuizApp = () => {
     { q: "Hvad skete der med Parken (stadion) i 2025?", o: ["Nyt navn", "Udvidelse godkendt", "Nyt græstæppe", "Taget blæste af"], a: 1, c: "Endelig! Der bliver plads til 50.000 mennesker. Naboerne er allerede sure over larmen." },
     { q: "Hvilken dansk by blev kåret til 'Europas Kulturhovedstad' (uformelt) af CNN?", o: ["Aarhus", "Odense", "Aalborg", "Esbjerg"], a: 1, c: "H.C. Andersen byen rykkede! Letbanen virkede faktisk, og turisterne væltede ind." },
 
-    // DYR & NATUR (NY KATEGORI)
+    // DYR & NATUR
     { q: "Hvad blev lovpligtigt for alle udekatte i 2025?", o: ["At bære refleks", "GPS-halsbånd", "At være i snor", "Obligatorisk kastrering"], a: 1, c: "GPS-tracking blev et krav. Nu kan du se præcis hvor mange mus (og naboens haver) Misser besøger." },
     { q: "Hvilken stor begivenhed fandt sted i København Zoo i 2025?", o: ["De fik en Enhjørning", "Pandaerne fik endelig en unge", "Isbjørnene stak af", "Elefanterne lærte at male"], a: 1, c: "Miraklet skete! Efter årevis med bambus-dates og akavet stemning, kom der en lille sort-hvid uldtot." },
     { q: "En spækhugger skabte kaos i en dansk havn i sommeren 2025. Hvad gjorde den?", o: ["Spiste en kajak", "Væltede en sejlbåd", "Stjal fisk fra kuttere", "Sang opera"], a: 1, c: "Den 'legede' med roret indtil båden kæntrede. Forsikringsselskabet troede ikke på forklaringen." },
@@ -85,7 +91,37 @@ const QuizApp = () => {
     { q: "Hvad var navnet på DR's store julekalender i 2025?", o: ["Tidsrejsen 3", "Nissernes Ø", "Julefeber 2", "Gammel Jul"], a: 2, c: "Mere julefeber til folket! Børnene elskede det, de voksne savnede Pyrus." }
   ];
 
-  const activeData = gameState.quiz_mode === 'test' ? testQuestions : realQuestions;
+  // --- DATA: RUNDE 2 (20 NYE SPØRGSMÅL - EKSTRA) ---
+  const realQuestions2 = [
+    { q: "MAD: Hvad hed den 'superfood' alle spiste i 2025?", o: ["Kaktus-juice", "Fårekyllinge-mel", "Tang-bacon", "Svampe-kaffe"], a: 3, c: "Kaffe lavet på svampe. Det smager af jord, men hipsterne elsker det." },
+    { q: "RUMMET: Hvad fandt man på Månen i 2025?", o: ["Vand i store mængder", "Aliens", "En gammel cola-dåse", "Guld"], a: 0, c: "Kæmpe underjordiske søer. Nu skal vi bare finde ud af, hvordan vi får det ned i en sodavandsmaskine." },
+    { q: "SPROG: Hvilket jysk udtryk kom i ordbogen i 2025?", o: ["Træls", "Mojn", "Kavt", "Pyt-knap"], a: 2, c: "'Kavt' er nu officielt dansk. Det beskriver perfekt stemningen, når man møder sin eks i Netto." },
+    { q: "FILM: Hvem spillede den nye James Bond i 2025?", o: ["Aaron Taylor-Johnson", "Idris Elba", "Tom Holland", "Mads Mikkelsen"], a: 0, c: "Han fik rollen! Han ser godt ud i smoking, men kan han drikke Martinis?" },
+    { q: "TEKNOLOGI: Hvad kan din mikrobølgeovn nu i 2025?", o: ["Flyve", "Bestille pizza", "Scanne kalorier", "Spille musik"], a: 2, c: "Den tæller kalorierne i din lasagne, mens den varmer den. Verdens mest deprimerende feature." },
+    { q: "DANMARK: Hvilken by fik endelig sin letbane til at virke i 2025?", o: ["Odense", "Aarhus", "København (Ring 3)", "Aalborg"], a: 2, c: "Ring 3 letbanen kører! Den larmer lidt, men den kører faktisk til tiden (nogle gange)." },
+    { q: "MODE: Hvad kom tilbage på mode for mænd i 2025?", o: ["Høje hatte", "Monokler", "Overskæg", "Lange kapper"], a: 3, c: "Kapper er in! Folk ligner en blanding af Batman og en Harry Potter-karakter på Strøget." },
+    { q: "SPORT: Hvilken sportsgren blev OL-disciplin i 2025?", o: ["E-sport (CS:GO)", "Padel Tennis", "Dødvægtløft", "Øl-bowling"], a: 1, c: "Padel er nu OL-sport. Alle mellemledere i Danmark jubler og køber nyt udstyr." },
+    { q: "NATUREN: Hvad skete der med Gudenåen i foråret 2025?", o: ["Den tørrede ud", "Den gik over sine bredder (igen)", "Den frøs til is", "Den skiftede farve"], a: 1, c: "Oversvømmelse igen. Silkeborg var kortvarigt Nordens Venedig." },
+    { q: "MUSIK: Hvilket legendarisk band blev genforenet (som hologrammer) i 2025?", o: ["Gasolin'", "Oasis", "The Beatles", "Spice Girls"], a: 0, c: "Kim Larsen som hologram i Parken. Det var smukt, men også lidt uhyggeligt." },
+    { q: "HVERDAG: Hvad blev forbudt i offentlig transport i 2025?", o: ["At tale i telefon", "At spise kebab", "Højttaler-musik", "At have sko på"], a: 2, c: "Endelig! Bøde på 1000 kr. for at spille TikTok-videoer uden høretelefoner." },
+    { q: "GAMING: Hvad kostede den nye PlayStation 6, da den udkom i 2025?", o: ["4.000 kr.", "6.000 kr.", "8.500 kr.", "12.000 kr."], a: 2, c: "8.500 kr. Og du skal stadig betale ekstra for at spille online. Av." },
+    { q: "USA: Hvad indførte USA som noget nyt i 2025?", o: ["Gratis tandlæge", "4 dages arbejdsuge", "Skat på robotter", "Forbud mod TikTok"], a: 3, c: "TikTok røg. Influencere græd på åben skærm (på Instagram i stedet)." },
+    { q: "BIZARRE NEWS: En mand i Jylland blev berømt for at samle på...?", o: ["Navleuld", "Gamle Nokiaer", "Tomme mælkekartoner", "Regnvand"], a: 1, c: "Han havde 5.000 stk Nokia 3310. Han bygger nu et hus af dem." },
+    { q: "DRKULTUR: Hvem blev ny dommer i 'Den Store Bagedyst' 2025?", o: ["En AI-robot", "Dronning Mary", "En fransk konditor", "Casper Christensen"], a: 2, c: "En sur franskmand, der hader alt med fondant. Det er fantastisk TV." },
+    { q: "VEJRET: Sommeren 2025 slog rekord i...?", o: ["Regn", "Solskinstimer", "Hagl", "Vindstød"], a: 0, c: "Det regnede i 40 dage i træk. Roskilde Festival var ét stort mudderbad." },
+    { q: "ARBEJDSLIV: Hvad blev det nye store frynsegode i 2025?", o: ["Gratis massage", "Søvn-pod på kontoret", "Ubegrænset ferie", "Betalt terapi"], a: 1, c: "Du kan nu tage en lur i arbejdstiden. Chefen kalder det 'Power Napping Optimization'." },
+    { q: "ROYALT: Hvad fik Prins Christian i 20-års fødselsdagsgave af Folketinget?", o: ["En ø", "En hest", "Et jagtgevær", "En elcykel"], a: 2, c: "Et håndlavet jagtgevær. De Gamle Værdier lever stadig." },
+    { q: "TREND: Hvad erstattede 'Cold Plunge' (isbad) som sundhedstrend i 2025?", o: ["Sauna-dragter", "Sand-badning", "Lyd-terapi", "At skrige i skoven"], a: 1, c: "At blive begravet i varmt sand. Det kradser alle vegne, men det skulle være sundt." },
+    { q: "SIDSTE SPØRGSMÅL (RUNDE 2): Skal vi tage en runde 3?", o: ["JA!", "NEJ, jeg skal tisse", "Kun hvis der er shots", "Jeg vil hjem"], a: 0, c: "Desværre venner, koden stopper her. Men baren er stadig åben! SKÅL!" }
+  ];
+
+  // Logik til at vælge spørgsmål
+  let activeData = [];
+  if (gameState.quiz_mode === 'test') activeData = testQuestions1;
+  else if (gameState.quiz_mode === 'test_2') activeData = testQuestions2;
+  else if (gameState.quiz_mode === 'real') activeData = realQuestions1;
+  else if (gameState.quiz_mode === 'real_2') activeData = realQuestions2;
+  else activeData = realQuestions1; // Fallback
 
   // --- SUPABASE & LOGIC ---
   useEffect(() => {
@@ -122,12 +158,11 @@ const QuizApp = () => {
     return () => { supabase.removeChannel(roomSub); supabase.removeChannel(playerSub); };
   }, [roomCode, role]);
 
-  // NYT: AUTO-REVEAL LOGIK FOR VÆRTEN
+  // AUTO-REVEAL LOGIK FOR VÆRTEN
   useEffect(() => {
     if (role === 'host' && gameState.status === 'active' && players.length > 0) {
         const allAnswered = players.every(p => p.last_answer !== null);
         if (allAnswered) {
-            // Lille pause så det ikke virker abrupt
             const timer = setTimeout(() => {
                 updateGameStatus('showing_answer', gameState.current_question);
             }, 500);
@@ -140,7 +175,6 @@ const QuizApp = () => {
     if (hasAnswered || gameState.status !== 'active') return;
     setHasAnswered(true);
     
-    // Gem svaret i databasen
     const me = players.find(p => p.name === playerName);
     if (me) {
         let updateData = { last_answer: idx };
@@ -174,9 +208,28 @@ const QuizApp = () => {
     }
   };
 
+  // NY FUNKTION: START RUNDE 2 (Nulstiller point, men beholder spillere)
+  const startMoreQuestions = async () => {
+    if (!window.confirm("Er du klar til RUNDE 2? Dette nulstiller pointene for den nye runde!")) return;
+    
+    // Find ud af hvilken mode vi skal i (Test -> Test 2, Real -> Real 2)
+    const currentBase = gameState.quiz_mode.includes('test') ? 'test' : 'real';
+    const nextMode = currentBase + '_2'; 
+
+    // Nulstil point for alle spillere, men behold dem i rummet
+    await supabase.from('players').update({ score: 0, correct_count: 0, total_bonus: 0, last_answer: null }).gt('id', -1);
+
+    // Opdater rummet til ny mode og lobby status
+    await supabase.from('quiz_rooms').update({ 
+        quiz_mode: nextMode, 
+        current_question: 0, 
+        status: 'lobby' 
+    }).eq('room_code', roomCode);
+  };
+
   const toggleMode = async () => {
-    const newMode = gameState.quiz_mode === 'real' ? 'test' : 'real';
-    if (!window.confirm(`Skift til ${newMode === 'real' ? 'RIGTIG (30 spg)' : 'TEST (2 spg)'}?`)) return;
+    const newMode = gameState.quiz_mode.includes('real') ? 'test' : 'real';
+    if (!window.confirm(`Skift til ${newMode === 'real' ? 'RIGTIG (Runde 1)' : 'TEST (Runde 1)'}?`)) return;
     await supabase.from('quiz_rooms').update({ quiz_mode: newMode, current_question: 0, status: 'lobby' }).eq('room_code', roomCode);
   };
 
@@ -221,7 +274,9 @@ const QuizApp = () => {
     <MainLayout quizMode={gameState.quiz_mode}>
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6 bg-slate-800/50 p-4 rounded-2xl backdrop-blur-sm border border-slate-700/50">
-        <div className="font-black text-xl italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">QUIZ'25</div>
+        <div className="font-black text-xl italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
+            {gameState.quiz_mode.includes('2') ? "RUNDE 2 🚀" : "QUIZ'25"}
+        </div>
         <div className="flex items-center gap-3">
           {role === 'host' && <button onClick={fullReset} className="text-rose-400 p-2"><Trash2 size={20} /></button>}
           <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl font-bold text-sm border border-slate-700"><Users size={14} className="text-indigo-400" /> {players.length}</div>
@@ -231,11 +286,13 @@ const QuizApp = () => {
       {/* LOBBY */}
       {gameState.status === 'lobby' && (
         <div className="flex-grow flex flex-col text-center">
-          <h2 className="text-4xl font-black mb-2 text-white">Lobbyen er åben!</h2>
+          <h2 className="text-4xl font-black mb-2 text-white">
+            {gameState.quiz_mode.includes('2') ? "Klar til Runde 2?" : "Lobbyen er åben!"}
+          </h2>
           <p className="text-slate-400 mb-8 text-sm">Find jeres pladser...</p>
           
           {role === 'host' && (
-            <button onClick={toggleMode} className="mb-8 mx-auto text-xs font-bold bg-slate-800 px-4 py-2 rounded-full border border-slate-600 text-slate-400">{gameState.quiz_mode === 'test' ? "Skift til PROD" : "Skift til TEST"}</button>
+            <button onClick={toggleMode} className="mb-8 mx-auto text-xs font-bold bg-slate-800 px-4 py-2 rounded-full border border-slate-600 text-slate-400">{gameState.quiz_mode.includes('test') ? "Skift til PROD" : "Skift til TEST"}</button>
           )}
 
           <div className="grid grid-cols-2 gap-3 mb-8 overflow-y-auto max-h-[50vh] p-2">
@@ -359,6 +416,7 @@ const QuizApp = () => {
           <div className="text-center mb-8">
              <Trophy size={64} className="mx-auto text-amber-400 mb-2 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]" />
              <h2 className="text-4xl font-black text-white italic">RESULTATER</h2>
+             {gameState.quiz_mode.includes('2') && <div className="text-amber-300 font-bold mt-2">RUNDE 2 AFSLUTTET</div>}
           </div>
 
           <div className="space-y-3 mb-8">
@@ -380,9 +438,18 @@ const QuizApp = () => {
           </div>
           
           {role === 'host' && (
-            <button onClick={fullReset} className="mt-6 text-rose-500 text-xs font-bold uppercase flex items-center justify-center gap-2 py-4">
-               <RefreshCcw size={14} /> Nulstil alt
-            </button>
+            <div className="mt-auto space-y-4">
+                {/* KNAPPEN TIL RUNDE 2 (VISES KUN HVIS VI IKKE ALLEREDE ER I RUNDE 2) */}
+                {!gameState.quiz_mode.includes('2') && (
+                    <button onClick={startMoreQuestions} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl animate-pulse hover:scale-[1.02] transition-transform flex items-center justify-center gap-3">
+                         MERE!!! <FastForward fill="currentColor" />
+                    </button>
+                )}
+                
+                <button onClick={fullReset} className="w-full text-rose-500 text-xs font-bold uppercase flex items-center justify-center gap-2 py-4">
+                   <RefreshCcw size={14} /> Nulstil alt
+                </button>
+            </div>
           )}
         </div>
       )}
