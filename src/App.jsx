@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Users, Play, Trophy, Monitor, ChevronRight, CheckCircle2, Zap, Trash2, RefreshCcw, AlertTriangle, Flame } from 'lucide-react';
+import { Users, Play, Trophy, Monitor, ChevronRight, CheckCircle2, Zap, Trash2, RefreshCcw, AlertTriangle, FastForward, Flame } from 'lucide-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- SIMPLE CONFETTI COMPONENT (NO DEPENDENCIES) ---
+// --- SIMPLE CONFETTI COMPONENT ---
 const SimpleConfetti = () => {
   const [particles, setParticles] = useState([]);
 
@@ -14,8 +14,8 @@ const SimpleConfetti = () => {
     const colors = ['#FFC700', '#FF0000', '#2E3192', '#41BBC7', '#73ff00', '#ff00ea'];
     const newParticles = Array.from({ length: 50 }).map((_, i) => ({
       id: i,
-      x: Math.random() * 100, // left position %
-      delay: Math.random() * 2, // animation delay
+      x: Math.random() * 100, 
+      delay: Math.random() * 2, 
       color: colors[Math.floor(Math.random() * colors.length)],
       size: Math.random() * 10 + 5,
     }));
@@ -43,7 +43,7 @@ const SimpleConfetti = () => {
             animation: `fall ${Math.random() * 3 + 2}s linear infinite`,
             animationDelay: `${p.delay}s`,
             opacity: 0.8,
-            borderRadius: Math.random() > 0.5 ? '50%' : '0%', // Mix of circles and squares
+            borderRadius: Math.random() > 0.5 ? '50%' : '0%',
           }}
         />
       ))}
@@ -52,10 +52,8 @@ const SimpleConfetti = () => {
 };
 
 const MainLayout = ({ children, quizMode }) => (
-  // min-h-[100dvh] sikrer at den passer præcis indenfor browserens rammer på mobil
   <div className={`min-h-[100dvh] text-slate-100 font-sans transition-colors duration-500 flex flex-col ${quizMode.includes('test') ? 'bg-slate-900 border-t-8 border-amber-500' : 'bg-[#0f172a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/40 via-slate-900 to-slate-900'}`}>
     {quizMode.includes('test') && <div className="bg-amber-500 text-black font-black text-center text-xs py-1">TEST MODE {quizMode.includes('3') ? '3' : (quizMode.includes('2') ? '2' : '1')} (DEV)</div>}
-    {/* p-3 for at spare vertikal plads på mobiler */}
     <div className="w-full max-w-md md:max-w-4xl mx-auto p-3 md:p-6 flex-grow flex flex-col justify-between relative z-10">
       {children}
     </div>
@@ -68,7 +66,10 @@ const QuizApp = () => {
   const [roomCode] = useState('NYTÅR2025');
   const [playerName, setPlayerName] = useState('');
   const [players, setPlayers] = useState([]);
-  const [gameState, setGameState] = useState({ status: 'lobby', current_question: 0, question_started_at: null, quiz_mode: 'real' });
+  const [gameState, setGameState] = useState({ status: 'lobby', current_question: 0, quiz_mode: 'real' });
+  
+  // NYT: Lokalt stopur til at fixe tids-bugs
+  const [localStartTime, setLocalStartTime] = useState(null);
   
   // --- DATA: TEST RUNDER ---
   const testQuestions1 = [
@@ -84,27 +85,27 @@ const QuizApp = () => {
     { q: "RUNDE 3 TEST (SPICY): Skal vi i seng?", o: ["Nu", "Aldrig", "Om lidt", "I morgen"], a: 0, c: "Sengen kalder, men festen larmer. Godnat!" }
   ];
 
-  // --- DATA: RUNDE 1 (FAKTA & KALENDER 2025 - ORDSPIL EDITION) ---
+  // --- DATA: RUNDE 1 (HELT NYE 2025 SPØRGSMÅL - ORDSPILS EDITION) ---
   const realQuestions1 = [
-    // DE 5 NYE STARTSPØRGSMÅL
-    { q: "Hvilke tre lande delte værtsskabet for VM i Herrehåndbold i januar 2025?", o: ["Danmark, Sverige, Norge", "Danmark, Norge, Kroatien", "Tyskland, Polen, Danmark", "Frankrig, Spanien, Portugal"], a: 1, c: "Vi håndterede det for vildt! Det var ikke en harpiks-situation, men en ren mål-fest i tre lande. Man må sige, vi havde grebet om tingene." },
-    { q: "Hvilken begivenhed fandt sted i Washington D.C. d. 20. januar 2025?", o: ["Super Bowl", "Indsættelse af Donald Trump", "Det Hvide Hus jubilæum", "Fredsaftale underskrevet"], a: 1, c: "Han trak det længste strå - eller skal vi sige den længste Trump-et? Demokraterne blev Harris'et ud, og nu er Det Hvide Hus igen orange-over." },
-    { q: "Hvilken Formel 1-kører annoncerede sit skifte til Ferrari og kørte i rødt i 2025?", o: ["Max Verstappen", "Lando Norris", "Lewis Hamilton", "Kevin Magnussen"], a: 2, c: "Han skiftede gear! Det var en rød-glødende nyhed. Man kan sige, han var træt af at være Mercedes-løs og ville prøve flere hestekræfter." },
-    { q: "Hvilken hiphop-stjerne stod for Super Bowl Halftime Show i februar 2025?", o: ["Kanye West", "Kendrick Lamar", "Drake", "Jay-Z"], a: 1, c: "Det var helt bowl-et! Han rappede så taget lettede. Det var bestemt ikke falsk markedsføring – han ramte plet på hver en beat." },
-    { q: "Hvad var sommerens helt store musiknyhed i Storbritannien?", o: ["The Beatles AI-tour", "Blur gik fra hinanden", "Oasis blev genforenet", "Ed Sheeran stoppede"], a: 2, c: "Det var Wonder-well gjort! Brødrene begravede stridsøksen uden at slås. Don't look back in banker - de tjener kassen!" },
-
-    // SPORT & BEGIVENHEDER (Fortsat)
-    { q: "Hvilken by lagde asfalt til starten af Tour de France d. 5. juli 2025?", o: ["København", "Lille (Frankrig)", "Barcelona", "London"], a: 1, c: "En stor start i en Lille by! Rytterne var gearet til tænderne, og det kørte bare deruda'. Det var heldigvis aldrig kæde-ligt at se på." },
+    // STARTERE
+    { q: "Hvilke tre lande delte værtsskabet for VM i Herrehåndbold i januar 2025?", o: ["Danmark, Sverige, Norge", "Danmark, Norge, Kroatien", "Tyskland, Polen, Danmark", "Frankrig, Spanien, Portugal"], a: 1, c: "Vi håndterede det for vildt! Det var ikke en harpiks-situation, men en ren mål-fest. Man må sige, vi havde grebet om tingene." },
+    { q: "Hvilken begivenhed stjal al opmærksomhed d. 20. januar 2025 i USA?", o: ["Super Bowl", "Indsættelse af Donald Trump", "Det Hvide Hus jubilæum", "Fredsaftale underskrevet"], a: 1, c: "Han trak det længste strå - eller skal vi sige den længste Trump-et? Demokraterne blev Harris'et ud, og nu er Det Hvide Hus igen orange-over." },
+    { q: "Hvilken Formel 1-kører skiftede sensationelt til Ferrari i 2025?", o: ["Max Verstappen", "Lando Norris", "Lewis Hamilton", "Kevin Magnussen"], a: 2, c: "Han skiftede gear! Det var en rød-glødende nyhed. Man kan sige, han var træt af at være Mercedes-løs og ville prøve flere hestekræfter." },
+    
+    // BEGIVENHEDER
+    { q: "Hvilken by var startby for Tour de France 2025?", o: ["København", "Lille (Frankrig)", "Barcelona", "London"], a: 1, c: "En stor start i en Lille by! Rytterne var gearet til tænderne, og det kørte bare deruda'. Det var heldigvis aldrig kæde-ligt at se på." },
     { q: "Hvor blev Champions League finalen spillet d. 31. maj 2025?", o: ["Wembley (London)", "Parken (Kbh)", "Allianz Arena (München)", "Stade de France (Paris)"], a: 2, c: "München var mål-rettet! Det var en bajer-dygtig indsats. Der var ikke noget pølse-snak her, kun ren tysk effektivitet." },
     { q: "Hvilken by var vært for Eurovision Song Contest i maj 2025?", o: ["Zürich", "Geneve", "Basel", "Bern"], a: 2, c: "Det gik som et schweizerur! Basel var basen, og stemningen var ost-tastisk. Der var ingen, der sang på sidste vers." },
+    { q: "Hvilken hiphop-stjerne stod for Super Bowl Halftime Show i februar 2025?", o: ["Kanye West", "Kendrick Lamar", "Drake", "Jay-Z"], a: 1, c: "Det var helt bowl-et! Han rappede så taget lettede. Det var bestemt ikke falsk markedsføring – han ramte plet på hver en beat." },
     
     // POLITIK & SAMFUND
     { q: "Hvilken dato var vi til stemmeurnerne til Kommunalvalget 2025?", o: ["1. november", "18. november", "21. november", "4. december"], a: 1, c: "Vi satte vores kryds og tværs. Der var masser af valgflæsk på menuen, men vi håber, de nye byrødder ikke er helt taburet-tappede." },
     { q: "Hvilken rolle varetog Danmark i EU i andet halvår af 2025?", o: ["Formandskabet", "Forsvars-ledelsen", "Landbrugsstyrelsen", "Ingen"], a: 0, c: "Mette sad for bordenden. Det var en union-ik chance for at vise fanen. Vi håber ikke, det blev for EU-ro-tisk i kulissen." },
     { q: "Hvad fejrede statsradiofonien (DR) d. 1. april 2025?", o: ["Lukningen af P3", "Reklame-start", "100 års jubilæum", "Ny generaldirektør"], a: 2, c: "De har været på bølgelængde med danskerne i 100 år. Det var en signal-stærk fejring, og licensen var heldigvis ikke en radio-aktiv bombe." },
 
-    // KULTUR & SHOWBIZ
+    // KULTUR
     { q: "Hvem styrede slagets gang som vært for Oscar-uddelingen i marts 2025?", o: ["Jimmy Kimmel", "Conan O'Brien", "Ricky Gervais", "Kevin Hart"], a: 1, c: "Han var Conan-kurerende sjov! Han leverede en rolle-model indsats. Det var bestemt ikke en komedie af fejl, men en ægte blockbuster." },
+    { q: "Hvad var sommerens helt store musiknyhed i Storbritannien?", o: ["The Beatles AI-tour", "Blur gik fra hinanden", "Oasis blev genforenet", "Ed Sheeran stoppede"], a: 2, c: "Det var Wonder-well gjort! Brødrene begravede stridsøksen uden at slås. Don't look back in banker - de tjener kassen!" },
     { q: "Hvilket dansk band spillede 4 udsolgte koncerter i Parken i juni 2025?", o: ["Volbeat", "D-A-D", "The Minds of 99", "Nik & Jay"], a: 2, c: "De spillede så Parken rystede – det var helt sind-ssygt! De var på hjemmebane, og publikum var helt Solkonge-lige." },
     { q: "Hvilken sangerinde afsluttede officielt sin gigantiske 'Eras Tour' i 2024/25?", o: ["Beyoncé", "Taylor Swift", "Adele", "Dua Lipa"], a: 1, c: "Det gik ikke Swift, for den tour varede evigheder! Men hun sang sig ind i historiebøgerne. Det var en æra-frygtindgydende præstation." },
 
@@ -121,7 +122,7 @@ const QuizApp = () => {
     { q: "Hvad var det, Dronning Margrethe gjorde for præcis to år siden (nytår 23/24)?", o: ["Hun abdicerede", "Hun fik en hund", "Hun flyttede", "Hun fik kørekort"], a: 0, c: "Hun smed kronen på værket. Det var en kongelig overraskelse, der fik os til at tabe kæben. Nu er det Frederik, der styrer ballet." }
   ];
 
-  // --- DATA: RUNDE 2 (BLANDET MIX 2025 - ORDSPIL EDITION) ---
+  // --- DATA: RUNDE 2 (BLANDET MIX 2025) ---
   const realQuestions2 = [
     { q: "FILM: Hvilken spil-filmatisering med Jack Black havde premiere i april 2025?", o: ["Minecraft: The Movie", "Fortnite: The Movie", "Zelda", "Mario 2"], a: 0, c: "En rigtig blok-buster! Men anmelderne var lidt firkantede. Det var måske at bygge lidt for højt på en spil-succes." },
     { q: "ROYALT: Hvem fyldte 20 år d. 15. oktober 2025?", o: ["Prins Christian", "Prinsesse Isabella", "Grev Nikolai", "Prins Joachim"], a: 0, c: "Han er ikke længere teen-konge, men tyve! Han tronede frem på dagen. Det var en fyrstelig fejring." },
@@ -146,7 +147,7 @@ const QuizApp = () => {
     { q: "BONUS: Er vi klar til den SPICY runde?", o: ["JA!", "Nej", "Måske", "Hvad?"], a: 0, c: "Så stram ballerne, for nu gælder det trends og TikTok-sprog!" }
   ];
 
-  // --- DATA: RUNDE 3 (SPICY TRENDS & BEGREBER 2025 - ORDSPIL EDITION) ---
+  // --- DATA: RUNDE 3 (SPICY TRENDS & BEGREBER 2025) ---
   const realQuestions3 = [
     { q: "TREND: Hvad gik fænomenet 'Rawdogging' på en flyvetur ud på?", o: ["Ingen skærm/mad/søvn", "At flyve nøgen", "At spise råt kød", "At stå op"], a: 0, c: "Det er rå-kost for hjernen! Ingen underholdning, bare luft. Man skal være gjort af et særligt stof for ikke at flyve op i det røde felt." },
     { q: "SLANG: Hvad betød det, hvis en person havde 'Rizz' i 2025?", o: ["Charme/Score-evne", "Risengrød", "Penge", "Dårlig stil"], a: 0, c: "Har du Rizz, får du kys! Ingen Rizz? Så er det bare ris til egen røv. Det handler om at have talegaverne i orden." },
@@ -172,17 +173,14 @@ const QuizApp = () => {
 
   // Logik til at vælge spørgsmål
   let activeData = [];
-  // TEST MODES
   if (gameState.quiz_mode === 'test') activeData = testQuestions1;
   else if (gameState.quiz_mode === 'test_2') activeData = testQuestions2;
   else if (gameState.quiz_mode === 'test_3') activeData = testQuestions3;
-  // REAL MODES
   else if (gameState.quiz_mode === 'real') activeData = realQuestions1;
   else if (gameState.quiz_mode === 'real_2') activeData = realQuestions2;
   else if (gameState.quiz_mode === 'real_3') activeData = realQuestions3;
-  else activeData = realQuestions1; // Fallback
+  else activeData = realQuestions1;
 
-  // --- SUPABASE & LOGIC ---
   useEffect(() => {
     if (!SUPABASE_URL) return;
     const fetchInitialData = async () => {
@@ -192,7 +190,6 @@ const QuizApp = () => {
       if (rData) setGameState({ 
         status: rData.status, 
         current_question: rData.current_question, 
-        question_started_at: rData.question_started_at,
         quiz_mode: rData.quiz_mode || 'real' 
       });
     };
@@ -202,7 +199,6 @@ const QuizApp = () => {
       setGameState({ 
         status: payload.new.status, 
         current_question: payload.new.current_question, 
-        question_started_at: payload.new.question_started_at,
         quiz_mode: payload.new.quiz_mode || 'real' 
       });
     }).subscribe();
@@ -216,10 +212,16 @@ const QuizApp = () => {
     return () => { supabase.removeChannel(roomSub); supabase.removeChannel(playerSub); };
   }, [roomCode, role]);
 
+  // NY LOGIK: Nulstil og start lokalt stopur, når nyt spørgsmål kommer
+  useEffect(() => {
+    if (gameState.status === 'active') {
+        setLocalStartTime(Date.now()); // Start tiden LIGE NU på denne enhed
+    }
+  }, [gameState.current_question, gameState.status]);
+
   // AUTO-REVEAL LOGIK FOR VÆRTEN
   useEffect(() => {
     if (role === 'host' && gameState.status === 'active' && players.length > 0) {
-        // VIGTIGT: Vi tjekker nu, om spilleren har svaret på DETTE spørgsmål (ved at kigge på indekset)
         const allAnswered = players.every(p => p.last_q_index === gameState.current_question);
         if (allAnswered) {
             const timer = setTimeout(() => {
@@ -233,16 +235,23 @@ const QuizApp = () => {
   const submitAnswer = async (idx) => {
     const me = players.find(p => p.name === playerName);
     
-    // SIKKERHEDSTJEK: Har jeg allerede svaret på DETTE spørgsmål?
     if (me && me.last_q_index === gameState.current_question) return;
     if (gameState.status !== 'active') return;
 
     if (me) {
-        // Vi gemmer nu både SVARET og SPØRGSMÅLS-NUMMERET.
         let updateData = { last_answer: idx, last_q_index: gameState.current_question };
+        
+        // BEREGN BONUS BASERET PÅ LOKAL TID (Fixer tids-buggen)
+        // Hvis localStartTime mangler (fejl), så giv 0 bonus for en sikkerheds skyld
+        let speedBonus = 0;
+        if (localStartTime && idx === activeData[gameState.current_question]?.a) {
+            const now = Date.now();
+            const secondsPassed = (now - localStartTime) / 1000;
+            // Loft på 10 point, bund på 0.
+            speedBonus = Math.min(10, Math.max(0, Math.floor(10 - secondsPassed)));
+        }
+
         if (idx === activeData[gameState.current_question]?.a) {
-            const secondsPassed = (new Date() - new Date(gameState.question_started_at)) / 1000;
-            const speedBonus = Math.max(0, Math.floor(10 - secondsPassed));
             updateData.score = (me.score || 0) + 10 + speedBonus;
             updateData.correct_count = (me.correct_count || 0) + 1;
             updateData.total_bonus = (me.total_bonus || 0) + speedBonus;
@@ -254,11 +263,8 @@ const QuizApp = () => {
   const updateGameStatus = async (status, idx = 0) => {
     if (idx >= activeData.length && status === 'active') status = 'finished';
     
-    // Vi behøver ikke længere "nulstille" svar i databasen, fordi vi nu tjekker versions-nummeret (last_q_index).
-    // Det gør systemet lynhurtigt og fejlfrit.
-    
     const payload = { status, current_question: Math.min(idx, activeData.length - 1) };
-    if (status === 'active') payload.question_started_at = new Date().toISOString();
+    // Vi behøver ikke længere sende 'question_started_at' til databasen, da klienterne styrer det selv
     await supabase.from('quiz_rooms').update(payload).eq('room_code', roomCode);
   };
 
@@ -275,9 +281,7 @@ const QuizApp = () => {
     }
   };
 
-  // HER ER FIXET: VI BRUGER room_id TIL AT SLETTE POINT
   const startMoreQuestions = async () => {
-    // Find ud af hvilken mode vi er i, og hvad den næste er
     const currentBase = gameState.quiz_mode.includes('test') ? 'test' : 'real';
     let nextMode = '';
     let promptText = '';
@@ -287,26 +291,16 @@ const QuizApp = () => {
         promptText = "Klar til RUNDE 2? Pointene nulstilles!";
     } else if (gameState.quiz_mode === currentBase + '_2') {
         nextMode = currentBase + '_3';
-        promptText = "Klar til RUNDE 3 (FINALEN)? Pointene nulstilles!";
+        promptText = "Klar til RUNDE 3 (SPICY FINALEN)? Pointene nulstilles!";
     } else {
-        return; // Ingen flere runder
+        return; 
     }
 
     if (!window.confirm(promptText)) return;
     
-    // 1. Find ID på rummet
     const { data: room } = await supabase.from('quiz_rooms').select('id').eq('room_code', roomCode).single();
-    
     if (room) {
-        // 2. Nulstil spillere KUN i dette rum
-        const { error } = await supabase.from('players')
-            .update({ score: 0, correct_count: 0, total_bonus: 0, last_answer: null, last_q_index: -1 })
-            .eq('room_id', room.id);
-            
-        if (error) {
-            alert("Fejl: Kunne ikke nulstille point. Tjek internettet.");
-            return;
-        }
+        await supabase.from('players').update({ score: 0, correct_count: 0, total_bonus: 0, last_answer: null, last_q_index: -1 }).eq('room_id', room.id);
     }
 
     await supabase.from('quiz_rooms').update({ quiz_mode: nextMode, current_question: 0, status: 'lobby' }).eq('room_code', roomCode);
@@ -324,8 +318,6 @@ const QuizApp = () => {
     const { data: room } = await supabase.from('quiz_rooms').select('id').eq('room_code', roomCode).single();
     if (room) { await supabase.from('players').insert([{ name: playerName, score: 0, room_id: room.id, last_q_index: -1 }]); setRole('player'); setView('game'); }
   };
-
-  // --- UI VIEWS ---
 
   if (view === 'landing') {
     return (
@@ -354,12 +346,9 @@ const QuizApp = () => {
   }
 
   const currentQ = activeData[gameState.current_question];
-  
-  // HER ER MAGIEN: Vi tjekker databasen: Har JEG svaret på DETTE spørgsmål (indeks)?
   const myData = players.find(p => p.name === playerName);
   const iHaveAnsweredThisSpecificQuestion = myData && myData.last_q_index === gameState.current_question;
 
-  // Header Title Helper
   const getRoundTitle = () => {
       if (gameState.quiz_mode.includes('3')) return "RUNDE 3 🔥";
       if (gameState.quiz_mode.includes('2')) return "RUNDE 2 🚀";
@@ -368,7 +357,6 @@ const QuizApp = () => {
 
   return (
     <MainLayout quizMode={gameState.quiz_mode}>
-      {/* HEADER */}
       <div className="flex justify-between items-center mb-4 bg-slate-800/50 p-4 rounded-2xl backdrop-blur-sm border border-slate-700/50">
         <div className="font-black text-xl italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">
             {getRoundTitle()}
@@ -379,7 +367,6 @@ const QuizApp = () => {
         </div>
       </div>
 
-      {/* LOBBY */}
       {gameState.status === 'lobby' && (
         <div className="flex-grow flex flex-col text-center">
           <h2 className="text-4xl font-black mb-2 text-white">
@@ -408,7 +395,6 @@ const QuizApp = () => {
         </div>
       )}
 
-      {/* GAME ACTIVE */}
       {gameState.status === 'active' && currentQ && (
         <div className="flex-grow flex flex-col">
           <div className="text-center mb-4">
@@ -443,15 +429,11 @@ const QuizApp = () => {
         </div>
       )}
 
-      {/* SHOWING ANSWER */}
       {gameState.status === 'showing_answer' && currentQ && (
         <div className="flex-grow flex flex-col items-center justify-start text-center overflow-y-auto">
-          
-          {/* SKÅL ALARM LOGIK */}
           {(() => {
             const playersWhoAnswered = players.filter(p => p.last_q_index === gameState.current_question);
             const everyoneWrong = playersWhoAnswered.length > 0 && playersWhoAnswered.every(p => p.last_answer !== currentQ.a);
-            
             if (everyoneWrong) {
                 return (
                     <div className="w-full bg-rose-600 text-white p-6 rounded-3xl mb-6 animate-bounce shadow-2xl border-4 border-rose-800">
@@ -464,13 +446,11 @@ const QuizApp = () => {
             return null;
           })()}
 
-          {/* DET RIGTIGE SVAR + CONTEXT */}
           <div className="mb-6 w-full max-w-2xl mx-auto">
              <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4 border border-emerald-500/20">
                 <CheckCircle2 size={14} /> Det rigtige svar
              </div>
              <h2 className="text-3xl md:text-4xl font-black text-white mb-4 leading-tight">{currentQ.o[currentQ.a]}</h2>
-             
              {currentQ.c && (
                 <div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-slate-300 text-sm md:text-base italic leading-relaxed shadow-sm max-w-lg mx-auto">
                     " {currentQ.c} "
@@ -478,13 +458,10 @@ const QuizApp = () => {
              )}
           </div>
 
-          {/* HVEM SVAREDE HVAD? */}
           <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
              {currentQ.o.map((opt, i) => {
                 const isCorrect = i === currentQ.a;
-                // Her kigger vi kun på dem, der har svaret PÅ DENNE RUNDE
                 const votedHere = players.filter(p => p.last_q_index === gameState.current_question && p.last_answer === i);
-                
                 return (
                     <div key={i} className={`p-3 rounded-xl border-2 flex flex-col ${isCorrect ? 'bg-emerald-900/30 border-emerald-500/50' : 'bg-slate-800/50 border-slate-800'}`}>
                         <div className="flex justify-between items-center mb-2">
@@ -507,7 +484,6 @@ const QuizApp = () => {
         </div>
       )}
 
-      {/* RESULTS */}
       {gameState.status === 'finished' && (
         <div className="flex-grow flex flex-col relative">
           <SimpleConfetti />
@@ -537,7 +513,6 @@ const QuizApp = () => {
           
           {role === 'host' && (
             <div className="mt-auto space-y-4 relative z-10">
-                {/* KNAPPEN TIL NÆSTE RUNDE (VISES KUN HVIS VI IKKE ALLEREDE ER I RUNDE 3) */}
                 {!gameState.quiz_mode.includes('3') && (
                     <button onClick={startMoreQuestions} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl animate-pulse hover:scale-[1.02] transition-transform flex items-center justify-center gap-3">
                          {gameState.quiz_mode.includes('2') ? "SPICY RUNDE 3!!!" : "MERE!!!"} <Flame fill="currentColor" />
