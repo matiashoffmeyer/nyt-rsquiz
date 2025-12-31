@@ -11,7 +11,7 @@ const SimpleConfetti = () => {
   const [particles, setParticles] = useState([]);
 
   useEffect(() => {
-    const colors = ['#FFC700', '#FF0000', '#2E3192', '#41BBC7', '#73ff00', '#ff00ea'];
+    const colors = ['#FF0000', '#FF00ea', '#800080', '#000000', '#FFC700']; 
     const newParticles = Array.from({ length: 50 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100, 
@@ -52,7 +52,7 @@ const SimpleConfetti = () => {
 };
 
 const MainLayout = ({ children, quizMode }) => (
-  <div className={`min-h-[100dvh] text-slate-100 font-sans transition-colors duration-500 flex flex-col ${quizMode.includes('test') ? 'bg-slate-900 border-t-8 border-amber-500' : 'bg-[#0f172a] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-900/40 via-slate-900 to-slate-900'}`}>
+  <div className={`min-h-[100dvh] text-slate-100 font-sans transition-colors duration-500 flex flex-col ${quizMode.includes('test') ? 'bg-slate-900 border-t-8 border-amber-500' : 'bg-[#1a0505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-rose-900/40 via-slate-950 to-black'}`}>
     {quizMode.includes('test') && <div className="bg-amber-500 text-black font-black text-center text-xs py-1">TEST MODE {quizMode.includes('3') ? '3' : (quizMode.includes('2') ? '2' : '1')} (DEV)</div>}
     <div className="w-full max-w-md md:max-w-4xl mx-auto p-3 md:p-6 flex-grow flex flex-col justify-between relative z-10">
       {children}
@@ -83,49 +83,48 @@ const QuizApp = () => {
     { q: "RUNDE 3 TEST (SPICY): Skal vi i seng?", o: ["Nu", "Aldrig", "Om lidt", "I morgen"], a: 0, c: "Sengen kalder, men festen larmer. Godnat!" }
   ];
 
-  // --- DATA: RUNDE 1 (ANDREAS' VERSION: SEKSY VIBES) ---
+  // --- DATA: RUNDE 1 (FAKTA: STATISTIK & REKORDER) ---
   const realQuestions1 = [
-    { q: "Hvad er ifølge datingsider den mest attraktive egenskab i 2025?", o: ["Humor", "Muskler", "Penge", "Emotionel intelligens"], a: 3, c: "Følelser er det nye sixpack. Kan du tale om dem, kan du også få dem." },
-    { q: "Hvilken emoji bliver oftest brugt som flirt uden at sige det direkte?", o: ["🍆", "🔥", "😉", "💦"], a: 2, c: "Blinket siger: 'Jeg mener det… men måske ikke… men jo'." },
-    { q: "Hvad svarer flest, når de bliver spurgt om deres største turn-on?", o: ["Selvtillid", "Højde", "Stemmen", "Hænder"], a: 0, c: "Ikke for meget, ikke for lidt. Bare nok til at fylde rummet." },
-    { q: "Hvad er den mest almindelige løgn i en dating-bio?", o: ["Jeg elsker at rejse", "Jeg er spontan", "Jeg elsker naturen", "Jeg er klar til noget seriøst"], a: 3, c: "Alle er klar… lige indtil det bliver seriøst." },
-    { q: "Hvad bliver oftest beskrevet som det mest erotiske ved en person?", o: ["Øjne", "Duft", "Smil", "Stemme"], a: 3, c: "En stemme kan klæde én helt af uden at røre." },
-    { q: "Hvornår føler folk sig mest sexede?", o: ["Efter træning", "Når de er forelskede", "Når de får komplimenter", "Når de er fulde"], a: 2, c: "Et ægte kompliment slår både spejle og shots." },
-    { q: "Hvad er mest sandsynligt at føre til et kys?", o: ["Øjenkontakt", "En joke", "En drink mere", "En dans"], a: 0, c: "Blikket gør arbejdet før læberne tør." },
-    { q: "Hvad er den mest delte 'dirty little secret'?", o: ["Fantasier", "Gamle flirts", "Stalking på Instagram", "Screenshots"], a: 2, c: "Alle kigger. Ingen indrømmer det." },
-    { q: "Hvad bliver oftest beskrevet som 'overraskende frækt'?", o: ["Intelligens", "At lave mad", "At lytte", "At tage initiativ"], a: 1, c: "Når nogen kan noget med hænderne… og krydderier." },
-    { q: "BONUS: Er stemningen blevet lidt varm?", o: ["Ja 🔥", "Meget", "Jeg sveder", "Skru ned"], a: 0, c: "Perfekt. Så er vi kun lige begyndt." }
+    { q: "Hvad er gennemsnitsvarigheden for selve samlejet (penetration til udløsning) ifølge studier?", o: ["3-7 minutter", "15-20 minutter", "30-40 minutter", "Over en time"], a: 0, c: "Mellem 3 og 7 minutter. Pornofilm lyver! Hvis han holder i 40 minutter, tænker han på Excel-ark." },
+    { q: "Hvilken måned på året bliver der undfanget flest børn i Danmark (født 9 mdr senere)?", o: ["December (Julefrokost)", "Juli (Sommerferie)", "Februar (Vinter)", "Oktober (Efterår)"], a: 0, c: "December! Julefrokoster og kulde får folk til at rykke sammen. September er den største fødselsmåned." },
+    { q: "Hvor mange procent af kvinder får orgasme udelukkende ved penetration (uden klitoris-stimulering)?", o: ["Ca. 18%", "Ca. 50%", "Ca. 75%", "Næsten alle"], a: 0, c: "Kun ca. 18%. Så gutter: Hvis I glemmer 'knappen', glemmer I succesen. Det er ren biologi." },
+    { q: "Hvad er verdensrekorden for flest orgasmer på en time (for en kvinde)?", o: ["16", "52", "134", "220"], a: 2, c: "134! Det blev målt i et laboratorie-studie i 60'erne. Mandens rekord i samme studie? 16. Kvinder vinder." },
+    { q: "Hvilken aldersgruppe er ifølge Sundhedsstyrelsen dårligst til at bruge kondom?", o: ["15-19 år", "20-29 år", "30-39 år", "50+ år"], a: 3, c: "Folk over 50! De er 'generation fri sex', og graviditet er ikke en risiko, så de glemmer sygdommene. Gummi er for alle!" },
+    { q: "Hvad er den hyppigste seksuelle fantasi på tværs af køn ifølge store surveys?", o: ["Gruppe-sex", "BDSM", "Sex et offentligt sted", "Sex med en kendt"], a: 0, c: "Gruppe-sex (trekant eller flere). Mange tænker på det, færre gør det. Det er logistikken, der dræber drømmen." },
+    { q: "Hvor meget sæd producerer en gennemsnitlig mand i løbet af sit liv?", o: ["1 liter", "14 liter", "50 liter", "En swimmingpool"], a: 1, c: "Ca. 14 liter. Det svarer til omkring 28 store fadøl... hvis man altså ser sådan på det." },
+    { q: "Hvad er gennemsnitslængden på en erigeret penis på verdensplan?", o: ["10-12 cm", "13-14 cm", "16-18 cm", "20+ cm"], a: 1, c: "13,12 cm for at være præcis. Alt over 15 cm er teknisk set 'over gennemsnittet'. Størrelsen på egoet tæller ikke med." },
+    { q: "Hvor mange kalorier forbrænder man gennemsnitligt ved en halv times sex?", o: ["50 kcal", "100 kcal", "300 kcal", "500 kcal"], a: 1, c: "Ca. 85-100 kcal. Det svarer til et æble eller et glas vin. Det erstatter desværre ikke fitness-abonnementet." },
+    { q: "Hvilket land i verden har ifølge Durex-undersøgelser sex oftest?", o: ["Frankrig", "Brasilien", "Grækenland", "USA"], a: 2, c: "Grækerne! De topper listen med 164 gange om året. Danskere ligger og roder nede omkring 100-120." }
   ];
 
-  // --- DATA: RUNDE 2 (ANDREAS' VERSION: CONFESSIONS & FLIRT FAILS) ---
+  // --- DATA: RUNDE 2 (VIDEN: SYGDOMME & BIOLOGI) ---
   const realQuestions2 = [
-    { q: "Hvad er den mest almindelige flirt-fejl?", o: ["For meget snap", "For lidt svar", "For meget selvtillid", "At være for sød"], a: 0, c: "Mystik er hot. Spam er ikke." },
-    { q: "Hvad er mest sandsynligt at ødelægge en god flirt?", o: ["Dårlig ånde", "En eks-historie", "Telefonen fremme", "Alle tre"], a: 3, c: "Kys kræver nærvær. Ikke notifikationer." },
-    { q: "Hvad svarer flest, hvis de bliver ghostet?", o: ["Intet", "En joke", "Et langt afsnit", "Et selfie"], a: 0, c: "Stilhed er den koldeste afslutning." },
-    { q: "Hvad er den mest sexy besked at få?", o: ["'Tænker på dig'", "'Er du vågen?'", "'Kom over'", "'Savner dig'"], a: 0, c: "Kort. Ærligt. Effektivt." },
-    { q: "Hvad bliver oftest nævnt som det mest akavede øjeblik?", o: ["Forkert navn", "Lyde", "Forældre", "Alle ovenstående"], a: 3, c: "Der findes ingen værdighed efter punktet." },
-    { q: "Hvad tænder flest mere end udseende?", o: ["Humor", "Tryghed", "Selvsikkerhed", "At blive valgt"], a: 3, c: "At føle sig valgt slår alt." },
-    { q: "Hvad er mest sandsynligt at føre til en gentagelse?", o: ["God kemi", "God sex", "God samtale", "God timing"], a: 0, c: "Når det klikker, klikker det." },
-    { q: "Hvad indrømmer folk oftest efter et glas vin?", o: ["Crushes", "Fantasier", "Fortrydelser", "Alt"], a: 3, c: "Vin er sandhedsserum med prop." },
-    { q: "Hvad er mest attraktivt i sengen ifølge flest?", o: ["Kommunikation", "Erfaring", "Passion", "Overraskelser"], a: 0, c: "Spørg hellere end at gætte." },
-    { q: "BONUS: Er vi klar til den SPICY runde?", o: ["JA 😈", "Måske", "Jeg er rød i hovedet", "Hvad?"], a: 0, c: "Godt. Nu bliver det spicy." }
+    { q: "Hvad er den mest udbredte kønssygdom i Danmark?", o: ["Klamydia", "Gonorré", "Syfilis", "Herpes"], a: 0, c: "Klamydia. Over 30.000 tilfælde om året. Det er 'folkesygdommen' i underlivet. Husk nu at tisse i koppen!" },
+    { q: "Hvor stor en del af klitoris er synlig udefra?", o: ["Det hele", "50%", "Ca. 10%", "Ingen ved det"], a: 2, c: "Kun 'isbjergets top' (ca. 10%). Resten (crura og bulbi) ligger inde i kroppen og er ca. 9-11 cm stort. Det er et helt orgel!" },
+    { q: "Hvad er 'Blue Balls' (medicinsk set)?", o: ["En myte", "Blodophobning i testiklerne", "Betændelse", "Koldbrand"], a: 1, c: "Det er epididymal hypertension. Blodet løber til, men ikke fra, hvis man ikke får udløsning. Det gør ondt, men man dør ikke." },
+    { q: "Hvilken kønssygdom kaldes 'Den franske syge'?", o: ["Gonorré", "Syfilis", "Herpes", "Fnat"], a: 1, c: "Syfilis. Franskmændene kaldte den 'Den italienske syge'. Ingen ville tage æren for den." },
+    { q: "Hvad sker der med vagina, når en kvinde bliver opstemt?", o: ["Den bliver kortere", "Den udvider sig og bliver længere", "Den lukker sig", "Intet"], a: 1, c: "Den udvider sig (telt-effekt) og bliver dybere. Naturen gør plads til festen." },
+    { q: "Hvor lang tid lever sædceller typisk inde i kvindens krop?", o: ["1 time", "24 timer", "Op til 5 dage", "2 uger"], a: 2, c: "Op til 5 dage! Så sex lørdag kan blive til en baby onsdag. De er nogle små, stædige svømmere." },
+    { q: "Hvad er 'Phimosis'?", o: ["Forhudsforsnevring", "Skæv penis", "Mangel på lyst", "En sexstilling"], a: 0, c: "Når forhuden er for stram og ikke kan trækkes tilbage. Det kan gøre ondt, men kan heldigvis fikses." },
+    { q: "Kan mænd få brystkræft?", o: ["Ja", "Nej", "Kun hvis de tager hormoner", "Kun over 80 år"], a: 0, c: "Ja. Mænd har også brystvæv. Det er sjældent, men det sker. Så mærk efter, gutter!" },
+    { q: "Hvad er symptomerne på klamydia hos mænd?", o: ["Altid svie", "Altid udflåd", "Ofte ingen symptomer", "Røde pletter"], a: 2, c: "Ofte ingen! Det er det farlige. Man kan være smittebærer uden at ane det. 'Det svier ikke' er ingen garanti." },
+    { q: "Hvad er det gennemsnitlige volumen af en udløsning?", o: ["En teske (3-5 ml)", "En spiseske (15 ml)", "Et snapseglas (20 ml)", "En halv kop"], a: 0, c: "Kun ca. en teskefuld (3-5 ml). I pornofilm snyder de ofte med 'fake cum' for effekten." }
   ];
 
-  // --- DATA: RUNDE 3 (ANDREAS' VERSION: SPICY & LEGESYG) ---
+  // --- DATA: RUNDE 3 (HISTORIE & MYTER) ---
   const realQuestions3 = [
-    { q: "Hvad er den mest almindelige frække tanke i hverdagen?", o: ["Kollegaen", "Eks'en", "En fremmed", "Alle tre"], a: 3, c: "Hjernen stopper aldrig. Den hvisker bare." },
-    { q: "Hvad bliver oftest beskrevet som 'uventet frækt'?", o: ["Hvisken", "Langsomhed", "Initiativ", "Øjenkontakt"], a: 1, c: "Det er ikke tempoet. Det er pausen." },
-    { q: "Hvad er mest sandsynligt at tænde en gnist igen?", o: ["Et blik", "En besked sent", "Et minde", "Berøring"], a: 0, c: "Nogle blikke glemmer man aldrig." },
-    { q: "Hvad siger flest ja til, hvis stemningen er rigtig?", o: ["Noget nyt", "Noget forbudt", "Noget spontant", "Alt"], a: 3, c: "Stemning slår regler." },
-    { q: "Hvad er det mest sexy at høre?", o: ["'Jeg vil have dig'", "'Du er smuk'", "'Kom her'", "'Jeg stoler på dig'"], a: 3, c: "Tillid er det frækkeste ord." },
-    { q: "Hvad er den største turn-off midt i det hele?", o: ["Usikkerhed", "Stress", "Telefonen", "Tvivl"], a: 2, c: "Ingen vil konkurrere med en skærm." },
-    { q: "Hvad husker folk bedst bagefter?", o: ["Stemningen", "Detaljerne", "Følelsen", "Lydene"], a: 2, c: "Kroppen husker, selv når hjernen glemmer." },
-    { q: "Hvad er mest sandsynligt at føre til grin på den gode måde?", o: ["Ærlighed", "Klodsethed", "Improvisation", "Alt"], a: 3, c: "Hvis I kan grine, kan I alt." },
-    { q: "Hvad er den største hemmelige fantasi?", o: ["At blive valgt igen", "At slippe kontrollen", "At blive set", "Alle"], a: 3, c: "Vi vil bare gerne mærkes." },
-    { q: "SIDSTE SPØRGSMÅL: Hvem har styret festen i aften?", o: ["Vi har! 🔥", "Naboen", "Politiet", "Ingen"], a: 0, c: "Tak for legen. Husk: Det er kun et spil… måske." }
+    { q: "Hvad blev vibratoren oprindeligt opfundet til i 1800-tallet?", o: ["At røre kagedej", "At kurere 'hysteri' hos kvinder", "Som rygmassage", "Til mænds prostata"], a: 1, c: "Læger brugte den til at give kvinder 'paroxysmer' (orgasmer) for at kurere hysteri. Det var en medicinsk behandling!" },
+    { q: "Hvilken fødevare troede man i 1700-tallet var et farligt afrodisiakum?", o: ["Kartoflen", "Tomaten", "Agurken", "Chokoladen"], a: 0, c: "Kartoflen! Man mente, den gav lystige tanker og spedalskhed. I dag er det bare pomfritter." },
+    { q: "Hvad betyder ordet 'pornografi' oprindeligt på græsk?", o: ["Krops-billeder", "Skøge-skrift (Skriveri om prostituerede)", "Nøgen-kunst", "Lyst-lære"], a: 1, c: "'Porne' betyder skøge/prostitueret og 'graphein' betyder at skrive. Altså 'beskrivelse af prostituerede'." },
+    { q: "Hvilket dyr har det største lem i forhold til sin kropsstørrelse?", o: ["Hesten", "Elefanten", "Ruren (Et lille krebsdyr)", "Blåhvalen"], a: 2, c: "Ruren! Dens penis kan blive 8 gange så lang som dens krop. Den sidder fast på en sten og skal nå naboen." },
+    { q: "Hvad var Casanovas foretrukne prævention?", o: ["Fåretarme", "En halv citron", "At trække sig ud", "Bønner"], a: 1, c: "En halv citron sat op som et pessar (livmoderhalskappe). Syren dræbte sæden... men av, det må have svedet!" },
+    { q: "Hvad er 'Priapisme'?", o: ["Lyst til fødder", "En erektion der varer mere end 4 timer", "Mangel på testikler", "Angst for sex"], a: 1, c: "En smertefuld, langvarig erektion der ikke går væk. Det er en medicinsk nødsituation (og ikke sjovt)." },
+    { q: "Hvilket land legaliserede som det første i verden pornografi (i 1969)?", o: ["USA", "Sverige", "Holland", "Danmark"], a: 3, c: "Danmark! Vi frigav billedpornoen i 1969. Hele verdenspressen kom til København for at se 'syndens hule'." },
+    { q: "Hvad er 'Kegel-øvelser' godt for?", o: ["Større bryster", "Stærkere bækkenbund (bedre sex)", "Længere penis", "Bedre ånde"], a: 1, c: "At stramme op 'down under'. Det giver bedre kontrol, stærkere orgasmer og hjælper mod inkontinens." },
+    { q: "Myte eller fakta: Stopper mænds penisvækst helt efter puberteten?", o: ["Fakta (den vokser ikke mere)", "Myte (den vokser hele livet)", "Den krymper med alderen", "Den vokser kun ved træning"], a: 0, c: "Fakta. Når puberteten slutter, er festen forbi vækstmæssigt. Til gengæld kan den *virke* mindre, hvis man tager på i vægt." },
+    { q: "SIDSTE SPØRGSMÅL: Hvad er det latinske ord for 'samleje'?", o: ["Coitus", "Fellatio", "Cunnilingus", "Intercourse"], a: 0, c: "Coitus. Det lyder meget formelt, men det er det, vi alle er herre/dame gode til (eller øver os på). Godt nytår!" }
   ];
 
-  // Logik til at vælge spørgsmål
   let activeData = [];
   if (gameState.quiz_mode === 'test') activeData = testQuestions1;
   else if (gameState.quiz_mode === 'test_2') activeData = testQuestions2;
@@ -260,15 +259,15 @@ const QuizApp = () => {
       <MainLayout quizMode={gameState.quiz_mode}>
         <div className="flex-grow flex flex-col items-center justify-center text-center">
           <div className="relative">
-            <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 to-purple-600 rounded-full blur opacity-75 animate-pulse"></div>
-            <div className="relative bg-slate-900 rounded-full p-4 mb-6"><Zap className="text-amber-400" size={64} fill="currentColor" /></div>
+            <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-purple-900 rounded-full blur opacity-75 animate-pulse"></div>
+            <div className="relative bg-slate-900 rounded-full p-4 mb-6"><Zap className="text-red-500" size={64} fill="currentColor" /></div>
           </div>
-          <h1 className="text-6xl font-black mb-10 italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 drop-shadow-lg">H. Schneekloths<br/>NYTÅRS<br/>BATTLE<br/>2025</h1>
+          <h1 className="text-6xl font-black mb-10 italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-purple-600 drop-shadow-lg">H. Schneekloths<br/>NYTÅRS<br/>XXX<br/>2025</h1>
           <div className="w-full space-y-4">
-            <button onClick={() => { setRole('host'); setView('game'); }} className="w-full bg-slate-800/50 text-indigo-200 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 border border-slate-700 hover:bg-slate-700 transition-all"><Monitor size={20} /> Start som Vært</button>
+            <button onClick={() => { setRole('host'); setView('game'); }} className="w-full bg-slate-800/50 text-red-200 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 border border-slate-700 hover:bg-slate-700 transition-all"><Monitor size={20} /> Start som Vært</button>
             <div className="flex items-center gap-2">
-               <input type="text" placeholder="Dit navn..." className="flex-grow p-4 rounded-2xl bg-slate-800 border-2 border-slate-700 text-white font-bold outline-none focus:border-amber-400 transition-colors" value={playerName} onChange={(e) => setPlayerName(e.target.value)} />
-               <button onClick={handleJoin} className="bg-gradient-to-r from-emerald-500 to-emerald-600 text-white p-4 rounded-2xl font-black shadow-lg shadow-emerald-900/50 active:scale-95 transition-all"><ChevronRight size={24} /></button>
+               <input type="text" placeholder="Dit navn..." className="flex-grow p-4 rounded-2xl bg-slate-800 border-2 border-slate-700 text-white font-bold outline-none focus:border-red-500 transition-colors" value={playerName} onChange={(e) => setPlayerName(e.target.value)} />
+               <button onClick={handleJoin} className="bg-gradient-to-r from-red-600 to-purple-600 text-white p-4 rounded-2xl font-black shadow-lg shadow-red-900/50 active:scale-95 transition-all"><ChevronRight size={24} /></button>
             </div>
           </div>
         </div>
@@ -281,48 +280,48 @@ const QuizApp = () => {
   const iHaveAnsweredThisSpecificQuestion = myData && myData.last_q_index === gameState.current_question;
 
   const getRoundTitle = () => {
-      if (gameState.quiz_mode.includes('3')) return "RUNDE 3 🔥";
-      if (gameState.quiz_mode.includes('2')) return "RUNDE 2 🚀";
-      return "QUIZ'25";
+      if (gameState.quiz_mode.includes('3')) return "RUNDE 3 🍑";
+      if (gameState.quiz_mode.includes('2')) return "RUNDE 2 🍆";
+      return "QUIZ XXX";
   };
 
   return (
     <MainLayout quizMode={gameState.quiz_mode}>
       <div className="flex justify-between items-center mb-4 bg-slate-800/50 p-4 rounded-2xl backdrop-blur-sm border border-slate-700/50">
-        <div className="font-black text-xl italic text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">{getRoundTitle()}</div>
+        <div className="font-black text-xl italic text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-purple-400">{getRoundTitle()}</div>
         <div className="flex items-center gap-3">
-          {role === 'host' && <button onClick={fullReset} className="text-rose-400 p-2"><Trash2 size={20} /></button>}
-          <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl font-bold text-sm border border-slate-700"><Users size={14} className="text-indigo-400" /> {players.length}</div>
+          {role === 'host' && <button onClick={fullReset} className="text-red-400 p-2"><Trash2 size={20} /></button>}
+          <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl font-bold text-sm border border-slate-700"><Users size={14} className="text-red-400" /> {players.length}</div>
         </div>
       </div>
 
       {gameState.status === 'lobby' && (
         <div className="flex-grow flex flex-col text-center">
-          <h2 className="text-4xl font-black mb-2 text-white">{gameState.quiz_mode.includes('3') ? "Klar til SPICY runde? 🌶️" : (gameState.quiz_mode.includes('2') ? "Klar til Runde 2?" : "Lobbyen er åben!")}</h2>
+          <h2 className="text-4xl font-black mb-2 text-white">{gameState.quiz_mode.includes('3') ? "Klar til FINALEN? 🍑" : (gameState.quiz_mode.includes('2') ? "Klar til Runde 2? 🍆" : "Lobbyen er åben! 😈")}</h2>
           <p className="text-slate-400 mb-8 text-sm">Find jeres pladser...</p>
           {role === 'host' && ( <button onClick={toggleMode} className="mb-8 mx-auto text-xs font-bold bg-slate-800 px-4 py-2 rounded-full border border-slate-600 text-slate-400">{gameState.quiz_mode.includes('test') ? "Skift til PROD" : "Skift til TEST"}</button> )}
           <div className="grid grid-cols-2 gap-3 mb-8 overflow-y-auto max-h-[50vh] p-2">
             {players.map((p, i) => (
               <div key={i} className="bg-slate-800 p-3 rounded-xl border border-slate-700 flex items-center justify-between animate-in zoom-in">
                 <span className="font-bold text-slate-200 truncate text-sm">{p.name}</span>
-                <span className="w-2 h-2 bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"></span>
+                <span className="w-2 h-2 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
               </div>
             ))}
           </div>
-          {role === 'host' && ( <button onClick={() => updateGameStatus('active')} className="mt-auto w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl shadow-indigo-900/50 hover:scale-[1.02] transition-transform active:scale-95 flex items-center justify-center gap-3"> START <Play fill="currentColor" size={24} /> </button> )}
+          {role === 'host' && ( <button onClick={() => updateGameStatus('active')} className="mt-auto w-full bg-gradient-to-r from-red-600 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl shadow-red-900/50 hover:scale-[1.02] transition-transform active:scale-95 flex items-center justify-center gap-3"> START <Play fill="currentColor" size={24} /> </button> )}
         </div>
       )}
 
       {gameState.status === 'active' && currentQ && (
         <div className="flex-grow flex flex-col">
           <div className="text-center mb-4">
-            <span className="inline-block bg-slate-800 text-indigo-300 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase mb-4 border border-slate-700">Spørgsmål {gameState.current_question + 1} / {activeData.length}</span>
+            <span className="inline-block bg-slate-800 text-red-300 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase mb-4 border border-slate-700">Spørgsmål {gameState.current_question + 1} / {activeData.length}</span>
             <h2 className="text-2xl md:text-4xl font-black leading-tight text-white drop-shadow-sm">{currentQ.q}</h2>
           </div>
           <div key={gameState.current_question} className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-grow content-center">
             {currentQ.o.map((opt, i) => (
               role === 'player' ? (
-                <button key={i} disabled={iHaveAnsweredThisSpecificQuestion} onClick={() => submitAnswer(i)} className={`relative p-6 rounded-2xl text-xl font-bold text-left transition-all border-b-4 active:border-b-0 active:translate-y-1 touch-manipulation ${iHaveAnsweredThisSpecificQuestion ? 'bg-slate-800 border-slate-900 text-slate-500' : 'bg-slate-700 border-slate-900 hover:bg-slate-600 text-white active:bg-indigo-600'}`}>{opt}</button>
+                <button key={i} disabled={iHaveAnsweredThisSpecificQuestion} onClick={() => submitAnswer(i)} className={`relative p-6 rounded-2xl text-xl font-bold text-left transition-all border-b-4 active:border-b-0 active:translate-y-1 touch-manipulation ${iHaveAnsweredThisSpecificQuestion ? 'bg-slate-800 border-slate-900 text-slate-500' : 'bg-slate-700 border-slate-900 hover:bg-slate-600 text-white active:bg-red-600'}`}>{opt}</button>
               ) : (
                 <div key={i} className="bg-slate-800 p-6 rounded-2xl text-xl font-bold text-center border-b-4 border-slate-900 text-slate-300 flex flex-col justify-center items-center"><span>{opt}</span>
                     <div className="mt-2 flex gap-1 flex-wrap justify-center">{players.filter(p => p.last_q_index === gameState.current_question).length > 0 && <span className="text-[10px] text-slate-500 animate-pulse">Venter på svar...</span>}</div>
@@ -331,7 +330,7 @@ const QuizApp = () => {
             ))}
           </div>
           {role === 'host' && <button onClick={() => updateGameStatus('showing_answer', gameState.current_question)} className="mt-6 w-full bg-amber-500 text-black py-4 rounded-2xl font-black text-xl shadow-lg">SE SVAR</button>}
-          {role === 'player' && iHaveAnsweredThisSpecificQuestion && <div className="mt-4 text-center text-indigo-400 font-bold animate-pulse">Svar modtaget... 🤞</div>}
+          {role === 'player' && iHaveAnsweredThisSpecificQuestion && <div className="mt-4 text-center text-red-400 font-bold animate-pulse">Svar modtaget... 🤞</div>}
         </div>
       )}
 
@@ -340,11 +339,11 @@ const QuizApp = () => {
           {(() => {
             const playersWhoAnswered = players.filter(p => p.last_q_index === gameState.current_question);
             const everyoneWrong = playersWhoAnswered.length > 0 && playersWhoAnswered.every(p => p.last_answer !== currentQ.a);
-            if (everyoneWrong) return (<div className="w-full bg-rose-600 text-white p-6 rounded-3xl mb-6 animate-bounce shadow-2xl border-4 border-rose-800"><div className="flex justify-center mb-2"><AlertTriangle size={48} className="text-yellow-300" /></div><h2 className="text-3xl font-black uppercase mb-2">KATASTROFE!</h2><p className="text-xl font-bold">Alle drikker! Bund eller resten i håret!</p></div>);
+            if (everyoneWrong) return (<div className="w-full bg-rose-600 text-white p-6 rounded-3xl mb-6 animate-bounce shadow-2xl border-4 border-rose-800"><div className="flex justify-center mb-2"><AlertTriangle size={48} className="text-yellow-300" /></div><h2 className="text-3xl font-black uppercase mb-2">STRAF!</h2><p className="text-xl font-bold">Alle drikker! Bund eller strip!</p></div>);
             return null;
           })()}
           <div className="mb-6 w-full max-w-2xl mx-auto">
-             <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4 border border-emerald-500/20"><CheckCircle2 size={14} /> Det rigtige svar</div>
+             <div className="inline-flex items-center gap-2 bg-red-500/10 text-red-400 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4 border border-red-500/20"><CheckCircle2 size={14} /> Det "rigtige" svar</div>
              <h2 className="text-3xl md:text-4xl font-black text-white mb-4 leading-tight">{currentQ.o[currentQ.a]}</h2>
              {currentQ.c && (<div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-slate-300 text-sm md:text-base italic leading-relaxed shadow-sm max-w-lg mx-auto">" {currentQ.c} "</div>)}
           </div>
@@ -353,9 +352,9 @@ const QuizApp = () => {
                 const isCorrect = i === currentQ.a;
                 const votedHere = players.filter(p => p.last_q_index === gameState.current_question && p.last_answer === i);
                 return (
-                    <div key={i} className={`p-3 rounded-xl border-2 flex flex-col ${isCorrect ? 'bg-emerald-900/30 border-emerald-500/50' : 'bg-slate-800/50 border-slate-800'}`}>
-                        <div className="flex justify-between items-center mb-2"><span className={`font-bold text-sm ${isCorrect ? 'text-emerald-400' : 'text-slate-400'}`}>{opt}</span>{isCorrect && <CheckCircle2 size={16} className="text-emerald-500" />}</div>
-                        <div className="flex flex-wrap gap-1 mt-auto">{votedHere.map((p, idx) => (<span key={idx} className={`text-[10px] px-2 py-0.5 rounded-md font-bold truncate max-w-[100px] ${isCorrect ? 'bg-emerald-500 text-black' : 'bg-slate-700 text-slate-300'}`}>{p.name}</span>))}</div>
+                    <div key={i} className={`p-3 rounded-xl border-2 flex flex-col ${isCorrect ? 'bg-red-900/30 border-red-500/50' : 'bg-slate-800/50 border-slate-800'}`}>
+                        <div className="flex justify-between items-center mb-2"><span className={`font-bold text-sm ${isCorrect ? 'text-red-400' : 'text-slate-400'}`}>{opt}</span>{isCorrect && <CheckCircle2 size={16} className="text-red-500" />}</div>
+                        <div className="flex flex-wrap gap-1 mt-auto">{votedHere.map((p, idx) => (<span key={idx} className={`text-[10px] px-2 py-0.5 rounded-md font-bold truncate max-w-[100px] ${isCorrect ? 'bg-red-500 text-black' : 'bg-slate-700 text-slate-300'}`}>{p.name}</span>))}</div>
                     </div>
                 )
              })}
@@ -380,14 +379,14 @@ const QuizApp = () => {
                    <div className="text-3xl font-black">{p.score}</div>
                 </div>
                 <div className={`text-[11px] font-bold uppercase leading-tight ${i===0?'text-amber-900':'text-slate-500'}`}>Svarede rigtigt på {p.correct_count || 0} spørgsmål og hentede {p.total_bonus || 0} point på hastighed.</div>
-                {i===0 && <div className="absolute -top-2 -right-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-bounce">VINDER!</div>}
+                {i===0 && <div className="absolute -top-2 -right-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-bounce">SEXGUD!</div>}
               </div>
             ))}
           </div>
           {role === 'host' && (
             <div className="mt-auto space-y-4 relative z-10">
                 {!gameState.quiz_mode.includes('3') && (
-                    <button onClick={startMoreQuestions} className="w-full bg-gradient-to-r from-pink-500 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl animate-pulse hover:scale-[1.02] transition-transform flex items-center justify-center gap-3">{gameState.quiz_mode.includes('2') ? "SPICY RUNDE 3!!!" : "MERE!!!"} <Flame fill="currentColor" /></button>
+                    <button onClick={startMoreQuestions} className="w-full bg-gradient-to-r from-red-600 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl animate-pulse hover:scale-[1.02] transition-transform flex items-center justify-center gap-3">{gameState.quiz_mode.includes('2') ? "FINALEN 🍑" : "MERE SEX 🔥"} <Flame fill="currentColor" /></button>
                 )}
                 <button onClick={fullReset} className="w-full text-rose-500 text-xs font-bold uppercase flex items-center justify-center gap-2 py-4"><RefreshCcw size={14} /> Nulstil alt</button>
             </div>
