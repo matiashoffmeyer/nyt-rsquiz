@@ -83,116 +83,46 @@ const QuizApp = () => {
     { q: "RUNDE 3 TEST (SPICY): Skal vi i seng?", o: ["Nu", "Aldrig", "Om lidt", "I morgen"], a: 0, c: "Sengen kalder, men festen larmer. Godnat!" }
   ];
 
-  // --- DATA: RUNDE 1 (HELT NYE 2025 FACTS - ORDSPILS EDITION) ---
+  // --- DATA: RUNDE 1 (ANDREAS' VERSION: SEKSY VIBES) ---
   const realQuestions1 = [
-    // 1. KONGEHUSET
-    { q: "Hvilken stor dag fejrede Kongehuset d. 21. april 2025?", o: ["Marys jubilæum", "Prinsesse Isabellas 18 års fødselsdag", "Frederiks tron-dag", "Margrethes flytning"], a: 1, c: "Isabella blev myndig! Nu må hun køre bil og købe shots. Mon ikke Frederik gav en omgang? Det var i hvert fald en **prinsesse-fin** fest." },
-    
-    // 2. SPORT (CYKLING)
-    { q: "Hvor blev VM i Landevejscykling afholdt i september 2025 (Historisk!)?", o: ["Frankrig", "Rwanda (Afrika)", "Kina", "USA"], a: 1, c: "For første gang i Afrika! Det kørte på skinner... eller dæk. Det var en historisk **kæde-reaktion**, og Rwanda viste sig som en **bjergtagende** vært." },
-    
-    // 3. FILM
-    { q: "Hvilken længe ventet James Cameron-film fik premiere i december 2025?", o: ["Titanic 2", "Avatar 3: Fire and Ash", "Terminator 7", "Alien: Romulus"], a: 1, c: "Vi ventede i 100 år, men den kom! Det var en **blå** stempling af biografen. Cameron har virkelig **dykket** dybt i effekterne denne gang." },
-    
-    // 4. BEGIVENHED (JAPAN)
-    { q: "Hvilken kæmpe verdensbegivenhed åbnede i Osaka, Japan i april 2025?", o: ["OL", "Verdensudstillingen (Expo 2025)", "VM i Fodbold", "PlayStation Festival"], a: 1, c: "Expo 2025! Hele verden var samlet. Det var en **udstillet** succes. Hvis man var der, fik man nok **sushi** på opleveren." },
-    
-    // 5. POLITIK (TYSKLAND)
-    { q: "Hvad skulle vores naboer i Tyskland til i september 2025?", o: ["Oktoberfest (tidligt)", "Forbundsdagsvalg", "Fodbold EM", "Klimatopmøde"], a: 1, c: "Scholz var presset. Det var en rigtig **pølse-snak** i Berlin. Valget var ikke nogen **bratwurst**-overraskelse, men det ændrede balancen i Europa." },
-    
-    // 6. TOG (DANMARK)
-    { q: "Hvilke nye togsæt begyndte DSB endelig at testkøre med passagerer i 2025?", o: ["IC4 (igen)", "IC5 (Coradia Stream)", "Damplokomotiver", "Hyperloop"], a: 1, c: "IC5 er fremtiden! Vi håber ikke, de kører af **sporet** tidsmæssigt som de gamle. Det er på **høje tid**, vi fik strøm på skinnerne." },
-    
-    // 7. RUMMET
-    { q: "Hvilken mission sendte NASA afsted i september 2025 med fire astronauter?", o: ["Artemis II (Rundt om månen)", "Mars One", "ISS Nedrivning", "Star Wars"], a: 0, c: "De fløj rundt om månen og hjem igen. Det var en **stjerne-god** præstation. Der var ingen, der var lunatic - det var ren videnskab." },
-    
-    // 8. REJSE (ROM)
-    { q: "Hvorfor var der ekstra mange turister i Rom i hele 2025?", o: ["Gratis pizza", "Paven holdt 'Jubelår' (Holy Year)", "Colosseum genåbnede", "Varmen var væk"], a: 1, c: "Det katolske Jubelår! Paven åbnede Den Hellige Dør. Det var en **velsignet** god forretning for hotellerne, men en **synd** for trængslen." },
-    
-    // 9. FILM (SPIL)
-    { q: "Hvilken film med Jack Black baseret på et spil udkom i april 2025?", o: ["A Minecraft Movie", "Roblox: The Movie", "Sims", "Tetris 2"], a: 0, c: "Minecraft-filmen. Det så lidt **firkantet** ud med rigtige mennesker. Anmelderne syntes måske, plottet var lidt **blok-eret**." },
-    
-    // 10. SOCIALE MEDIER
-    { q: "Hvilken app stod til at blive forbudt i USA i januar 2025, hvis den ikke blev solgt?", o: ["TikTok", "Instagram", "Temu", "Snapchat"], a: 0, c: "TikTok var i modvind. Amerikanerne mente, det var en **kina-krig** om data. Det var lige før, tiden **løb ud** for dansevideoerne." },
-    
-    // 11. SPORT (FORMEL 1)
-    { q: "Hvilket team kørte Kevin Magnussen IKKE for i 2025 (fordi han stoppede der)?", o: ["Ferrari", "Haas", "McLaren", "Red Bull"], a: 1, c: "Han og Haas sagde farvel efter '24. Det var en **bremseklods** for karrieren, men han gav den gas så længe det varede. En **dæk-adent** afslutning." },
-    
-    // 12. MUSIK
-    { q: "Hvilken dansk festival meldte 'Alt Udsolgt' på rekordtid (igen) i 2025?", o: ["Roskilde Festival", "Smukfest", "Tinderbox", "Copenhell"], a: 1, c: "Smukfest billetterne røg hurtigere end en fadøl i bøgeskoven. Det er en **smuk** tradition, men serverne fik **stress**." },
-    
-    // 13. ERHVERV
-    { q: "Hvilket dansk firma cementerede sin plads som Europas mest værdifulde i 2025?", o: ["Mærsk", "Lego", "Novo Nordisk", "Carlsberg"], a: 2, c: "Novo har **fedet** den, mens vi andre er skrumpet. Det er en **sprøjte-god** forretning. En rigtig tung spiller på markedet." },
-    
-    // 14. KLIMA
-    { q: "Hvor blev FN's store klimatopmøde (COP30) afholdt i november 2025?", o: ["I Danmark", "I Brasilien (Belém)", "I Dubai", "I USA"], a: 1, c: "I Amazon-regnskoven! Det var **klima-ks** på debatten. De lovede guld og **grønne** skove, men lad os se, om det holder." },
-    
-    // 15. TECH
-    { q: "Hvilken ny AI-model fra OpenAI rygtedes/udkom i 2025 og skulle være 'klogere end mennesker'?", o: ["GPT-5 (Orion)", "Siri 2.0", "Alexa Pro", "Terminator"], a: 0, c: "GPT-5. Den er så klog, at den nok snart overtager quiz-tjansen her. Det er en **kunstig** situation, men ret intelligent." },
-    
-    // 16. DRONNINGEN
-    { q: "Hvilken titel bar Margrethe gennem hele 2025?", o: ["Dronning (uden regent-status)", "Prinsesse", "Hertuginde", "Fru Margrethe"], a: 0, c: "Hun er stadig Dronning Margrethe, bare uden tronen. Hun nyder otiummet og maler løs. Det er et **monarki-stisk** luksusliv." },
-    
-    // 17. BRO
-    { q: "Hvad skete der (som sædvanlig) med prisen for at køre over Storebælt i 2025?", o: ["Den blev gratis", "Den steg en lille smule", "Det blev halv pris", "Kun jyder betaler"], a: 1, c: "Den fik et lille nøk op. Det er en **bro-get** affære for pengepungen. Man må sige, de forstår at slå **bro** til din bankkonto." },
-    
-    // 18. NATUR
-    { q: "Hvilket fænomen på nattehimlen var ekstra kraftigt i 2025 pga. 'Solar Maximum'?", o: ["Nordlys", "Måneformørkelse", "Stjerneskud", "UFO'er"], a: 0, c: "Solen gik amok, og vi fik nordlys i Danmark. Himlen var helt **grøn** af misundelse! Det var en **lys-idé** fra naturens side." },
-    
-    // 19. SPORT (BADMINTON)
-    { q: "Hvor blev VM i Badminton afholdt i august 2025?", o: ["København", "Paris", "Tokyo", "London"], a: 1, c: "I Paris. Axelsen var på pletten igen. Han er ikke til at **fjer-ne** fra toppen. En rigtig **shuttle-cocky** indsats!" },
-    
-    // 20. NYTÅR
-    { q: "Hvad er det vigtigste ved nytårsaften 2025?", o: ["Dronningens tale", "Kongens tale", "Statsministerens tale", "At vi vinder quizzen"], a: 3, c: "At I vinder! Kongen talte godt nok kl. 18, men nu gælder det håneretten. Det er en **raket-videnskab** at feste rigtigt!" }
+    { q: "Hvad er ifølge datingsider den mest attraktive egenskab i 2025?", o: ["Humor", "Muskler", "Penge", "Emotionel intelligens"], a: 3, c: "Følelser er det nye sixpack. Kan du tale om dem, kan du også få dem." },
+    { q: "Hvilken emoji bliver oftest brugt som flirt uden at sige det direkte?", o: ["🍆", "🔥", "😉", "💦"], a: 2, c: "Blinket siger: 'Jeg mener det… men måske ikke… men jo'." },
+    { q: "Hvad svarer flest, når de bliver spurgt om deres største turn-on?", o: ["Selvtillid", "Højde", "Stemmen", "Hænder"], a: 0, c: "Ikke for meget, ikke for lidt. Bare nok til at fylde rummet." },
+    { q: "Hvad er den mest almindelige løgn i en dating-bio?", o: ["Jeg elsker at rejse", "Jeg er spontan", "Jeg elsker naturen", "Jeg er klar til noget seriøst"], a: 3, c: "Alle er klar… lige indtil det bliver seriøst." },
+    { q: "Hvad bliver oftest beskrevet som det mest erotiske ved en person?", o: ["Øjne", "Duft", "Smil", "Stemme"], a: 3, c: "En stemme kan klæde én helt af uden at røre." },
+    { q: "Hvornår føler folk sig mest sexede?", o: ["Efter træning", "Når de er forelskede", "Når de får komplimenter", "Når de er fulde"], a: 2, c: "Et ægte kompliment slår både spejle og shots." },
+    { q: "Hvad er mest sandsynligt at føre til et kys?", o: ["Øjenkontakt", "En joke", "En drink mere", "En dans"], a: 0, c: "Blikket gør arbejdet før læberne tør." },
+    { q: "Hvad er den mest delte 'dirty little secret'?", o: ["Fantasier", "Gamle flirts", "Stalking på Instagram", "Screenshots"], a: 2, c: "Alle kigger. Ingen indrømmer det." },
+    { q: "Hvad bliver oftest beskrevet som 'overraskende frækt'?", o: ["Intelligens", "At lave mad", "At lytte", "At tage initiativ"], a: 1, c: "Når nogen kan noget med hænderne… og krydderier." },
+    { q: "BONUS: Er stemningen blevet lidt varm?", o: ["Ja 🔥", "Meget", "Jeg sveder", "Skru ned"], a: 0, c: "Perfekt. Så er vi kun lige begyndt." }
   ];
 
-  // --- DATA: RUNDE 2 (BLANDET MIX 2025 - ORDSPILS EDITION) ---
+  // --- DATA: RUNDE 2 (ANDREAS' VERSION: CONFESSIONS & FLIRT FAILS) ---
   const realQuestions2 = [
-    { q: "FILM: Hvilken superhelte-film startede det nye 'DC Universe' i juli 2025?", o: ["Superman: Legacy", "Batman Returns", "Wonder Woman 3", "Flash 2"], a: 0, c: "Superman vendte tilbage! Det var en **super-mandlig** præstation. Han fløj højere end benzinpriserne." },
-    { q: "ROYALT: Hvem blev student i sommeren 2025 (hvis alt gik efter planen)?", o: ["Prinsesse Isabella", "Prins Christian", "Ingen", "Grev Henrik"], a: 0, c: "Isabella fik huen på! Det var en **hue-ggelig** dag på Øregård. Nu skal hun ud og male byen rød (eller blå)." },
-    { q: "SPORT: Hvem var landstræner for herrelandsholdet i fodbold hele året?", o: ["Kasper Hjulmand", "Brian Riemer", "Thomas Frank", "Michael Laudrup"], a: 1, c: "Brian Riemer. Han har virkelig sparket gang i holdet. Han sidder ikke bare på bænken, han har en plan." },
-    { q: "MUSIK: Hvilken dansk legende holdt stadig pause fra koncerter i 2025?", o: ["Christopher", "Jada", "Thomas Helmig", "Medina"], a: 2, c: "Det gør ondt i hjertet, men Helmig holder fri. Ingen 'Stupid Man' her. Vi venter på, at han igen siger: 'Jeg malaga mig ned'." },
-    { q: "PARK: Hvilken forlystelse i Tivoli var savnet i 2025 (lukket/ombygget)?", o: ["Dæmonen", "Den Gamle Rutschebane", "Snurretoppen", "Ballongyngerne"], a: 2, c: "Snurretoppen røg sig en tur. Nu slipper vi for at køre i ring. Tivoli har forlystet sig med at bygge nyt." },
-    { q: "REJSE: Hvad var 'Coolcation', som mange danskere valgte i sommerferien?", o: ["Ferie i kolde lande", "Ferie alene", "Ferie uden mobil", "Ferie med is"], a: 0, c: "Det er is-koldt beregnet! Folk gider ikke svede sydpå, så de tager nordpå. Det er den hotteste trend at fryse." },
-    { q: "JUBILÆUM: Hvilken folkekær film fyldte 50 år i efteråret 2025?", o: ["Olsen Banden på Sporet", "Matador", "Zappa", "Huset på Christianshavn"], a: 0, c: "Skide godt, Egon! 50 år på sporet. Det var en plan, der holdt hele vejen. De er stadig kup-et over dem alle." },
-    { q: "BYGGERI: Hvad åbnede endelig på Papirøen i København i 2025?", o: ["Vandkulturhuset", "Et Operahus", "En ny metro", "Et storcenter"], a: 0, c: "Nu kan man komme i vand til knæene. Det ser ikke kun godt ud på papir-et, det virker også i virkeligheden." },
-    { q: "SERIE: Hvilken Netflix-gigant sendte sin 5. og sidste sæson i 2025?", o: ["Stranger Things", "Bridgerton", "The Crown", "Squid Game"], a: 0, c: "Det var en mærkelig (strange) afslutning! Verden blev vendt på hovedet. Det var ikke for tøsepiger, men monster-fedt." },
-    { q: "TURISME: Hvad skulle turister betale for at komme ind i Venedig på travle dage?", o: ["5 Euro i entré", "Ingenting", "100 Euro", "Man skulle booke 1 år før"], a: 0, c: "Det koster kassen at se vandet. Turisterne må punge ud. Det er en synkende skude, hvis de ikke begrænser strømmen." },
-    { q: "DANMARK: Hvilken forårs-helligdag manglede vi igen i år (2025)?", o: ["Store Bededag", "Kristi Himmelfart", "2. Pinsedag", "Grundlovsdag"], a: 0, c: "Vi måtte bede forgæves om at få den tilbage. Regeringen var ikke til at hugge eller stikke i. Nu er det slut med varme hveder." },
-    { q: "BIL: Hvilket bilmærke dominerede de danske veje i 2025?", o: ["Tesla", "VW", "Toyota", "Peugeot"], a: 0, c: "De giver konkurrenterne baghjul på strøm. Salget var helt elektrisk! Det kører som smurt i olie... eller nå nej." },
-    { q: "SUNDHED: Hvilken type medicin var stadig i kæmpe vækst i 2025?", o: ["Slankemedicin (Wegovy)", "Panodil", "Ipren", "Hostesaft"], a: 0, c: "Novo har fedet den, mens vi andre er skrumpet. Det er en sprøjte-god forretning." },
-    { q: "GAMING: Hvilket spil ventede vi stadig på (udskudt til '26)?", o: ["GTA VI", "FIFA 26", "Sims 5", "Call of Duty"], a: 0, c: "GTA 6. Vi har ventet længere end på en offentlig bus. Rockstar kører i deres eget gear." },
-    { q: "JOB: Hvad gik trenden 'Coffee Badging' ud på i 2025?", o: ["Møde ind, hente kaffe, skride hjem", "Lave god kaffe", "Spilde kaffe", "Drikke te"], a: 0, c: "En bønne for fremmøde! Man stempler ind, får sit koffein-fix, og så er man smuttet. Det er kaffe-grums i maskineriet for chefen." },
-    { q: "SPORT: Hvilket land var værter for Kvindernes EM i fodbold i sommer?", o: ["Schweiz", "England", "Tyskland", "Danmark"], a: 0, c: "Det var dame-godt spillet! De gik til stålet (og bolden). Det kørte som smurt i alpe-landet." },
-    { q: "REJSE: Hvad skulle vi have klar for at rejse til London fra april 2025?", o: ["En ETA (Elektronisk tilladelse)", "Et visum på papir", "Vaccinepas", "Ingenting"], a: 0, c: "Nu koster det at sige Hello. Briterne har sat en grænse. Det er slut med at komme sovende gennem kontrollen." },
-    { q: "NET: Hvad insisterede Elon Musk stadig på at kalde Twitter i 2025?", o: ["X", "Y", "Z", "SpaceBook"], a: 0, c: "Elon satte et stort kryds over fuglen. Men vi pipper stadig løs. Det er lidt et X-periment, der aldrig slutter." },
-    { q: "KALENDER: Hvilken ugedag faldt Juleaften på i år (2025)?", o: ["Onsdag", "Torsdag", "Fredag", "Lørdag"], a: 0, c: "En onsdags-snegl... øh jul. Det delte ugen midt over som en brunede kartoffel. Kort uge, lang and!" },
-    { q: "TECH: Hvilken ny håndholdt konsol blev endelig vist frem af Nintendo?", o: ["Switch 2", "GameBoy 2025", "Wii 3", "DS 2025"], a: 0, c: "Nintendo lavede endelig et skifte (Switch 2). Vi har trykket på alle knapper for at få den. Det er game on igen!" },
-    { q: "BONUS: Er vi klar til den SPICY runde?", o: ["JA!", "Nej", "Måske", "Hvad?"], a: 0, c: "Så stram ballerne, for nu gælder det trends og TikTok-sprog!" }
+    { q: "Hvad er den mest almindelige flirt-fejl?", o: ["For meget snap", "For lidt svar", "For meget selvtillid", "At være for sød"], a: 0, c: "Mystik er hot. Spam er ikke." },
+    { q: "Hvad er mest sandsynligt at ødelægge en god flirt?", o: ["Dårlig ånde", "En eks-historie", "Telefonen fremme", "Alle tre"], a: 3, c: "Kys kræver nærvær. Ikke notifikationer." },
+    { q: "Hvad svarer flest, hvis de bliver ghostet?", o: ["Intet", "En joke", "Et langt afsnit", "Et selfie"], a: 0, c: "Stilhed er den koldeste afslutning." },
+    { q: "Hvad er den mest sexy besked at få?", o: ["'Tænker på dig'", "'Er du vågen?'", "'Kom over'", "'Savner dig'"], a: 0, c: "Kort. Ærligt. Effektivt." },
+    { q: "Hvad bliver oftest nævnt som det mest akavede øjeblik?", o: ["Forkert navn", "Lyde", "Forældre", "Alle ovenstående"], a: 3, c: "Der findes ingen værdighed efter punktet." },
+    { q: "Hvad tænder flest mere end udseende?", o: ["Humor", "Tryghed", "Selvsikkerhed", "At blive valgt"], a: 3, c: "At føle sig valgt slår alt." },
+    { q: "Hvad er mest sandsynligt at føre til en gentagelse?", o: ["God kemi", "God sex", "God samtale", "God timing"], a: 0, c: "Når det klikker, klikker det." },
+    { q: "Hvad indrømmer folk oftest efter et glas vin?", o: ["Crushes", "Fantasier", "Fortrydelser", "Alt"], a: 3, c: "Vin er sandhedsserum med prop." },
+    { q: "Hvad er mest attraktivt i sengen ifølge flest?", o: ["Kommunikation", "Erfaring", "Passion", "Overraskelser"], a: 0, c: "Spørg hellere end at gætte." },
+    { q: "BONUS: Er vi klar til den SPICY runde?", o: ["JA 😈", "Måske", "Jeg er rød i hovedet", "Hvad?"], a: 0, c: "Godt. Nu bliver det spicy." }
   ];
 
-  // --- DATA: RUNDE 3 (SPICY TRENDS & BEGREBER 2025 - ORDSPILS EDITION) ---
+  // --- DATA: RUNDE 3 (ANDREAS' VERSION: SPICY & LEGESYG) ---
   const realQuestions3 = [
-    { q: "TREND: Hvad gik fænomenet 'Rawdogging' på en flyvetur ud på?", o: ["Ingen skærm/mad/søvn", "At flyve nøgen", "At spise råt kød", "At stå op"], a: 0, c: "Det er rå-kost for hjernen! Ingen underholdning, bare luft. Man skal være gjort af et særligt stof for ikke at flyve op i det røde felt." },
-    { q: "SLANG: Hvad betød det, hvis en person havde 'Rizz' i 2025?", o: ["Charme/Score-evne", "Risengrød", "Penge", "Dårlig stil"], a: 0, c: "Har du Rizz, får du kys! Ingen Rizz? Så er det bare ris til egen røv. Det handler om at have talegaverne i orden." },
-    { q: "SOMMER: Hvad var 'Brat Summer', som vi snakkede om?", o: ["Neon-grøn, fest og kaos", "Barbie-pink", "Rolig sommer", "Kedelig sommer"], a: 0, c: "En grøn bølge af kaos! Det var tilladt at være en møgunge. Sommeren var ikke bare hot, den var Brat." },
-    { q: "FÆNOMEN: Hvad blev 'Hawk Tuah' pigen kendt for (fra året før)?", o: ["Et viralt interview om sex", "At synge opera", "At bage kage", "At spille fodbold"], a: 0, c: "Hun spyttede sandheder ud! Det gik viralt hurtigere end man kunne sige Tuah. Internettet er et mærkeligt sted." },
-    { q: "FORHOLD: Hvad kaldte man det, når man datede uden at være kærester?", o: ["Situationship", "Relationskib", "Venskab+", "Deltid"], a: 0, c: "Et skib uden ror! Man sejler rundt i følelserne. Er vi kærester? Nej, vi er i situation. Det er forhold-svis kompliceret." },
-    { q: "LIVSSTIL: Hvad gik trenden 'Bed Rotting' ud på?", o: ["At ligge i sengen hele dagen", "At spise gammel mad", "At sove 24 timer", "At ødelægge sin seng"], a: 0, c: "Man lader dagen rådne væk. Det er dyne-namit for sjælen (eller dovenskaben). Hvorfor stå op, når man kan ligge ned?" },
-    { q: "UDSEENDE: Hvad var 'Mewing', som især drenge gik op i?", o: ["Tungepres for kæbelinje", "Kattelyde", "Hårfarvning", "Makeup"], a: 0, c: "Hold tunge lige i munden! De vil have en kæbe af stål, men ser ud som om de har slugt en kat. Mjaverligt!" },
-    { q: "ORD: Hvad betød det at være 'Demure' (Jools Lebron trenden)?", o: ["Beskeden og mindful", "Vild og gal", "Højlydt", "Grim"], a: 0, c: "Vær lidt mindful, skat. Det er ikke demure at bøvse ved bordet. En trend der var mistænkeligt pæn i kanten." },
-    { q: "APP: Hvad gjorde mange på appen 'Temu' i 2025?", o: ["Købte billigt skrammel", "Datede", "Hørte musik", "Så film"], a: 0, c: "Det er temu-lig billigt! Men kvaliteten er også derefter. Man får hvad man betaler for: En kina-køb der holder til døren." },
-    { q: "DATE: Hvad mente folk, når de fik et 'Ick'?", o: ["Noget der tændte dem af", "En sygdom", "En type drink", "Et kys"], a: 0, c: "Pludselig er han bare klam. Det er et ick-e til at holde ud! Når magien forsvinder hurtigere end dug for solen." },
-    { q: "BEGREB: Hvad var en 'Tradwife', som trendede på sociale medier?", o: ["Husmor der dyrker 50'er stilen", "En moderne kone", "En der handler aktier", "En robot-kone"], a: 0, c: "Tilbage til kødgryderne! Det er trad-itionelt, men er det moderne? Hun bager brød, mens han tjener brødet. Smag og behag." },
-    { q: "SLANG: Hvad betød det at være 'Delulu'?", o: ["Virkelighedsfjern/Indbildsk", "Lækker", "Dum", "Rig"], a: 0, c: "Hvis man tror på det, er det sandt? Nej, du er bare delulu! Men hey, drømme er gratis (indtil virkeligheden rammer)." },
-    { q: "KROP: Hvad var 'Ozempic Face', som sladderbladene skrev om?", o: ["Indfaldent ansigt efter vægttab", "Et glad ansigt", "Røde øjne", "Store læber"], a: 0, c: "Ansigtet hænger lidt i bremsen. Man bliver tynd, men ser slidt ud. Det er prisen for at snyde på vægten." },
-    { q: "ARBEJDE: Hvad dækkede begrebet 'Quiet Quitting' over?", o: ["Kun at gøre det nødvendige", "At sige op hemmeligt", "At larme", "At stjæle ting"], a: 0, c: "Man lister sig ud af ansvaret på stille sokker. Ingen larm, bare minimum indsats. Chefen opdager det ikke, før det er for sent." },
-    { q: "TREND: Hvad var 'Dumbphone' trenden?", o: ["At skifte til gammel Nokia", "En telefon af træ", "At tale dumt", "Ingen telefon"], a: 0, c: "Det er smart at være dum! Slut med apps, nu kan man kun ringe. Det er en opkalds-kvalitet, vi havde glemt." },
-    { q: "MAD: Hvad var en 'Girl Dinner'?", o: ["En tallerken med snacks/ost", "En stor bøf", "Ingen mad", "Kun salat"], a: 0, c: "Hvem behøver en steg? Lidt ost og en kiks er pige-godt! Det er snack-attack på højt niveau." },
-    { q: "FARVE: Hvad var et 'Beige Flag' i dating-verdenen?", o: ["Noget sært, men ikke farligt", "Noget meget farligt", "At de er kedelige", "At de elsker beige"], a: 0, c: "Det er ikke rødt, det er ikke grønt, det er bare... beige. Lidt farveløst, men man dør ikke af det. Kedeligt er det nye sort." },
-    { q: "LIVSSTIL: Hvad stod 'DINK' for?", o: ["Double Income, No Kids", "Drinking In New Kitchen", "Dad Is Not Kind", "Dance In Night Klub"], a: 0, c: "Ingen bleer, masser af skejser! De lever det søde liv og tager en drink mere. Børn er dyre, frihed er priceless." },
-    { q: "FILM: Hvilket fænomen kaldte man 'Barbenheimer' (som vi stadig husker)?", o: ["Barbie og Oppenheimer mix", "En ny drink", "En by i Tyskland", "En sanger"], a: 0, c: "En bombe af lyserød energi! Det var en eksplosiv cocktail. Biograferne havde en dukke-god dag." },
-    { q: "SIDSTE SPØRGSMÅL: Hvem har styret festen i aften?", o: ["Vi har!", "Naboen", "Politiet", "Ingen"], a: 0, c: "I har styret det for vildt! Ingen er nabo-venlige i aften. Tak for kampen – I er nogle krudtugler! Godt nytår!" }
+    { q: "Hvad er den mest almindelige frække tanke i hverdagen?", o: ["Kollegaen", "Eks'en", "En fremmed", "Alle tre"], a: 3, c: "Hjernen stopper aldrig. Den hvisker bare." },
+    { q: "Hvad bliver oftest beskrevet som 'uventet frækt'?", o: ["Hvisken", "Langsomhed", "Initiativ", "Øjenkontakt"], a: 1, c: "Det er ikke tempoet. Det er pausen." },
+    { q: "Hvad er mest sandsynligt at tænde en gnist igen?", o: ["Et blik", "En besked sent", "Et minde", "Berøring"], a: 0, c: "Nogle blikke glemmer man aldrig." },
+    { q: "Hvad siger flest ja til, hvis stemningen er rigtig?", o: ["Noget nyt", "Noget forbudt", "Noget spontant", "Alt"], a: 3, c: "Stemning slår regler." },
+    { q: "Hvad er det mest sexy at høre?", o: ["'Jeg vil have dig'", "'Du er smuk'", "'Kom her'", "'Jeg stoler på dig'"], a: 3, c: "Tillid er det frækkeste ord." },
+    { q: "Hvad er den største turn-off midt i det hele?", o: ["Usikkerhed", "Stress", "Telefonen", "Tvivl"], a: 2, c: "Ingen vil konkurrere med en skærm." },
+    { q: "Hvad husker folk bedst bagefter?", o: ["Stemningen", "Detaljerne", "Følelsen", "Lydene"], a: 2, c: "Kroppen husker, selv når hjernen glemmer." },
+    { q: "Hvad er mest sandsynligt at føre til grin på den gode måde?", o: ["Ærlighed", "Klodsethed", "Improvisation", "Alt"], a: 3, c: "Hvis I kan grine, kan I alt." },
+    { q: "Hvad er den største hemmelige fantasi?", o: ["At blive valgt igen", "At slippe kontrollen", "At blive set", "Alle"], a: 3, c: "Vi vil bare gerne mærkes." },
+    { q: "SIDSTE SPØRGSMÅL: Hvem har styret festen i aften?", o: ["Vi har! 🔥", "Naboen", "Politiet", "Ingen"], a: 0, c: "Tak for legen. Husk: Det er kun et spil… måske." }
   ];
 
   // Logik til at vælge spørgsmål
