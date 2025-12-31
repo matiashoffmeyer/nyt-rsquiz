@@ -64,16 +64,15 @@ const MainLayout = ({ children, quizMode }) => (
 const QuizApp = () => {
   const [view, setView] = useState('landing');
   const [role, setRole] = useState(null);
-  const [roomCode] = useState('DATING2025');
+  // FIX: Vi bruger 'NYTÅR2025' igen, da det er den kode, databasen kender!
+  const [roomCode] = useState('NYTÅR2025'); 
   const [playerName, setPlayerName] = useState('');
   const [players, setPlayers] = useState([]);
   const [gameState, setGameState] = useState({ status: 'lobby', current_question: 0, quiz_mode: 'real' });
   const [localStartTime, setLocalStartTime] = useState(null);
   
   // --- PROFIL: CHRISTINA ---
-  // Dette vises i "Intro" fasen (hvis vi implementerede en info-skærm), men her er det indbygget i logikken.
   // Christina: 34 år, Marketing Manager. Elsker god vin, hader arrogance. Er klar på sjov, men vil tages seriøst.
-  // Hun søger "The Real Deal", ikke bare en fuckboy, men han skal have glimt i øjet.
 
   // --- RUNDE 1: FØRSTE DATE (ISBRYDEREN) ---
   const datingQuestions1 = [
@@ -237,7 +236,22 @@ const QuizApp = () => {
     e.preventDefault();
     if (!playerName.trim()) return;
     const { data: room } = await supabase.from('quiz_rooms').select('id').eq('room_code', roomCode).single();
-    if (room) { await supabase.from('players').insert([{ name: playerName, score: 0, room_id: room.id, last_q_index: -1 }]); setRole('player'); setView('game'); }
+    
+    if (room) {
+        // Tjek om navnet allerede findes i dette rum
+        const { data: existingPlayer } = await supabase.from('players').select('id').eq('room_id', room.id).eq('name', playerName).single();
+        
+        if (existingPlayer) {
+            alert("Navnet er taget! Vælg et andet.");
+            return;
+        }
+
+        await supabase.from('players').insert([{ name: playerName, score: 0, room_id: room.id, last_q_index: -1 }]);
+        setRole('player');
+        setView('game');
+    } else {
+        alert("Kunne ikke finde rummet! Tjek din internetforbindelse.");
+    }
   };
 
   if (view === 'landing') {
@@ -253,10 +267,11 @@ const QuizApp = () => {
           </h1>
           <div className="w-full space-y-4">
             <button onClick={() => { setRole('host'); setView('game'); }} className="w-full bg-pink-900/50 text-pink-200 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 border border-pink-700 hover:bg-pink-800 transition-all"><Monitor size={20} /> Start som Vært</button>
-            <div className="flex items-center gap-2">
+            {/* Added Form wrapper for Enter key support */}
+            <form onSubmit={handleJoin} className="flex items-center gap-2 w-full">
                <input type="text" placeholder="Dit navn..." className="flex-grow p-4 rounded-2xl bg-slate-800 border-2 border-slate-700 text-white font-bold outline-none focus:border-pink-500 transition-colors" value={playerName} onChange={(e) => setPlayerName(e.target.value)} />
-               <button onClick={handleJoin} className="bg-gradient-to-r from-pink-600 to-purple-600 text-white p-4 rounded-2xl font-black shadow-lg shadow-pink-900/50 active:scale-95 transition-all"><ChevronRight size={24} /></button>
-            </div>
+               <button type="submit" className="bg-gradient-to-r from-pink-600 to-purple-600 text-white p-4 rounded-2xl font-black shadow-lg shadow-pink-900/50 active:scale-95 transition-all"><ChevronRight size={24} /></button>
+            </form>
           </div>
         </div>
       </MainLayout>
