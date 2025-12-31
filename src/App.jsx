@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Users, Play, Trophy, Monitor, ChevronRight, CheckCircle2, Zap, Trash2, RefreshCcw, AlertTriangle, FastForward, Flame } from 'lucide-react';
+import { Users, Play, Trophy, Monitor, ChevronRight, CheckCircle2, Zap, Trash2, RefreshCcw, Heart, Flame, Sparkles, Wine } from 'lucide-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// --- CONFETTI COMPONENT ---
+// --- CONFETTI (ROMANTIC EDITION) ---
 const SimpleConfetti = () => {
   const [particles, setParticles] = useState([]);
 
   useEffect(() => {
-    const colors = ['#FF0000', '#FF00ea', '#800080', '#000000', '#FFC700']; 
-    const newParticles = Array.from({ length: 50 }).map((_, i) => ({
+    const colors = ['#ff0000', '#ff69b4', '#ffffff', '#800080']; // Rød, Pink, Hvid, Lilla
+    const newParticles = Array.from({ length: 60 }).map((_, i) => ({
       id: i,
       x: Math.random() * 100, 
       delay: Math.random() * 2, 
@@ -43,7 +43,7 @@ const SimpleConfetti = () => {
             animation: `fall ${Math.random() * 3 + 2}s linear infinite`,
             animationDelay: `${p.delay}s`,
             opacity: 0.8,
-            borderRadius: Math.random() > 0.5 ? '50%' : '0%',
+            borderRadius: '50%', // Hearts/Circles vibes
           }}
         />
       ))}
@@ -52,7 +52,8 @@ const SimpleConfetti = () => {
 };
 
 const MainLayout = ({ children, quizMode }) => (
-  <div className={`min-h-[100dvh] text-slate-100 font-sans transition-colors duration-500 flex flex-col ${quizMode.includes('test') ? 'bg-slate-900 border-t-8 border-amber-500' : 'bg-[#1a0505] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-rose-900/40 via-slate-950 to-black'}`}>
+  // Romantisk baggrund: Mørk lilla/pink gradient
+  <div className={`min-h-[100dvh] text-pink-50 font-sans transition-colors duration-500 flex flex-col ${quizMode.includes('test') ? 'bg-slate-900 border-t-8 border-amber-500' : 'bg-[#1a0510] bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-pink-900/60 via-purple-950 to-black'}`}>
     {quizMode.includes('test') && <div className="bg-amber-500 text-black font-black text-center text-xs py-1">TEST MODE {quizMode.includes('3') ? '3' : (quizMode.includes('2') ? '2' : '1')} (DEV)</div>}
     <div className="w-full max-w-md md:max-w-4xl mx-auto p-3 md:p-6 flex-grow flex flex-col justify-between relative z-10">
       {children}
@@ -63,76 +64,61 @@ const MainLayout = ({ children, quizMode }) => (
 const QuizApp = () => {
   const [view, setView] = useState('landing');
   const [role, setRole] = useState(null);
-  const [roomCode] = useState('NYTÅR2025');
+  const [roomCode] = useState('DATING2025');
   const [playerName, setPlayerName] = useState('');
   const [players, setPlayers] = useState([]);
   const [gameState, setGameState] = useState({ status: 'lobby', current_question: 0, quiz_mode: 'real' });
   const [localStartTime, setLocalStartTime] = useState(null);
   
-  // --- DATA: TEST RUNDER ---
-  const testQuestions1 = [
-    { q: "TEST 1: Virker knapperne?", o: ["Ja", "Nej", "Måske", "Ved ikke"], a: 0, c: "Knapperne virker! Det er lige til at trykke på." },
-    { q: "TEST 2: Hvad hedder Matias' kat?", o: ["Plet", "Mina", "Speck", "Felix"], a: 2, c: "Speck. En kat med respekt." }
-  ];
-  const testQuestions2 = [
-    { q: "RUNDE 2 TEST: Er vi videre?", o: ["Ja da", "Nej", "Hvad?", "Måske"], a: 0, c: "Vi ruller videre. Ingen slinger i valsen her." },
-    { q: "RUNDE 2 TEST: Hvad drikker vi?", o: ["Vand", "Mælk", "Champagne", "Gift"], a: 2, c: "Bobler! Det er brusende godt." }
-  ];
-  const testQuestions3 = [
-    { q: "RUNDE 3 TEST (SPICY): Er du fuld?", o: ["Lidt", "Meget", "Nej", "Måske"], a: 1, c: "Skål! Du sejler, men skibet er ladet med fest." },
-    { q: "RUNDE 3 TEST (SPICY): Skal vi i seng?", o: ["Nu", "Aldrig", "Om lidt", "I morgen"], a: 0, c: "Sengen kalder, men festen larmer. Godnat!" }
+  // --- PROFIL: CHRISTINA ---
+  // Dette vises i "Intro" fasen (hvis vi implementerede en info-skærm), men her er det indbygget i logikken.
+  // Christina: 34 år, Marketing Manager. Elsker god vin, hader arrogance. Er klar på sjov, men vil tages seriøst.
+  // Hun søger "The Real Deal", ikke bare en fuckboy, men han skal have glimt i øjet.
+
+  // --- RUNDE 1: FØRSTE DATE (ISBRYDEREN) ---
+  const datingQuestions1 = [
+    { q: "Vi mødes på vinbaren. Hvad bestiller du til Christina for at starte aftenen godt?", o: ["En fadøl", "Et glas kølig Sancerre (Hvidvin)", "Et shot Tequila", "En kop te"], a: 1, c: "Klasse! Christina elsker hvidvin. Øl er for bodega-agtigt til første date, og tequila er for desperat." },
+    { q: "Samtalen går lidt i stå. Hvad spørger du om for at få hende til at åbne op?", o: ["Hvorfor er du single?", "Hvad er din passion?", "Hvor meget tjener du?", "Kan du lide min skjorte?"], a: 1, c: "Passion! Det tænder en ild i hendes øjne. At spørge til eks-kærester eller løn er totalt turn-off." },
+    { q: "Tjeneren spilder lidt vin på bordet. Hvordan reagerer du?", o: ["Bliver sur og kræver rabat", "Laver en joke og tørrer det op", "Ignorerer det", "Får Christina til at tørre det op"], a: 1, c: "Humor og overskud er sexet. At blive sur på servicepersonale er det største røde flag for en kvinde på 34." },
+    { q: "Hun nævner, at hun elsker reality-tv. Hvad siger du?", o: ["Ad, det er for dumt", "Jeg ser det også! (Løgn)", "Det er min guilty pleasure!", "Vi skal se Paradise sammen"], a: 2, c: "Ærlighed + fælles sjov. 'Guilty pleasure' viser, at du ikke er en snob, men heller ikke dum." },
+    { q: "Regningen kommer. Hvad er det rigtige træk i 2025?", o: ["Du betaler diskret det hele", "Du foreslår at splitte 50/50", "Du venter på hun betaler", "Du siger 'jeg glemte pungen'"], a: 0, c: "Selvom vi er moderne, elsker Christina en gentleman på første date. Betal diskret – ingen store armbevægelser." },
+    { q: "I går en tur bagefter. Hun fryser lidt. Hvad gør du?", o: ["Siger 'løb lidt, så får du varmen'", "Lægger armen om hende", "Tilbyder din jakke", "Ignorerer det"], a: 2, c: "Jakken! Det er den klassiske film-manøvre. Det viser omsorg og offervilje. Armen er for tidligt, løb er for dumt." },
+    { q: "Hun spørger: 'Hvad søger du egentlig?' Hvad svarer du?", o: ["Bare noget sjovt", "Jeg leder efter 'The One'", "Jeg tager det som det kommer, men er åben", "En der kan vaske mit tøj"], a: 2, c: "Det perfekte svar. Ikke for desperat, ikke for useriøst. Du er åben, men mystisk." },
+    { q: "Date slut. Hvordan siger du farvel?", o: ["Kysser hende på munden", "Giver hånd", "Krammer og siger 'vi ses'", "Går bare"], a: 2, c: "Krammet er sikkert. Et kys kan virke for pågående på første date, medmindre hun læner sig ind. Spil 'hard to get'." }
   ];
 
-  // --- DATA: RUNDE 1 (FAKTA: STATISTIK & REKORDER) ---
-  const realQuestions1 = [
-    { q: "Hvad er gennemsnitsvarigheden for selve samlejet (penetration til udløsning) ifølge studier?", o: ["3-7 minutter", "15-20 minutter", "30-40 minutter", "Over en time"], a: 0, c: "Mellem 3 og 7 minutter. Pornofilm lyver! Hvis han holder i 40 minutter, tænker han på Excel-ark." },
-    { q: "Hvilken måned på året bliver der undfanget flest børn i Danmark (født 9 mdr senere)?", o: ["December (Julefrokost)", "Juli (Sommerferie)", "Februar (Vinter)", "Oktober (Efterår)"], a: 0, c: "December! Julefrokoster og kulde får folk til at rykke sammen. September er den største fødselsmåned." },
-    { q: "Hvor mange procent af kvinder får orgasme udelukkende ved penetration (uden klitoris-stimulering)?", o: ["Ca. 18%", "Ca. 50%", "Ca. 75%", "Næsten alle"], a: 0, c: "Kun ca. 18%. Så gutter: Hvis I glemmer 'knappen', glemmer I succesen. Det er ren biologi." },
-    { q: "Hvad er verdensrekorden for flest orgasmer på en time (for en kvinde)?", o: ["16", "52", "134", "220"], a: 2, c: "134! Det blev målt i et laboratorie-studie i 60'erne. Mandens rekord i samme studie? 16. Kvinder vinder." },
-    { q: "Hvilken aldersgruppe er ifølge Sundhedsstyrelsen dårligst til at bruge kondom?", o: ["15-19 år", "20-29 år", "30-39 år", "50+ år"], a: 3, c: "Folk over 50! De er 'generation fri sex', og graviditet er ikke en risiko, så de glemmer sygdommene. Gummi er for alle!" },
-    { q: "Hvad er den hyppigste seksuelle fantasi på tværs af køn ifølge store surveys?", o: ["Gruppe-sex", "BDSM", "Sex et offentligt sted", "Sex med en kendt"], a: 0, c: "Gruppe-sex (trekant eller flere). Mange tænker på det, færre gør det. Det er logistikken, der dræber drømmen." },
-    { q: "Hvor meget sæd producerer en gennemsnitlig mand i løbet af sit liv?", o: ["1 liter", "14 liter", "50 liter", "En swimmingpool"], a: 1, c: "Ca. 14 liter. Det svarer til omkring 28 store fadøl... hvis man altså ser sådan på det." },
-    { q: "Hvad er gennemsnitslængden på en erigeret penis på verdensplan?", o: ["10-12 cm", "13-14 cm", "16-18 cm", "20+ cm"], a: 1, c: "13,12 cm for at være præcis. Alt over 15 cm er teknisk set 'over gennemsnittet'. Størrelsen på egoet tæller ikke med." },
-    { q: "Hvor mange kalorier forbrænder man gennemsnitligt ved en halv times sex?", o: ["50 kcal", "100 kcal", "300 kcal", "500 kcal"], a: 1, c: "Ca. 85-100 kcal. Det svarer til et æble eller et glas vin. Det erstatter desværre ikke fitness-abonnementet." },
-    { q: "Hvilket land i verden har ifølge Durex-undersøgelser sex oftest?", o: ["Frankrig", "Brasilien", "Grækenland", "USA"], a: 2, c: "Grækerne! De topper listen med 164 gange om året. Danskere ligger og roder nede omkring 100-120." }
+  // --- RUNDE 2: DET DYBERE LAG (FØLELSER & KEMI) ---
+  const datingQuestions2 = [
+    { q: "Date nr. 2: I er hjemme hos dig. Hvad laver du til middag?", o: ["Bestiller pizza", "Laver en 3-retters menu fra bunden", "En lækker, men simpel pasta og god rødvin", "Rugbrødsmadder"], a: 2, c: "Pasta og vin! Det er romantisk, men ikke 'jeg-prøver-for-hårdt' som en 3-retters. Pizza er for dovent." },
+    { q: "I sidder i sofaen. Musikken skal sættes på. Hvad vælger du?", o: ["Heavy Metal", "Top 20 Hits", "Noget lækkert Soul/R&B (Frank Ocean/Sade)", "Dansktop"], a: 2, c: "Soul/R&B. Det sætter stemningen uden at larme. Det er 'bukse-smider-musik' på den stilfulde måde." },
+    { q: "Hun fortæller om en svær dag på jobbet. Hvad gør du?", o: ["Kommer med løsninger på problemet", "Lytter og hælder mere vin op", "Skifter emne", "Fortæller om din egen dag"], a: 1, c: "LYT! Kvinder vil høres, ikke fixes (lige nu). Vin hjælper også." },
+    { q: "Stemningen er god. Du vil gerne rykke tættere på. Hvad er trækket?", o: ["Rykker helt hen med det samme", "Lægger hånden på hendes lår", "Fanger hendes blik og smiler", "Spørger 'må jeg røre dig?'"], a: 2, c: "Øjenkontakten først! Det bygger spændingen op. Hvis hun smiler tilbage, er der grønt lys." },
+    { q: "Hun spørger om din eks. Hvad er strategien?", o: ["Sviner eksen til", "Rosser eksen til skyerne", "Svarer kort, respektfuldt og flytter fokus til NU", "Begynder at græde"], a: 2, c: "Kort og respektfuldt. Ingen gider høre drama, men du må heller ikke virke bitter." },
+    { q: "Hun driller dig med din musiksmag. Hvordan reagerer du?", o: ["Bliver fornærmet", "Driller hende tilbage (flirtende)", "Skifter musikken", "Undskylder"], a: 1, c: "Banter! Drillerier er forspil for hjernen. Giv igen af samme skuffe." },
+    { q: "I taler om drømme. Hun vil gerne rejse. Hvad siger du?", o: ["Det er dyrt", "Jeg elsker også at rejse!", "Hvor vil du hen? Fortæl mig om det.", "Jeg vil hellere blive hjemme"], a: 2, c: "Spørg ind! Vis interesse for hendes indre verden. Det er vejen til hendes hjerte." },
+    { q: "Klokken er mange. Hun siger 'Jeg burde nok tage hjem'. Hvad siger du?", o: ["Ja, ses", "Bliv lidt endnu...", "Jeg ringer efter en taxa", "Du kan sove her (i gæsteværelset)"], a: 1, c: "'Bliv lidt endnu...' Det viser, du nyder hendes selskab, men presser ikke på sex." }
   ];
 
-  // --- DATA: RUNDE 2 (VIDEN: SYGDOMME & BIOLOGI) ---
-  const realQuestions2 = [
-    { q: "Hvad er den mest udbredte kønssygdom i Danmark?", o: ["Klamydia", "Gonorré", "Syfilis", "Herpes"], a: 0, c: "Klamydia. Over 30.000 tilfælde om året. Det er 'folkesygdommen' i underlivet. Husk nu at tisse i koppen!" },
-    { q: "Hvor stor en del af klitoris er synlig udefra?", o: ["Det hele", "50%", "Ca. 10%", "Ingen ved det"], a: 2, c: "Kun 'isbjergets top' (ca. 10%). Resten (crura og bulbi) ligger inde i kroppen og er ca. 9-11 cm stort. Det er et helt orgel!" },
-    { q: "Hvad er 'Blue Balls' (medicinsk set)?", o: ["En myte", "Blodophobning i testiklerne", "Betændelse", "Koldbrand"], a: 1, c: "Det er epididymal hypertension. Blodet løber til, men ikke fra, hvis man ikke får udløsning. Det gør ondt, men man dør ikke." },
-    { q: "Hvilken kønssygdom kaldes 'Den franske syge'?", o: ["Gonorré", "Syfilis", "Herpes", "Fnat"], a: 1, c: "Syfilis. Franskmændene kaldte den 'Den italienske syge'. Ingen ville tage æren for den." },
-    { q: "Hvad sker der med vagina, når en kvinde bliver opstemt?", o: ["Den bliver kortere", "Den udvider sig og bliver længere", "Den lukker sig", "Intet"], a: 1, c: "Den udvider sig (telt-effekt) og bliver dybere. Naturen gør plads til festen." },
-    { q: "Hvor lang tid lever sædceller typisk inde i kvindens krop?", o: ["1 time", "24 timer", "Op til 5 dage", "2 uger"], a: 2, c: "Op til 5 dage! Så sex lørdag kan blive til en baby onsdag. De er nogle små, stædige svømmere." },
-    { q: "Hvad er 'Phimosis'?", o: ["Forhudsforsnevring", "Skæv penis", "Mangel på lyst", "En sexstilling"], a: 0, c: "Når forhuden er for stram og ikke kan trækkes tilbage. Det kan gøre ondt, men kan heldigvis fikses." },
-    { q: "Kan mænd få brystkræft?", o: ["Ja", "Nej", "Kun hvis de tager hormoner", "Kun over 80 år"], a: 0, c: "Ja. Mænd har også brystvæv. Det er sjældent, men det sker. Så mærk efter, gutter!" },
-    { q: "Hvad er symptomerne på klamydia hos mænd?", o: ["Altid svie", "Altid udflåd", "Ofte ingen symptomer", "Røde pletter"], a: 2, c: "Ofte ingen! Det er det farlige. Man kan være smittebærer uden at ane det. 'Det svier ikke' er ingen garanti." },
-    { q: "Hvad er det gennemsnitlige volumen af en udløsning?", o: ["En teske (3-5 ml)", "En spiseske (15 ml)", "Et snapseglas (20 ml)", "En halv kop"], a: 0, c: "Kun ca. en teskefuld (3-5 ml). I pornofilm snyder de ofte med 'fake cum' for effekten." }
-  ];
-
-  // --- DATA: RUNDE 3 (HISTORIE & MYTER) ---
-  const realQuestions3 = [
-    { q: "Hvad blev vibratoren oprindeligt opfundet til i 1800-tallet?", o: ["At røre kagedej", "At kurere 'hysteri' hos kvinder", "Som rygmassage", "Til mænds prostata"], a: 1, c: "Læger brugte den til at give kvinder 'paroxysmer' (orgasmer) for at kurere hysteri. Det var en medicinsk behandling!" },
-    { q: "Hvilken fødevare troede man i 1700-tallet var et farligt afrodisiakum?", o: ["Kartoflen", "Tomaten", "Agurken", "Chokoladen"], a: 0, c: "Kartoflen! Man mente, den gav lystige tanker og spedalskhed. I dag er det bare pomfritter." },
-    { q: "Hvad betyder ordet 'pornografi' oprindeligt på græsk?", o: ["Krops-billeder", "Skøge-skrift (Skriveri om prostituerede)", "Nøgen-kunst", "Lyst-lære"], a: 1, c: "'Porne' betyder skøge/prostitueret og 'graphein' betyder at skrive. Altså 'beskrivelse af prostituerede'." },
-    { q: "Hvilket dyr har det største lem i forhold til sin kropsstørrelse?", o: ["Hesten", "Elefanten", "Ruren (Et lille krebsdyr)", "Blåhvalen"], a: 2, c: "Ruren! Dens penis kan blive 8 gange så lang som dens krop. Den sidder fast på en sten og skal nå naboen." },
-    { q: "Hvad var Casanovas foretrukne prævention?", o: ["Fåretarme", "En halv citron", "At trække sig ud", "Bønner"], a: 1, c: "En halv citron sat op som et pessar (livmoderhalskappe). Syren dræbte sæden... men av, det må have svedet!" },
-    { q: "Hvad er 'Priapisme'?", o: ["Lyst til fødder", "En erektion der varer mere end 4 timer", "Mangel på testikler", "Angst for sex"], a: 1, c: "En smertefuld, langvarig erektion der ikke går væk. Det er en medicinsk nødsituation (og ikke sjovt)." },
-    { q: "Hvilket land legaliserede som det første i verden pornografi (i 1969)?", o: ["USA", "Sverige", "Holland", "Danmark"], a: 3, c: "Danmark! Vi frigav billedpornoen i 1969. Hele verdenspressen kom til København for at se 'syndens hule'." },
-    { q: "Hvad er 'Kegel-øvelser' godt for?", o: ["Større bryster", "Stærkere bækkenbund (bedre sex)", "Længere penis", "Bedre ånde"], a: 1, c: "At stramme op 'down under'. Det giver bedre kontrol, stærkere orgasmer og hjælper mod inkontinens." },
-    { q: "Myte eller fakta: Stopper mænds penisvækst helt efter puberteten?", o: ["Fakta (den vokser ikke mere)", "Myte (den vokser hele livet)", "Den krymper med alderen", "Den vokser kun ved træning"], a: 0, c: "Fakta. Når puberteten slutter, er festen forbi vækstmæssigt. Til gengæld kan den *virke* mindre, hvis man tager på i vægt." },
-    { q: "SIDSTE SPØRGSMÅL: Hvad er det latinske ord for 'samleje'?", o: ["Coitus", "Fellatio", "Cunnilingus", "Intercourse"], a: 0, c: "Coitus. Det lyder meget formelt, men det er det, vi alle er herre/dame gode til (eller øver os på). Godt nytår!" }
+  // --- RUNDE 3: THE END GAME (3RD BASE & INTIMITET) ---
+  const datingQuestions3 = [
+    { q: "I har kysset. Det går godt. Hvordan eskalerer du til soveværelset?", o: ["Bærer hende derind (Hulemand)", "Spørger 'Vil du se min samling af frimærker?'", "Hvisker 'skal vi gå ind i seng?'", "Tager tøjet af i stuen"], a: 2, c: "Den hviskende invitation er frækkest. Det er intimt og giver hende muligheden for at sige ja (eller nej) elegant." },
+    { q: "I sengen: Hvad er vigtigst for Christina (34 år)?", o: ["At du bliver hurtigt færdig", "At du tager styringen men er opmærksom", "At du spørger om lov til alt", "At lyset er slukket"], a: 1, c: "Dominans med empati. Hun vil gerne føres, men du skal læse hendes signaler. Selvtillid er nøglen!" },
+    { q: "Efter akten (The Aftermath). Hvad gør du?", o: ["Vender dig om og sover", "Tjekker din telefon", "Holder om hende (Spoon)", "Går ud og ryger"], a: 2, c: "Spoon! Oxytocin-hormonet skal plejes. Nussetid er lige så vigtigt som selve akten for at sikre date nr. 3." },
+    { q: "Morgenen efter. Hun vågner hos dig. Hvad er det første move?", o: ["Sex igen med det samme", "Tilbyder kaffe/morgenmad", "Lader som om du sover", "Beder hende smutte"], a: 1, c: "Kaffe! Vejen til en kvindes hjerte om morgenen går gennem koffein og en frisk bolle (fra bageren!)." },
+    { q: "Hun har glemt en ørering hos dig. Hvad betyder det?", o: ["Det var en fejl", "Hun markerer sit territorium", "Hun vil se dig igen", "Hun er glemsom"], a: 2, c: "Det er et klassisk 'Leave-behind'. Hun vil have en undskyldning for at komme tilbage. Du er inde!" },
+    { q: "Du skal sende en besked senere på dagen. Hvad skriver du?", o: ["Tak for i går", "Hvornår ses vi?", "Jeg kan stadig dufte dig...", "Sender bare en emoji"], a: 2, c: "'Jeg kan stadig dufte dig...' er risky, men hvis I har været i seng, er den MEGA fræk og intim. Det holder gnisten i live." },
+    { q: "Christina spørger: 'Hvad er vi to nu?'", o: ["Kærester", "Bollevenner", "Vi dater eksklusivt", "Jeg ved det ikke"], a: 2, c: "'Vi dater eksklusivt'. Det er det voksne stadie før kærester. Det giver tryghed uden at være for pres." },
+    { q: "SIDSTE SPØRGSMÅL: Har du vundet Christinas hjerte (og krop)?", o: ["Ja, jeg er en Don Juan!", "Måske", "Nej, jeg failede", "Jeg er mere til mænd"], a: 0, c: "Tillykke, Casanova! Du har gennemført spillet. Nu er det op til dig at holde den kørende i virkeligheden! ❤️🔥" }
   ];
 
   let activeData = [];
   if (gameState.quiz_mode === 'test') activeData = testQuestions1;
   else if (gameState.quiz_mode === 'test_2') activeData = testQuestions2;
   else if (gameState.quiz_mode === 'test_3') activeData = testQuestions3;
-  else if (gameState.quiz_mode === 'real') activeData = realQuestions1;
-  else if (gameState.quiz_mode === 'real_2') activeData = realQuestions2;
-  else if (gameState.quiz_mode === 'real_3') activeData = realQuestions3;
-  else activeData = realQuestions1;
+  else if (gameState.quiz_mode === 'real') activeData = datingQuestions1;
+  else if (gameState.quiz_mode === 'real_2') activeData = datingQuestions2;
+  else if (gameState.quiz_mode === 'real_3') activeData = datingQuestions3;
+  else activeData = datingQuestions1;
 
   useEffect(() => {
     if (!SUPABASE_URL) return;
@@ -228,8 +214,8 @@ const QuizApp = () => {
     let nextMode = '';
     let promptText = '';
 
-    if (gameState.quiz_mode === currentBase) { nextMode = currentBase + '_2'; promptText = "Klar til RUNDE 2? Pointene nulstilles!"; }
-    else if (gameState.quiz_mode === currentBase + '_2') { nextMode = currentBase + '_3'; promptText = "Klar til RUNDE 3 (FINALEN)? Pointene nulstilles!"; }
+    if (gameState.quiz_mode === currentBase) { nextMode = currentBase + '_2'; promptText = "Klar til RUNDE 2: Følelser & Kemi?"; }
+    else if (gameState.quiz_mode === currentBase + '_2') { nextMode = currentBase + '_3'; promptText = "Klar til RUNDE 3: The End Game (3rd Base)?"; }
     else return;
 
     if (!window.confirm(promptText)) return;
@@ -243,7 +229,7 @@ const QuizApp = () => {
 
   const toggleMode = async () => {
     const newMode = gameState.quiz_mode.includes('real') ? 'test' : 'real';
-    if (!window.confirm(`Skift til ${newMode === 'real' ? 'RIGTIG (Runde 1)' : 'TEST (Runde 1)'}?`)) return;
+    if (!window.confirm(`Skift til ${newMode === 'real' ? 'DATING (Real)' : 'TEST (Dev)'}?`)) return;
     await supabase.from('quiz_rooms').update({ quiz_mode: newMode, current_question: 0, status: 'lobby' }).eq('room_code', roomCode);
   };
 
@@ -259,15 +245,17 @@ const QuizApp = () => {
       <MainLayout quizMode={gameState.quiz_mode}>
         <div className="flex-grow flex flex-col items-center justify-center text-center">
           <div className="relative">
-            <div className="absolute -inset-1 bg-gradient-to-r from-red-600 to-purple-900 rounded-full blur opacity-75 animate-pulse"></div>
-            <div className="relative bg-slate-900 rounded-full p-4 mb-6"><Zap className="text-red-500" size={64} fill="currentColor" /></div>
+            <div className="absolute -inset-1 bg-gradient-to-r from-pink-600 to-purple-900 rounded-full blur opacity-75 animate-pulse"></div>
+            <div className="relative bg-slate-900 rounded-full p-4 mb-6"><Heart className="text-pink-500" size={64} fill="currentColor" /></div>
           </div>
-          <h1 className="text-6xl font-black mb-10 italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-purple-600 drop-shadow-lg">H. Schneekloths<br/>NYTÅRS<br/>XXX<br/>2025</h1>
+          <h1 className="text-5xl font-black mb-10 italic tracking-tighter text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400 drop-shadow-lg">
+            THE DATING GAME<br/><span className="text-2xl not-italic font-normal text-white">Christina Edition</span>
+          </h1>
           <div className="w-full space-y-4">
-            <button onClick={() => { setRole('host'); setView('game'); }} className="w-full bg-slate-800/50 text-red-200 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 border border-slate-700 hover:bg-slate-700 transition-all"><Monitor size={20} /> Start som Vært</button>
+            <button onClick={() => { setRole('host'); setView('game'); }} className="w-full bg-pink-900/50 text-pink-200 font-bold py-4 rounded-2xl flex items-center justify-center gap-2 border border-pink-700 hover:bg-pink-800 transition-all"><Monitor size={20} /> Start som Vært</button>
             <div className="flex items-center gap-2">
-               <input type="text" placeholder="Dit navn..." className="flex-grow p-4 rounded-2xl bg-slate-800 border-2 border-slate-700 text-white font-bold outline-none focus:border-red-500 transition-colors" value={playerName} onChange={(e) => setPlayerName(e.target.value)} />
-               <button onClick={handleJoin} className="bg-gradient-to-r from-red-600 to-purple-600 text-white p-4 rounded-2xl font-black shadow-lg shadow-red-900/50 active:scale-95 transition-all"><ChevronRight size={24} /></button>
+               <input type="text" placeholder="Dit navn..." className="flex-grow p-4 rounded-2xl bg-slate-800 border-2 border-slate-700 text-white font-bold outline-none focus:border-pink-500 transition-colors" value={playerName} onChange={(e) => setPlayerName(e.target.value)} />
+               <button onClick={handleJoin} className="bg-gradient-to-r from-pink-600 to-purple-600 text-white p-4 rounded-2xl font-black shadow-lg shadow-pink-900/50 active:scale-95 transition-all"><ChevronRight size={24} /></button>
             </div>
           </div>
         </div>
@@ -280,57 +268,67 @@ const QuizApp = () => {
   const iHaveAnsweredThisSpecificQuestion = myData && myData.last_q_index === gameState.current_question;
 
   const getRoundTitle = () => {
-      if (gameState.quiz_mode.includes('3')) return "RUNDE 3 🍑";
-      if (gameState.quiz_mode.includes('2')) return "RUNDE 2 🍆";
-      return "QUIZ XXX";
+      if (gameState.quiz_mode.includes('3')) return "3RD BASE 💋";
+      if (gameState.quiz_mode.includes('2')) return "DEEP DIVE 🌹";
+      return "FIRST DATE 🥂";
   };
 
   return (
     <MainLayout quizMode={gameState.quiz_mode}>
-      <div className="flex justify-between items-center mb-4 bg-slate-800/50 p-4 rounded-2xl backdrop-blur-sm border border-slate-700/50">
-        <div className="font-black text-xl italic text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-purple-400">{getRoundTitle()}</div>
+      <div className="flex justify-between items-center mb-4 bg-purple-900/30 p-4 rounded-2xl backdrop-blur-sm border border-purple-700/50">
+        <div className="font-black text-xl italic text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400">{getRoundTitle()}</div>
         <div className="flex items-center gap-3">
-          {role === 'host' && <button onClick={fullReset} className="text-red-400 p-2"><Trash2 size={20} /></button>}
-          <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl font-bold text-sm border border-slate-700"><Users size={14} className="text-red-400" /> {players.length}</div>
+          {role === 'host' && <button onClick={fullReset} className="text-pink-400 p-2"><Trash2 size={20} /></button>}
+          <div className="flex items-center gap-2 bg-slate-900 px-3 py-1.5 rounded-xl font-bold text-sm border border-slate-700"><Users size={14} className="text-pink-400" /> {players.length}</div>
         </div>
       </div>
 
       {gameState.status === 'lobby' && (
         <div className="flex-grow flex flex-col text-center">
-          <h2 className="text-4xl font-black mb-2 text-white">{gameState.quiz_mode.includes('3') ? "Klar til FINALEN? 🍑" : (gameState.quiz_mode.includes('2') ? "Klar til Runde 2? 🍆" : "Lobbyen er åben! 😈")}</h2>
-          <p className="text-slate-400 mb-8 text-sm">Find jeres pladser...</p>
+          <h2 className="text-3xl font-black mb-2 text-white">
+             {gameState.quiz_mode.includes('3') ? "Klar til Finalen? 💋" : (gameState.quiz_mode.includes('2') ? "Klar til Runde 2? 🌹" : "Velkommen til Datingspillet!")}
+          </h2>
+          {!gameState.quiz_mode.includes('2') && !gameState.quiz_mode.includes('3') && (
+              <div className="bg-slate-800/80 p-4 rounded-xl mb-4 border border-slate-700 text-sm text-slate-300">
+                  <strong>Mød Christina (34):</strong><br/>
+                  Marketing Manager. Elsker hvidvin, rejser og ærlighed.<br/>
+                  Hader nærighed og arrogance.<br/>
+                  <em>Mål: Vind hendes hjerte (og kom i bukserne).</em>
+              </div>
+          )}
+          <p className="text-slate-400 mb-4 text-sm">Find jeres pladser...</p>
           {role === 'host' && ( <button onClick={toggleMode} className="mb-8 mx-auto text-xs font-bold bg-slate-800 px-4 py-2 rounded-full border border-slate-600 text-slate-400">{gameState.quiz_mode.includes('test') ? "Skift til PROD" : "Skift til TEST"}</button> )}
-          <div className="grid grid-cols-2 gap-3 mb-8 overflow-y-auto max-h-[50vh] p-2">
+          <div className="grid grid-cols-2 gap-3 mb-8 overflow-y-auto max-h-[40vh] p-2">
             {players.map((p, i) => (
               <div key={i} className="bg-slate-800 p-3 rounded-xl border border-slate-700 flex items-center justify-between animate-in zoom-in">
-                <span className="font-bold text-slate-200 truncate text-sm">{p.name}</span>
-                <span className="w-2 h-2 bg-red-500 rounded-full shadow-[0_0_10px_rgba(239,68,68,0.5)]"></span>
+                <span className="font-bold text-pink-200 truncate text-sm">{p.name}</span>
+                <span className="w-2 h-2 bg-pink-500 rounded-full shadow-[0_0_10px_rgba(236,72,153,0.5)]"></span>
               </div>
             ))}
           </div>
-          {role === 'host' && ( <button onClick={() => updateGameStatus('active')} className="mt-auto w-full bg-gradient-to-r from-red-600 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl shadow-red-900/50 hover:scale-[1.02] transition-transform active:scale-95 flex items-center justify-center gap-3"> START <Play fill="currentColor" size={24} /> </button> )}
+          {role === 'host' && ( <button onClick={() => updateGameStatus('active')} className="mt-auto w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl shadow-pink-900/50 hover:scale-[1.02] transition-transform active:scale-95 flex items-center justify-center gap-3"> START <Play fill="currentColor" size={24} /> </button> )}
         </div>
       )}
 
       {gameState.status === 'active' && currentQ && (
         <div className="flex-grow flex flex-col">
           <div className="text-center mb-4">
-            <span className="inline-block bg-slate-800 text-red-300 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase mb-4 border border-slate-700">Spørgsmål {gameState.current_question + 1} / {activeData.length}</span>
-            <h2 className="text-2xl md:text-4xl font-black leading-tight text-white drop-shadow-sm">{currentQ.q}</h2>
+            <span className="inline-block bg-purple-900/50 text-pink-300 px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase mb-4 border border-purple-700">Situation {gameState.current_question + 1} / {activeData.length}</span>
+            <h2 className="text-xl md:text-3xl font-bold leading-tight text-white drop-shadow-sm mb-2">{currentQ.q}</h2>
           </div>
           <div key={gameState.current_question} className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-grow content-center">
             {currentQ.o.map((opt, i) => (
               role === 'player' ? (
-                <button key={i} disabled={iHaveAnsweredThisSpecificQuestion} onClick={() => submitAnswer(i)} className={`relative p-6 rounded-2xl text-xl font-bold text-left transition-all border-b-4 active:border-b-0 active:translate-y-1 touch-manipulation ${iHaveAnsweredThisSpecificQuestion ? 'bg-slate-800 border-slate-900 text-slate-500' : 'bg-slate-700 border-slate-900 hover:bg-slate-600 text-white active:bg-red-600'}`}>{opt}</button>
+                <button key={i} disabled={iHaveAnsweredThisSpecificQuestion} onClick={() => submitAnswer(i)} className={`relative p-5 rounded-2xl text-lg font-bold text-left transition-all border-b-4 active:border-b-0 active:translate-y-1 touch-manipulation ${iHaveAnsweredThisSpecificQuestion ? 'bg-slate-800 border-slate-900 text-slate-500' : 'bg-purple-800 border-purple-950 hover:bg-purple-700 text-white active:bg-pink-600'}`}>{opt}</button>
               ) : (
-                <div key={i} className="bg-slate-800 p-6 rounded-2xl text-xl font-bold text-center border-b-4 border-slate-900 text-slate-300 flex flex-col justify-center items-center"><span>{opt}</span>
-                    <div className="mt-2 flex gap-1 flex-wrap justify-center">{players.filter(p => p.last_q_index === gameState.current_question).length > 0 && <span className="text-[10px] text-slate-500 animate-pulse">Venter på svar...</span>}</div>
+                <div key={i} className="bg-purple-900/40 p-5 rounded-2xl text-lg font-bold text-center border-b-4 border-purple-950 text-purple-100 flex flex-col justify-center items-center"><span>{opt}</span>
+                    <div className="mt-2 flex gap-1 flex-wrap justify-center">{players.filter(p => p.last_q_index === gameState.current_question).length > 0 && <span className="text-[10px] text-pink-300 animate-pulse">Svarer...</span>}</div>
                 </div>
               )
             ))}
           </div>
-          {role === 'host' && <button onClick={() => updateGameStatus('showing_answer', gameState.current_question)} className="mt-6 w-full bg-amber-500 text-black py-4 rounded-2xl font-black text-xl shadow-lg">SE SVAR</button>}
-          {role === 'player' && iHaveAnsweredThisSpecificQuestion && <div className="mt-4 text-center text-red-400 font-bold animate-pulse">Svar modtaget... 🤞</div>}
+          {role === 'host' && <button onClick={() => updateGameStatus('showing_answer', gameState.current_question)} className="mt-6 w-full bg-pink-500 text-white py-4 rounded-2xl font-black text-xl shadow-lg">SE REAKTION</button>}
+          {role === 'player' && iHaveAnsweredThisSpecificQuestion && <div className="mt-4 text-center text-pink-400 font-bold animate-pulse">Venter på Christina... 🤞</div>}
         </div>
       )}
 
@@ -339,27 +337,27 @@ const QuizApp = () => {
           {(() => {
             const playersWhoAnswered = players.filter(p => p.last_q_index === gameState.current_question);
             const everyoneWrong = playersWhoAnswered.length > 0 && playersWhoAnswered.every(p => p.last_answer !== currentQ.a);
-            if (everyoneWrong) return (<div className="w-full bg-rose-600 text-white p-6 rounded-3xl mb-6 animate-bounce shadow-2xl border-4 border-rose-800"><div className="flex justify-center mb-2"><AlertTriangle size={48} className="text-yellow-300" /></div><h2 className="text-3xl font-black uppercase mb-2">STRAF!</h2><p className="text-xl font-bold">Alle drikker! Bund eller strip!</p></div>);
+            if (everyoneWrong) return (<div className="w-full bg-rose-600 text-white p-6 rounded-3xl mb-6 animate-bounce shadow-2xl border-4 border-rose-800"><div className="flex justify-center mb-2"><AlertTriangle size={48} className="text-yellow-300" /></div><h2 className="text-3xl font-black uppercase mb-2">TURN-OFF!</h2><p className="text-xl font-bold">Hun gik hjem! Alle drikker!</p></div>);
             return null;
           })()}
           <div className="mb-6 w-full max-w-2xl mx-auto">
-             <div className="inline-flex items-center gap-2 bg-red-500/10 text-red-400 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4 border border-red-500/20"><CheckCircle2 size={14} /> Det "rigtige" svar</div>
-             <h2 className="text-3xl md:text-4xl font-black text-white mb-4 leading-tight">{currentQ.o[currentQ.a]}</h2>
-             {currentQ.c && (<div className="bg-slate-800/80 p-4 rounded-xl border border-slate-700 text-slate-300 text-sm md:text-base italic leading-relaxed shadow-sm max-w-lg mx-auto">" {currentQ.c} "</div>)}
+             <div className="inline-flex items-center gap-2 bg-pink-500/20 text-pink-300 px-4 py-1 rounded-full text-xs font-black uppercase tracking-widest mb-4 border border-pink-500/30"><Sparkles size={14} /> Det rigtige træk</div>
+             <h2 className="text-2xl md:text-3xl font-black text-white mb-4 leading-tight">{currentQ.o[currentQ.a]}</h2>
+             {currentQ.c && (<div className="bg-purple-900/60 p-4 rounded-xl border border-purple-700 text-purple-100 text-sm md:text-base italic leading-relaxed shadow-sm max-w-lg mx-auto">" {currentQ.c} "</div>)}
           </div>
           <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
              {currentQ.o.map((opt, i) => {
                 const isCorrect = i === currentQ.a;
                 const votedHere = players.filter(p => p.last_q_index === gameState.current_question && p.last_answer === i);
                 return (
-                    <div key={i} className={`p-3 rounded-xl border-2 flex flex-col ${isCorrect ? 'bg-red-900/30 border-red-500/50' : 'bg-slate-800/50 border-slate-800'}`}>
-                        <div className="flex justify-between items-center mb-2"><span className={`font-bold text-sm ${isCorrect ? 'text-red-400' : 'text-slate-400'}`}>{opt}</span>{isCorrect && <CheckCircle2 size={16} className="text-red-500" />}</div>
-                        <div className="flex flex-wrap gap-1 mt-auto">{votedHere.map((p, idx) => (<span key={idx} className={`text-[10px] px-2 py-0.5 rounded-md font-bold truncate max-w-[100px] ${isCorrect ? 'bg-red-500 text-black' : 'bg-slate-700 text-slate-300'}`}>{p.name}</span>))}</div>
+                    <div key={i} className={`p-3 rounded-xl border-2 flex flex-col ${isCorrect ? 'bg-pink-900/40 border-pink-500/50' : 'bg-slate-900/40 border-slate-800'}`}>
+                        <div className="flex justify-between items-center mb-2"><span className={`font-bold text-sm ${isCorrect ? 'text-pink-300' : 'text-slate-400'}`}>{opt}</span>{isCorrect && <Heart size={16} className="text-pink-500" fill="currentColor" />}</div>
+                        <div className="flex flex-wrap gap-1 mt-auto">{votedHere.map((p, idx) => (<span key={idx} className={`text-[10px] px-2 py-0.5 rounded-md font-bold truncate max-w-[100px] ${isCorrect ? 'bg-pink-600 text-white' : 'bg-slate-700 text-slate-300'}`}>{p.name}</span>))}</div>
                     </div>
                 )
              })}
           </div>
-          {role === 'host' && <button onClick={() => updateGameStatus('active', gameState.current_question + 1)} className="mt-auto w-full bg-indigo-600 text-white py-4 rounded-2xl font-black text-xl flex items-center justify-center gap-2 shadow-lg shadow-indigo-900/50">NÆSTE <ChevronRight /></button>}
+          {role === 'host' && <button onClick={() => updateGameStatus('active', gameState.current_question + 1)} className="mt-auto w-full bg-purple-600 text-white py-4 rounded-2xl font-black text-xl flex items-center justify-center gap-2 shadow-lg shadow-purple-900/50">NÆSTE <ChevronRight /></button>}
         </div>
       )}
 
@@ -367,28 +365,28 @@ const QuizApp = () => {
         <div className="flex-grow flex flex-col relative">
           <SimpleConfetti />
           <div className="text-center mb-8 relative z-10">
-             <Trophy size={64} className="mx-auto text-amber-400 mb-2 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]" />
-             <h2 className="text-4xl font-black text-white italic">RESULTATER</h2>
-             <div className="text-amber-300 font-bold mt-2 uppercase">{getRoundTitle()} AFSLUTTET</div>
+             <Trophy size={64} className="mx-auto text-pink-500 mb-2 drop-shadow-[0_0_15px_rgba(236,72,153,0.5)]" />
+             <h2 className="text-4xl font-black text-white italic">SCORE-LISTE</h2>
+             <div className="text-pink-300 font-bold mt-2 uppercase">{getRoundTitle()} AFSLUTTET</div>
           </div>
           <div className="space-y-3 mb-8 relative z-10">
             {players.map((p, i) => (
-              <div key={i} className={`relative flex flex-col p-4 rounded-2xl border-b-4 ${i===0 ? 'bg-amber-500 text-black border-amber-700' : 'bg-slate-800 border-slate-900 text-slate-200'}`}>
+              <div key={i} className={`relative flex flex-col p-4 rounded-2xl border-b-4 ${i===0 ? 'bg-pink-600 text-white border-pink-800' : 'bg-slate-800 border-slate-900 text-slate-200'}`}>
                 <div className="flex justify-between items-center mb-2">
                    <div className="flex items-center gap-3"><div className={`w-8 h-8 flex-shrink-0 flex items-center justify-center rounded-lg font-black ${i===0?'bg-black/20':'bg-slate-900'}`}>{i+1}</div><div className="text-xl font-black truncate">{p.name}</div></div>
                    <div className="text-3xl font-black">{p.score}</div>
                 </div>
-                <div className={`text-[11px] font-bold uppercase leading-tight ${i===0?'text-amber-900':'text-slate-500'}`}>Svarede rigtigt på {p.correct_count || 0} spørgsmål og hentede {p.total_bonus || 0} point på hastighed.</div>
-                {i===0 && <div className="absolute -top-2 -right-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-bounce">SEXGUD!</div>}
+                <div className={`text-[11px] font-bold uppercase leading-tight ${i===0?'text-pink-200':'text-slate-500'}`}>Forstod Christina {p.correct_count || 0} gange. Charmede sig til {p.total_bonus || 0} bonuspoint.</div>
+                {i===0 && <div className="absolute -top-2 -right-1 bg-white text-black text-[10px] font-black px-2 py-0.5 rounded-full shadow-sm animate-bounce">DON JUAN!</div>}
               </div>
             ))}
           </div>
           {role === 'host' && (
             <div className="mt-auto space-y-4 relative z-10">
                 {!gameState.quiz_mode.includes('3') && (
-                    <button onClick={startMoreQuestions} className="w-full bg-gradient-to-r from-red-600 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl animate-pulse hover:scale-[1.02] transition-transform flex items-center justify-center gap-3">{gameState.quiz_mode.includes('2') ? "FINALEN 🍑" : "MERE SEX 🔥"} <Flame fill="currentColor" /></button>
+                    <button onClick={startMoreQuestions} className="w-full bg-gradient-to-r from-pink-600 to-purple-600 text-white py-6 rounded-3xl font-black text-2xl shadow-xl animate-pulse hover:scale-[1.02] transition-transform flex items-center justify-center gap-3">{gameState.quiz_mode.includes('2') ? "GÅ TIL 3. BASE! 💋" : "GÅ DYBERE... 🌹"} <Flame fill="currentColor" /></button>
                 )}
-                <button onClick={fullReset} className="w-full text-rose-500 text-xs font-bold uppercase flex items-center justify-center gap-2 py-4"><RefreshCcw size={14} /> Nulstil alt</button>
+                <button onClick={fullReset} className="w-full text-pink-400 text-xs font-bold uppercase flex items-center justify-center gap-2 py-4"><RefreshCcw size={14} /> Genstart Datingen</button>
             </div>
           )}
         </div>
