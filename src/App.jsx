@@ -3,10 +3,16 @@ import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scro
 
 const CampaignManager = () => {
   // --- STATE ---
-  const [players, setPlayers] = useState([]);
+  // FIX: Vi starter med standard-data i stedet for en tom liste, så den ikke crasher ved start
+  const [players, setPlayers] = useState([
+      { name: 'Christian', role: '', vp: 2, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' },
+      { name: 'Andreas', role: '', vp: 1, xp: 13, lt: 20, hs: 7, drunk: 0, spouse: '' },
+      { name: 'Frederik', role: '', vp: 1, xp: 16, lt: 20, hs: 7, drunk: 0, spouse: '' },
+      { name: 'Matias', role: '', vp: 3, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' }
+  ]);
   const [stalemate, setStalemate] = useState(0);
   const [epilogueMode, setEpilogueMode] = useState(false);
-  const [activePlayerIndex, setActivePlayerIndex] = useState(0); // For Mobile Carousel
+  const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   
   // UI State
   const [showRules, setShowRules] = useState(false);
@@ -22,25 +28,25 @@ const CampaignManager = () => {
 
   // --- INITIAL LOAD & AUTO-SAVE ---
   useEffect(() => {
-    const saved = localStorage.getItem('staggingData_v10');
+    const saved = localStorage.getItem('staggingData_v11'); // Ny version key for at undgå cache fejl
     if (saved) {
       try {
         const data = JSON.parse(saved);
-        setPlayers(data.players || []);
-        setStalemate(data.stalemate || 0);
-        setEpilogueMode(data.epilogueMode || false);
-        if (data.lastRollRecord) setLastRollRecord(data.lastRollRecord);
+        if (data.players && data.players.length > 0) {
+            setPlayers(data.players);
+            setStalemate(data.stalemate || 0);
+            setEpilogueMode(data.epilogueMode || false);
+            if (data.lastRollRecord) setLastRollRecord(data.lastRollRecord);
+        }
       } catch (e) {
-        resetData(true);
+        console.error("Save file issue, using defaults");
       }
-    } else {
-      resetData(true);
     }
   }, []);
 
   useEffect(() => {
     if (!isImporting && players.length > 0) {
-      localStorage.setItem('staggingData_v10', JSON.stringify({ players, stalemate, epilogueMode, lastRollRecord }));
+      localStorage.setItem('staggingData_v11', JSON.stringify({ players, stalemate, epilogueMode, lastRollRecord }));
     }
   }, [players, stalemate, epilogueMode, lastRollRecord, isImporting]);
 
@@ -165,7 +171,6 @@ const CampaignManager = () => {
       }
   };
 
-  // --- TIMELINE DATA ---
   const timelineData = [
       { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
       { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
@@ -178,123 +183,129 @@ const CampaignManager = () => {
       { title: "Battle 5: Heidi's Bierbar", type: "battle", desc: "All vs All\nIn each player’s end step, he gains his choice of 2 Drunk- or 2 Poison counters.\nWhen a permanent, spell or ability you control causes a player to lose, you may gain his role.\nLast remaining player wins the campaign, if all the last players are killed at the same time (for example by a player-owned OG), the tie breaker is VP, then randomly." }
   ];
 
-  // --- PLAYER CARD COMPONENT (Reused for Grid and Carousel) ---
-  const PlayerCard = ({ player, index, isMobile }) => (
-    <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full">
-        <div className={`h-1 w-full ${['bg-red-600','bg-blue-600','bg-green-600','bg-yellow-600'][index]}`}></div>
-        
-        <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center">
-            <span className="w-full font-black text-lg text-center text-gray-200" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
-            {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
-        </div>
+  // --- PLAYER CARD COMPONENT ---
+  // Defined inside to access state/functions easily. 
+  // Safety check: if player is undefined (during init), return null
+  const PlayerCard = ({ player, index }) => {
+    if (!player) return null;
+    
+    return (
+        <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full">
+            <div className={`h-1 w-full ${['bg-red-600','bg-blue-600','bg-green-600','bg-yellow-600'][index]}`}></div>
+            
+            <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center">
+                <span className="w-full font-black text-lg text-center text-gray-200" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
+                {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
+            </div>
 
-        <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden">
-            {!epilogueMode ? (
-                <>
-                    {/* Role Selection */}
-                    <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
-                        <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-2 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none">
-                            <option value="">-- No Role --</option>
-                            <option value="Doctor">Doctor</option>
-                            <option value="Monk">Monk</option>
-                            <option value="Smith">Smith</option>
-                            <option value="Knight">Knight</option>
-                            <option value="Fool">Fool</option>
-                            <option value="King">King</option>
-                        </select>
-                        <div className="flex flex-col items-center leading-none">
-                            <span className="text-[8px] text-gray-600 uppercase">Lvl</span>
-                            <span className="text-xl font-bold text-blue-500" style={{ fontFamily: 'Cinzel, serif' }}>{getLevel(player.xp)}</span>
-                        </div>
-                    </div>
-
-                    {/* XP & VP */}
-                    <div className="grid grid-cols-2 gap-2">
-                        <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
-                            <span className="text-[8px] text-blue-500 font-bold">XP</span>
-                            <div className="flex items-center gap-1 w-full justify-between px-1">
-                                <button onClick={() => adjustValue(index, 'xp', -1)} className="text-gray-600 hover:text-white">-</button>
-                                <span className="font-mono text-lg font-bold">{player.xp}</span>
-                                <button onClick={() => adjustValue(index, 'xp', 1)} className="text-gray-600 hover:text-white">+</button>
+            <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden">
+                {!epilogueMode ? (
+                    <>
+                        {/* Role Selection */}
+                        <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                            <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-2 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none hover:border-gray-500 transition-colors">
+                                <option value="">-- No Role --</option>
+                                <option value="Doctor">Doctor</option>
+                                <option value="Monk">Monk</option>
+                                <option value="Smith">Smith</option>
+                                <option value="Knight">Knight</option>
+                                <option value="Fool">Fool</option>
+                                <option value="King">King</option>
+                            </select>
+                            <div className="flex flex-col items-center leading-none">
+                                <span className="text-[8px] text-gray-600 uppercase">Lvl</span>
+                                <span className="text-xl font-bold text-blue-500" style={{ fontFamily: 'Cinzel, serif' }}>{getLevel(player.xp)}</span>
                             </div>
                         </div>
-                        <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
-                            <span className="text-[8px] text-green-500 font-bold">VP</span>
-                            <div className="flex items-center gap-1 w-full justify-between px-1">
-                                <button onClick={() => adjustValue(index, 'vp', -1)} className="text-gray-600 hover:text-white">-</button>
-                                <span className="font-mono text-lg font-bold text-green-400">{player.vp}</span>
-                                <button onClick={() => adjustValue(index, 'vp', 1)} className="text-gray-600 hover:text-white">+</button>
+
+                        {/* XP & VP */}
+                        <div className="grid grid-cols-2 gap-2">
+                            <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
+                                <span className="text-[8px] text-blue-500 font-bold">XP</span>
+                                <div className="flex items-center gap-1 w-full justify-between px-1">
+                                    <button onClick={() => adjustValue(index, 'xp', -1)} className="text-gray-600 hover:text-white">-</button>
+                                    <span className="font-mono text-lg font-bold">{player.xp}</span>
+                                    <button onClick={() => adjustValue(index, 'xp', 1)} className="text-gray-600 hover:text-white">+</button>
+                                </div>
+                            </div>
+                            <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
+                                <span className="text-[8px] text-green-500 font-bold">VP</span>
+                                <div className="flex items-center gap-1 w-full justify-between px-1">
+                                    <button onClick={() => adjustValue(index, 'vp', -1)} className="text-gray-600 hover:text-white">-</button>
+                                    <span className="font-mono text-lg font-bold text-green-400">{player.vp}</span>
+                                    <button onClick={() => adjustValue(index, 'vp', 1)} className="text-gray-600 hover:text-white">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Abilities Scrollable */}
+                        <div className="flex-grow bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative">
+                            <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
+                            {player.role ? (
+                                <div className="text-xs text-gray-400 leading-normal space-y-3">
+                                    {getRoleAbilities(player.role).map((txt, i) => {
+                                        const lvl = i + 1;
+                                        const isUnlocked = getLevel(player.xp) >= lvl;
+                                        return (
+                                            <div key={i} className={`flex gap-2 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
+                                                <span className="font-bold whitespace-nowrap text-[10px] mt-0.5">Lvl {lvl}:</span>
+                                                <span>{txt}</span>
+                                            </div>
+                                        )
+                                    })}
+                                    <div className="w-full h-px bg-gray-800 my-2"></div>
+                                    <div className="text-yellow-600 italic text-[10px]">{getRoleReward(player.role)}</div>
+                                </div>
+                            ) : (
+                                <div className="h-full flex items-center justify-center text-xs text-gray-700 italic">Select Role</div>
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex-grow flex flex-col gap-4 justify-center">
+                        <div className="bg-indigo-900/20 p-2 rounded border border-indigo-500/30">
+                            <label className="text-[9px] text-indigo-400 uppercase font-bold block mb-1">Marriage</label>
+                            <select value={player.spouse} onChange={(e) => updatePlayer(index, 'spouse', e.target.value)} className="w-full bg-black text-gray-300 border border-gray-700 rounded p-2 text-xs focus:outline-none focus:border-indigo-500">
+                                <option value="">Single</option>
+                                {players.filter(p => p.name !== player.name).map((p, i) => (
+                                    <option key={i} value={p.name}>+ {p.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="bg-purple-900/20 p-2 rounded border border-purple-500/30 flex justify-between items-center">
+                            <span className="text-[9px] text-purple-400 font-bold uppercase">Drunk</span>
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => adjustValue(index, 'drunk', -1)} className="text-gray-500 hover:text-white">-</button>
+                                <span className="text-xl font-bold text-purple-400 w-6 text-center">{player.drunk}</span>
+                                <button onClick={() => adjustValue(index, 'drunk', 1)} className="text-gray-500 hover:text-white">+</button>
                             </div>
                         </div>
                     </div>
+                )}
 
-                    {/* Abilities Scrollable */}
-                    <div className="flex-grow bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative">
-                        <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
-                        {player.role ? (
-                            <div className="text-xs text-gray-400 leading-normal space-y-3">
-                                {getRoleAbilities(player.role).map((txt, i) => {
-                                    const lvl = i + 1;
-                                    const isUnlocked = getLevel(player.xp) >= lvl;
-                                    return (
-                                        <div key={i} className={`flex gap-2 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
-                                            <span className="font-bold whitespace-nowrap text-[10px] mt-0.5">Lvl {lvl}:</span>
-                                            <span>{txt}</span>
-                                        </div>
-                                    )
-                                })}
-                                <div className="w-full h-px bg-gray-800 my-2"></div>
-                                <div className="text-yellow-600 italic text-[10px]">{getRoleReward(player.role)}</div>
-                            </div>
-                        ) : (
-                            <div className="h-full flex items-center justify-center text-xs text-gray-700 italic">Select Role</div>
-                        )}
-                    </div>
-                </>
-            ) : (
-                <div className="flex-grow flex flex-col gap-4 justify-center">
-                    <div className="bg-indigo-900/20 p-2 rounded border border-indigo-500/30">
-                        <label className="text-[9px] text-indigo-400 uppercase font-bold block mb-1">Marriage</label>
-                        <select value={player.spouse} onChange={(e) => updatePlayer(index, 'spouse', e.target.value)} className="w-full bg-black text-gray-300 border border-gray-700 rounded p-2 text-xs focus:outline-none focus:border-indigo-500">
-                            <option value="">Single</option>
-                            {players.filter(p => p.name !== player.name).map((p, i) => (
-                                <option key={i} value={p.name}>+ {p.name}</option>
-                            ))}
-                        </select>
-                    </div>
-                    <div className="bg-purple-900/20 p-2 rounded border border-purple-500/30 flex justify-between items-center">
-                        <span className="text-[9px] text-purple-400 font-bold uppercase">Drunk</span>
-                        <div className="flex items-center gap-2">
-                            <button onClick={() => adjustValue(index, 'drunk', -1)} className="text-gray-500 hover:text-white">-</button>
-                            <span className="text-xl font-bold text-purple-400 w-6 text-center">{player.drunk}</span>
-                            <button onClick={() => adjustValue(index, 'drunk', 1)} className="text-gray-500 hover:text-white">+</button>
+                {/* Life / Hand */}
+                <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-800">
+                    <div className="bg-red-900/10 rounded border border-red-900/30 flex flex-col items-center p-1">
+                        <span className="text-[8px] text-red-600 font-bold uppercase mb-1">LIFE</span>
+                        <div className="flex w-full justify-between px-2 items-center">
+                            <button onClick={() => adjustValue(index, 'lt', -1)} className="text-gray-500 hover:text-white font-bold">-</button>
+                            <span className="text-xl font-mono font-bold text-red-500">{player.lt}</span>
+                            <button onClick={() => adjustValue(index, 'lt', 1)} className="text-gray-500 hover:text-white font-bold">+</button>
                         </div>
                     </div>
-                </div>
-            )}
-
-            {/* Life / Hand */}
-            <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-800">
-                <div className="bg-red-900/10 rounded border border-red-900/30 flex flex-col items-center p-1">
-                    <span className="text-[8px] text-red-600 font-bold uppercase mb-1">LIFE</span>
-                    <div className="flex w-full justify-between px-2 items-center">
-                        <button onClick={() => adjustValue(index, 'lt', -1)} className="text-gray-500 hover:text-white font-bold">-</button>
-                        <span className="text-xl font-mono font-bold text-red-500">{player.lt}</span>
-                        <button onClick={() => adjustValue(index, 'lt', 1)} className="text-gray-500 hover:text-white font-bold">+</button>
-                    </div>
-                </div>
-                <div className="bg-blue-900/10 rounded border border-blue-900/30 flex flex-col items-center p-1">
-                    <span className="text-[8px] text-blue-600 font-bold uppercase mb-1">HAND</span>
-                    <div className="flex w-full justify-between px-2 items-center">
-                        <button onClick={() => adjustValue(index, 'hs', -1)} className="text-gray-500 hover:text-white font-bold">-</button>
-                        <span className="text-xl font-mono font-bold text-blue-500">{player.hs}</span>
-                        <button onClick={() => adjustValue(index, 'hs', 1)} className="text-gray-500 hover:text-white font-bold">+</button>
+                    <div className="bg-blue-900/10 rounded border border-blue-900/30 flex flex-col items-center p-1">
+                        <span className="text-[8px] text-blue-600 font-bold uppercase mb-1">HAND</span>
+                        <div className="flex w-full justify-between px-2 items-center">
+                            <button onClick={() => adjustValue(index, 'hs', -1)} className="text-gray-500 hover:text-white font-bold">-</button>
+                            <span className="text-xl font-mono font-bold text-blue-500">{player.hs}</span>
+                            <button onClick={() => adjustValue(index, 'hs', 1)} className="text-gray-500 hover:text-white font-bold">+</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative flex">
@@ -378,7 +389,7 @@ const CampaignManager = () => {
         {/* DESKTOP VIEW: GRID OF 4 PLAYERS */}
         <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0">
             {players.map((player, index) => (
-                <PlayerCard key={index} player={player} index={index} isMobile={false} />
+                <PlayerCard key={index} player={player} index={index} />
             ))}
         </div>
 
@@ -386,14 +397,13 @@ const CampaignManager = () => {
         <div className="md:hidden flex flex-grow items-center justify-center relative overflow-hidden">
             <button onClick={prevPlayer} className="absolute left-0 z-20 p-2 text-white/50 hover:text-white bg-black/50 h-full flex items-center"><ChevronLeft size={32} /></button>
             <div className="w-full h-full p-1">
-                <PlayerCard player={players[activePlayerIndex]} index={activePlayerIndex} isMobile={true} />
+                <PlayerCard player={players[activePlayerIndex]} index={activePlayerIndex} />
             </div>
             <button onClick={nextPlayer} className="absolute right-0 z-20 p-2 text-white/50 hover:text-white bg-black/50 h-full flex items-center"><ChevronRight size={32} /></button>
         </div>
       </div>
 
       {/* --- RIGHT SIDE: CODEX PANE (Desktop & Mobile) --- */}
-      {/* On mobile: w-full (covers all). On desktop: w-1/3 */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-full md:w-1/3 translate-x-0' : 'w-full md:w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex</h2>
