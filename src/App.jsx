@@ -53,7 +53,7 @@ const CampaignManager = () => {
       }
     };
 
-    const saved = localStorage.getItem('staggingData_v16');
+    const saved = localStorage.getItem('staggingData_v17');
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -85,7 +85,7 @@ const CampaignManager = () => {
     setLastRollRecord(newRoll);
 
     const gameData = { players: newPlayers, stalemate: newStalemate, epilogueMode: newEpilogue, lastRollRecord: newRoll };
-    localStorage.setItem('staggingData_v16', JSON.stringify(gameData));
+    localStorage.setItem('staggingData_v17', JSON.stringify(gameData));
 
     if (supabase) {
         await supabase.from('campaign_state').update({ game_data: gameData }).eq('id', 1);
@@ -102,7 +102,7 @@ const CampaignManager = () => {
       { name: 'Matias', role: '', vp: 3, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' }
     ];
     syncState(defaults, 0, false, { type: '-', value: '-' });
-    setShowRules(false); // Close menu on action
+    setShowRules(false);
   };
 
   const rollDice = (sides) => {
@@ -243,14 +243,15 @@ const CampaignManager = () => {
     return (
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full">
             <div className={`h-1 w-full ${['bg-red-600','bg-blue-600','bg-green-600','bg-yellow-600'][index]}`}></div>
-            <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center">
+            <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center shrink-0">
                 <span className="w-full font-black text-lg text-center text-gray-200" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
                 {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
             </div>
-            <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden">
+            
+            <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden min-h-0">
                 {!epilogueMode ? (
                     <>
-                        <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                        <div className="grid grid-cols-[1fr_auto] gap-2 items-center shrink-0">
                             <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-2 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none hover:border-gray-500 transition-colors">
                                 <option value="">-- No Role --</option>
                                 {['Doctor','Monk','Smith','Knight','Fool','King'].map(r=><option key={r} value={r}>{r}</option>)}
@@ -260,7 +261,7 @@ const CampaignManager = () => {
                                 <span className="text-xl font-bold text-blue-500" style={{ fontFamily: 'Cinzel, serif' }}>{getLevel(player.xp)}</span>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-2 gap-2 shrink-0">
                             <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
                                 <span className="text-[8px] text-blue-500 font-bold mb-1">XP</span>
                                 <div className="flex items-center gap-2">
@@ -278,21 +279,21 @@ const CampaignManager = () => {
                                 </div>
                             </div>
                         </div>
-                        <div className="flex-grow bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative">
+                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative">
                             <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
                             {player.role ? (
-                                <div className="text-xs text-gray-400 leading-normal space-y-3">
+                                <div className="text-[10px] md:text-xs text-gray-400 leading-tight space-y-2">
                                     {getRoleAbilities(player.role).map((txt, i) => {
                                         const lvl = i + 1;
                                         const isUnlocked = getLevel(player.xp) >= lvl;
                                         return (
-                                            <div key={i} className={`flex gap-2 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
-                                                <span className="font-bold whitespace-nowrap text-[10px] mt-0.5">Lvl {lvl}:</span>
+                                            <div key={i} className={`flex gap-1 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
+                                                <span className="font-bold whitespace-nowrap mt-0.5">Lvl {lvl}:</span>
                                                 <span>{txt}</span>
                                             </div>
                                         )
                                     })}
-                                    <div className="w-full h-px bg-gray-800 my-2"></div>
+                                    <div className="w-full h-px bg-gray-800 my-1"></div>
                                     <div className="text-yellow-600 italic text-[10px]">{getRoleReward(player.role)}</div>
                                 </div>
                             ) : (
@@ -326,7 +327,7 @@ const CampaignManager = () => {
                         </div>
                     </div>
                 )}
-                <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-800">
+                <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-800 shrink-0">
                     <div className="bg-red-900/10 rounded border border-red-900/30 flex flex-col items-center p-1">
                         <span className="text-[8px] text-red-600 font-bold uppercase mb-1">LIFE</span>
                         <div className="flex w-full justify-between px-2 items-center">
@@ -350,14 +351,12 @@ const CampaignManager = () => {
   };
 
   return (
-    <div className="h-screen w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative flex">
-      {/* Background */}
+    <div className="h-dvh w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative flex">
       <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
         <style>{`@keyframes nebula { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } .nebula-bg { background: linear-gradient(-45deg, #1a0b0b, #2e1010, #0f172a, #000000); background-size: 400% 400%; animation: nebula 15s ease infinite; }`}</style>
         <div className="w-full h-full nebula-bg"></div>
       </div>
 
-      {/* Dice Overlay */}
       {diceOverlay.active && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
             <style>{`@keyframes chaos { 0% { transform: rotate(0deg) scale(0.5); } 100% { transform: rotate(360deg) scale(1); } } @keyframes landing { 0% { transform: scale(3); opacity: 0; } 50% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1); } } .rolling-anim { animation: chaos 0.1s infinite linear; opacity: 0.7; color: #444; } .landed-anim { animation: landing 0.4s ease-out forwards; text-shadow: 0 0 50px #d4af37; color: #d4af37; transform: scale(1.5); }`}</style>
@@ -365,7 +364,6 @@ const CampaignManager = () => {
         </div>
       )}
 
-      {/* MAIN APP AREA */}
       <div className={`flex-grow flex flex-col p-2 gap-2 relative z-10 transition-all duration-300 ${showRules ? 'w-full md:w-2/3' : 'w-full'}`}>
         
         {/* HEADER */}
@@ -400,13 +398,13 @@ const CampaignManager = () => {
                 </div>
             </div>
 
-            {/* DESKTOP CONTROLS */}
+            <button onClick={() => setShowRules(!showRules)} className="p-2 bg-yellow-600 text-black rounded font-bold hover:bg-yellow-500"><BookOpen size={16}/></button>
+
             <div className="hidden md:flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
                 <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
                 <button onClick={toggleEpilogue} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`} title="Epilogue"><Crown size={16}/></button>
                 <button onClick={resetData} className="p-2 hover:bg-white/10 rounded text-red-500" title="Reset"><RefreshCw size={16}/></button>
-                <button onClick={() => setShowRules(!showRules)} className={`p-2 rounded border border-yellow-700/50 ${showRules ? 'bg-yellow-900/50 text-white' : 'hover:bg-white/10 text-yellow-600'}`} title="Rules"><BookOpen size={16}/></button>
             </div>
         </div>
 
@@ -519,8 +517,6 @@ const CampaignManager = () => {
             </div>
         </div>
       </div>
-
-      <button onClick={() => setShowRules(!showRules)} className="md:hidden fixed bottom-4 right-4 bg-yellow-600 text-black p-4 rounded-full shadow-2xl z-50 border-2 border-yellow-400 active:scale-95"><BookOpen size={24} /></button>
     </div>
   );
 };
