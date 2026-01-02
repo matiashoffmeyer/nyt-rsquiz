@@ -13,6 +13,7 @@ const CampaignManager = () => {
   
   // Dice State
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
+  const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' }); // Permanent display
   
   // Import State
   const fileInputRef = useRef(null);
@@ -20,13 +21,14 @@ const CampaignManager = () => {
 
   // --- INITIAL LOAD & AUTO-SAVE ---
   useEffect(() => {
-    const saved = localStorage.getItem('staggingData_v8');
+    const saved = localStorage.getItem('staggingData_v9');
     if (saved) {
       try {
         const data = JSON.parse(saved);
         setPlayers(data.players || []);
         setStalemate(data.stalemate || 0);
         setEpilogueMode(data.epilogueMode || false);
+        if (data.lastRollRecord) setLastRollRecord(data.lastRollRecord);
       } catch (e) {
         resetData(true);
       }
@@ -37,9 +39,9 @@ const CampaignManager = () => {
 
   useEffect(() => {
     if (!isImporting && players.length > 0) {
-      localStorage.setItem('staggingData_v8', JSON.stringify({ players, stalemate, epilogueMode }));
+      localStorage.setItem('staggingData_v9', JSON.stringify({ players, stalemate, epilogueMode, lastRollRecord }));
     }
-  }, [players, stalemate, epilogueMode, isImporting]);
+  }, [players, stalemate, epilogueMode, lastRollRecord, isImporting]);
 
   // --- ACTIONS ---
   const resetData = (force = false) => {
@@ -52,17 +54,20 @@ const CampaignManager = () => {
     ]);
     setStalemate(0);
     setEpilogueMode(false);
+    setLastRollRecord({ type: '-', value: '-' });
   };
 
   const rollDice = (sides) => {
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
     const interval = setInterval(() => {
-      setDiceOverlay(prev => ({ ...prev, value: Math.floor(Math.random() * sides) + 1 }));
+      const randomVal = Math.floor(Math.random() * sides) + 1;
+      setDiceOverlay(prev => ({ ...prev, value: randomVal }));
       counter++;
       if (counter > 20) { 
         clearInterval(interval);
         setDiceOverlay(prev => ({ ...prev, finished: true }));
+        setLastRollRecord({ type: sides, value: randomVal }); // Save persistent result
         setTimeout(() => setDiceOverlay(prev => ({ ...prev, active: false })), 2000);
       }
     }, 50);
@@ -90,7 +95,7 @@ const CampaignManager = () => {
 
   // --- FILE SYSTEM ---
   const exportData = () => {
-    const data = JSON.stringify({ players, stalemate, epilogueMode, timestamp: new Date().toISOString() }, null, 2);
+    const data = JSON.stringify({ players, stalemate, epilogueMode, lastRollRecord, timestamp: new Date().toISOString() }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -113,6 +118,7 @@ const CampaignManager = () => {
           setPlayers(data.players);
           setStalemate(data.stalemate || 0);
           setEpilogueMode(data.epilogueMode || false);
+          if (data.lastRollRecord) setLastRollRecord(data.lastRollRecord);
           setTimeout(() => setIsImporting(false), 100);
         }
       } catch (err) { setIsImporting(false); }
@@ -246,27 +252,45 @@ const CampaignManager = () => {
             <div className={`font-black text-[20rem] fantasy-font leading-none ${diceOverlay.finished ? 'landed-anim' : 'rolling-anim'}`}>
                 {diceOverlay.value}
             </div>
-            {diceOverlay.finished && <div className="mt-8 text-4xl text-yellow-500 font-bold tracking-[1em] uppercase animate-pulse">RESULT</div>}
         </div>
       )}
 
       {/* --- LEFT SIDE: MAIN APP --- */}
       <div className={`flex-grow flex flex-col p-2 gap-2 relative z-10 transition-all duration-300 ${showRules ? 'w-2/3' : 'w-full'}`}>
         
-        {/* HEADER */}
-        <div className="flex justify-between items-center bg-[#111]/80 backdrop-blur border-b border-white/10 p-2 rounded-lg shrink-0">
-            <div className="flex flex-col">
-                <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest" style={{ fontFamily: 'Cinzel, serif' }}>STAGGING IT UP</h1>
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-gray-500"><Zap size={10} /> Campaign Manager</div>
+        {/* HEADER (COMPACTED) */}
+        <div className="flex justify-between items-center bg-[#111]/90 backdrop-blur border-b border-white/10 p-2 rounded-lg shrink-0 gap-2">
+            
+            {/* Title */}
+            <div className="flex flex-col shrink-0">
+                <h1 className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest" style={{ fontFamily: 'Cinzel, serif' }}>STAGGING IT UP</h1>
             </div>
 
-            {/* FULL DICE SET */}
-            <div className="flex gap-1">
-                {[4, 6, 8, 10, 12, 20].map(sides => (
-                    <button key={sides} onClick={() => rollDice(sides)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 hover:border-blue-400 text-blue-200 rounded font-bold text-xs shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all active:scale-95">D{sides}</button>
-                ))}
+            {/* STALEMATE (Moved Here) */}
+            <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-2 gap-2">
+                <div className="text-[10px] text-red-500 font-bold uppercase flex items-center gap-1"><Skull size={10} /> Stalemate</div>
+                <div className="flex items-center gap-1">
+                    <button onClick={() => setStalemate(Math.max(0, stalemate - 1))} className="text-gray-500 hover:text-white font-bold w-4">-</button>
+                    <span className="text-xl font-mono font-bold text-white w-6 text-center">{stalemate}</span>
+                    <button onClick={() => setStalemate(stalemate + 1)} className="text-gray-500 hover:text-white font-bold w-4">+</button>
+                </div>
             </div>
 
+            {/* DICE & RESULT */}
+            <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                    {[4, 6, 8, 10, 12, 20].map(sides => (
+                        <button key={sides} onClick={() => rollDice(sides)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 hover:border-blue-400 text-blue-200 rounded font-bold text-[10px] shadow-[0_0_10px_rgba(59,130,246,0.3)] transition-all active:scale-95">D{sides}</button>
+                    ))}
+                </div>
+                {/* LAST ROLL BOX */}
+                <div className="bg-black border border-yellow-600/50 rounded px-3 py-1 flex flex-col items-center justify-center min-w-[60px] shadow-[0_0_10px_rgba(234,179,8,0.2)]">
+                    <span className="text-[8px] text-gray-500 uppercase">D{lastRollRecord.type}</span>
+                    <span className="text-lg font-bold text-yellow-500 leading-none">{lastRollRecord.value}</span>
+                </div>
+            </div>
+
+            {/* SYSTEM CONTROLS */}
             <div className="flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500" title="Save"><Save size={16}/></button>
                 <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
@@ -276,26 +300,14 @@ const CampaignManager = () => {
             </div>
         </div>
 
-        {/* GLOBAL BAR */}
-        <div className="flex justify-center shrink-0 h-10">
-            <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-6 gap-6">
-                <div className="text-xs text-red-500 font-bold uppercase flex items-center gap-2"><Skull size={14} /> Stalemate Timer</div>
-                <div className="flex items-center gap-4">
-                    <button onClick={() => setStalemate(Math.max(0, stalemate - 1))} className="text-gray-500 hover:text-white text-xl font-bold">-</button>
-                    <span className="text-2xl font-mono font-bold text-white w-10 text-center">{stalemate}</span>
-                    <button onClick={() => setStalemate(stalemate + 1)} className="text-gray-500 hover:text-white text-xl font-bold">+</button>
-                </div>
-            </div>
-        </div>
-
         {/* PLAYERS GRID */}
         <div className="grid grid-cols-4 gap-2 flex-grow min-h-0">
             {players.map((player, index) => (
                 <div key={index} className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative">
                     <div className={`h-1 w-full ${['bg-red-600','bg-blue-600','bg-green-600','bg-yellow-600'][index]}`}></div>
                     
-                    <div className="p-3 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center">
-                        <span className="w-full font-black text-xl text-center text-gray-200" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
+                    <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center">
+                        <span className="w-full font-black text-lg text-center text-gray-200" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
                         {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
                     </div>
 
@@ -337,25 +349,26 @@ const CampaignManager = () => {
                                     </div>
                                 </div>
 
+                                {/* ROLE ABILITIES AREA (Increased Font Size) */}
                                 <div className="flex-grow bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative">
                                     <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
                                     {player.role ? (
-                                        <div className="text-[9px] text-gray-400 leading-snug space-y-2">
+                                        <div className="text-xs text-gray-400 leading-normal space-y-3">
                                             {getRoleAbilities(player.role).map((txt, i) => {
                                                 const lvl = i + 1;
                                                 const isUnlocked = getLevel(player.xp) >= lvl;
                                                 return (
-                                                    <div key={i} className={`flex gap-1 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
-                                                        <span className="font-bold whitespace-nowrap">Lvl {lvl}:</span>
+                                                    <div key={i} className={`flex gap-2 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
+                                                        <span className="font-bold whitespace-nowrap text-[10px] mt-0.5">Lvl {lvl}:</span>
                                                         <span>{txt}</span>
                                                     </div>
                                                 )
                                             })}
-                                            <div className="w-full h-px bg-gray-800 my-1"></div>
-                                            <div className="text-yellow-600 italic">{getRoleReward(player.role)}</div>
+                                            <div className="w-full h-px bg-gray-800 my-2"></div>
+                                            <div className="text-yellow-600 italic text-[10px]">{getRoleReward(player.role)}</div>
                                         </div>
                                     ) : (
-                                        <div className="h-full flex items-center justify-center text-[10px] text-gray-700 italic">Select Role</div>
+                                        <div className="h-full flex items-center justify-center text-xs text-gray-700 italic">Select Role</div>
                                     )}
                                 </div>
                             </>
@@ -381,22 +394,22 @@ const CampaignManager = () => {
                             </div>
                         )}
 
-                        {/* NEW LIFE/HAND UI */}
+                        {/* NEW LIFE/HAND UI (MATCHING XP/VP STYLE) */}
                         <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-800">
                             <div className="bg-red-900/10 rounded border border-red-900/30 flex flex-col items-center p-1">
-                                <label className="text-[8px] text-red-700 font-bold block mb-1">LIFE</label>
+                                <span className="text-[8px] text-red-600 font-bold uppercase mb-1">LIFE</span>
                                 <div className="flex w-full justify-between px-2 items-center">
-                                    <button onClick={() => adjustValue(index, 'lt', -1)} className="text-red-700 hover:text-red-400 text-lg font-bold">-</button>
-                                    <span className="text-xl font-bold text-red-500 font-mono">{player.lt}</span>
-                                    <button onClick={() => adjustValue(index, 'lt', 1)} className="text-red-700 hover:text-red-400 text-lg font-bold">+</button>
+                                    <button onClick={() => adjustValue(index, 'lt', -1)} className="text-gray-500 hover:text-white font-bold">-</button>
+                                    <span className="text-xl font-mono font-bold text-red-500">{player.lt}</span>
+                                    <button onClick={() => adjustValue(index, 'lt', 1)} className="text-gray-500 hover:text-white font-bold">+</button>
                                 </div>
                             </div>
                             <div className="bg-blue-900/10 rounded border border-blue-900/30 flex flex-col items-center p-1">
-                                <label className="text-[8px] text-blue-700 font-bold block mb-1">HAND</label>
+                                <span className="text-[8px] text-blue-600 font-bold uppercase mb-1">HAND</span>
                                 <div className="flex w-full justify-between px-2 items-center">
-                                    <button onClick={() => adjustValue(index, 'hs', -1)} className="text-blue-700 hover:text-blue-400 text-lg font-bold">-</button>
-                                    <span className="text-xl font-bold text-blue-500 font-mono">{player.hs}</span>
-                                    <button onClick={() => adjustValue(index, 'hs', 1)} className="text-blue-700 hover:text-blue-400 text-lg font-bold">+</button>
+                                    <button onClick={() => adjustValue(index, 'hs', -1)} className="text-gray-500 hover:text-white font-bold">-</button>
+                                    <span className="text-xl font-mono font-bold text-blue-500">{player.hs}</span>
+                                    <button onClick={() => adjustValue(index, 'hs', 1)} className="text-gray-500 hover:text-white font-bold">+</button>
                                 </div>
                             </div>
                         </div>
