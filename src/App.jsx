@@ -501,7 +501,7 @@ const CampaignManager = () => {
 
             {/* Hint text */}
             <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none opacity-50">
-                <span className="text-[9px] uppercase tracking-[0.2em] text-gray-500">Swipe for at skifte</span>
+                <span className="text-[9px] uppercase tracking-[0.2em] text-gray-500"></span>
             </div>
         </div>
       </div>
