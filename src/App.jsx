@@ -42,9 +42,9 @@ const CampaignManager = () => {
   const fileInputRef = useRef(null);
   const [isImporting, setIsImporting] = useState(false);
 
-  // --- SWIPE LOGIC STATE ---
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
+  // --- SWIPE LOGIC STATE (UPDATED TO REFS) ---
+  const touchStart = useRef(null);
+  const touchEnd = useRef(null);
   const minSwipeDistance = 50;
 
   // --- DATA ENGINE (HYBRID: CLOUD + LOCAL) ---
@@ -211,24 +211,29 @@ const CampaignManager = () => {
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
   const toggleRuleSection = (id) => setActiveRuleSection(activeRuleSection === id ? null : id);
 
-  // --- SWIPE HANDLERS ---
+  // --- SWIPE HANDLERS (FIXED) ---
   const onTouchStart = (e) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
+    touchEnd.current = null; // Reset
+    touchStart.current = e.targetTouches[0].clientX;
   };
 
   const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
+    touchEnd.current = e.targetTouches[0].clientX;
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
+    if (!touchStart.current || !touchEnd.current) return;
+    
+    const distance = touchStart.current - touchEnd.current;
     const isLeftSwipe = distance > minSwipeDistance;
     const isRightSwipe = distance < -minSwipeDistance;
 
-    if (isLeftSwipe) nextPlayer();
-    if (isRightSwipe) prevPlayer();
+    if (isLeftSwipe) {
+        nextPlayer();
+    }
+    if (isRightSwipe) {
+        prevPlayer();
+    }
   };
 
   // --- CONTENT HELPERS ---
@@ -452,7 +457,7 @@ const CampaignManager = () => {
 
         {/* MOBILE VIEW (SWIPE ENABLED) */}
         <div 
-            className="md:hidden flex flex-grow items-center justify-center relative overflow-hidden select-none"
+            className="md:hidden flex flex-grow items-center justify-center relative overflow-hidden select-none touch-pan-y"
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
