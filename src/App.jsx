@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, ChevronLeft, ChevronRight, Users } from 'lucide-react';
 
 const CampaignManager = () => {
   // --- STATE ---
-  // FIX: Vi starter med standard-data i stedet for en tom liste, så den ikke crasher ved start
   const [players, setPlayers] = useState([
       { name: 'Christian', role: '', vp: 2, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' },
       { name: 'Andreas', role: '', vp: 1, xp: 13, lt: 20, hs: 7, drunk: 0, spouse: '' },
@@ -28,7 +27,7 @@ const CampaignManager = () => {
 
   // --- INITIAL LOAD & AUTO-SAVE ---
   useEffect(() => {
-    const saved = localStorage.getItem('staggingData_v11'); // Ny version key for at undgå cache fejl
+    const saved = localStorage.getItem('staggingData_v12');
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -39,14 +38,14 @@ const CampaignManager = () => {
             if (data.lastRollRecord) setLastRollRecord(data.lastRollRecord);
         }
       } catch (e) {
-        console.error("Save file issue, using defaults");
+        console.error("Save file issue");
       }
     }
   }, []);
 
   useEffect(() => {
     if (!isImporting && players.length > 0) {
-      localStorage.setItem('staggingData_v11', JSON.stringify({ players, stalemate, epilogueMode, lastRollRecord }));
+      localStorage.setItem('staggingData_v12', JSON.stringify({ players, stalemate, epilogueMode, lastRollRecord }));
     }
   }, [players, stalemate, epilogueMode, lastRollRecord, isImporting]);
 
@@ -83,6 +82,39 @@ const CampaignManager = () => {
   const updatePlayer = (index, field, value) => {
     const newPlayers = [...players];
     newPlayers[index][field] = value;
+    setPlayers(newPlayers);
+  };
+
+  // --- MARRIAGE LOGIC (BIDIRECTIONAL SYNC) ---
+  const handleMarriage = (playerIndex, newSpouseName) => {
+    const newPlayers = [...players];
+    const currentPlayer = newPlayers[playerIndex];
+    const oldSpouseName = currentPlayer.spouse;
+
+    // 1. Break old marriage if exists (Divorce previous partner)
+    if (oldSpouseName) {
+        const oldSpouseIndex = newPlayers.findIndex(p => p.name === oldSpouseName);
+        if (oldSpouseIndex !== -1) newPlayers[oldSpouseIndex].spouse = "";
+    }
+
+    // 2. Set new marriage for current player
+    currentPlayer.spouse = newSpouseName;
+
+    // 3. Set new marriage for target player (if not single)
+    if (newSpouseName) {
+        const newSpouseIndex = newPlayers.findIndex(p => p.name === newSpouseName);
+        if (newSpouseIndex !== -1) {
+            // If target was married to someone else, divorce them first
+            const targetExName = newPlayers[newSpouseIndex].spouse;
+            if (targetExName) {
+                const targetExIndex = newPlayers.findIndex(p => p.name === targetExName);
+                if (targetExIndex !== -1) newPlayers[targetExIndex].spouse = "";
+            }
+            // Link them to current player
+            newPlayers[newSpouseIndex].spouse = currentPlayer.name;
+        }
+    }
+
     setPlayers(newPlayers);
   };
 
@@ -184,8 +216,6 @@ const CampaignManager = () => {
   ];
 
   // --- PLAYER CARD COMPONENT ---
-  // Defined inside to access state/functions easily. 
-  // Safety check: if player is undefined (during init), return null
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
     
@@ -264,13 +294,22 @@ const CampaignManager = () => {
                 ) : (
                     <div className="flex-grow flex flex-col gap-4 justify-center">
                         <div className="bg-indigo-900/20 p-2 rounded border border-indigo-500/30">
-                            <label className="text-[9px] text-indigo-400 uppercase font-bold block mb-1">Marriage</label>
-                            <select value={player.spouse} onChange={(e) => updatePlayer(index, 'spouse', e.target.value)} className="w-full bg-black text-gray-300 border border-gray-700 rounded p-2 text-xs focus:outline-none focus:border-indigo-500">
-                                <option value="">Single</option>
+                            <div className="flex justify-between items-center mb-1">
+                                <label className="text-[9px] text-indigo-400 uppercase font-bold flex items-center gap-1"><Users size={10}/> Marriage</label>
+                            </div>
+                            <select value={player.spouse} onChange={(e) => handleMarriage(index, e.target.value)} className="w-full bg-black text-gray-300 border border-gray-700 rounded p-2 text-xs focus:outline-none focus:border-indigo-500">
+                                <option value="">Single (Unmarried)</option>
                                 {players.filter(p => p.name !== player.name).map((p, i) => (
-                                    <option key={i} value={p.name}>+ {p.name}</option>
+                                    <option key={i} value={p.name}>Married to {p.name}</option>
                                 ))}
                             </select>
+                            {/* MARRIAGE RULES DISPLAY */}
+                            {player.spouse && (
+                                <div className="mt-2 text-[10px] text-pink-300 italic bg-black/40 p-2 rounded border border-pink-500/20 leading-tight">
+                                    ❤️ <strong>Rules:</strong> Shared Library. Cannot attack each other. 
+                                    <br/>💔 <strong>Divorce (Sorcery):</strong> Give hand to partner to leave.
+                                </div>
+                            )}
                         </div>
                         <div className="bg-purple-900/20 p-2 rounded border border-purple-500/30 flex justify-between items-center">
                             <span className="text-[9px] text-purple-400 font-bold uppercase">Drunk</span>
@@ -395,11 +434,16 @@ const CampaignManager = () => {
 
         {/* MOBILE VIEW: CAROUSEL (1 PLAYER) */}
         <div className="md:hidden flex flex-grow items-center justify-center relative overflow-hidden">
-            <button onClick={prevPlayer} className="absolute left-0 z-20 p-2 text-white/50 hover:text-white bg-black/50 h-full flex items-center"><ChevronLeft size={32} /></button>
+            {/* FIXED MOBILE ARROWS - Floating circles that don't block content */}
+            <button onClick={prevPlayer} className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/50 rounded-full text-white/70 hover:text-white hover:bg-black/80 transition-all border border-gray-700 shadow-lg active:scale-95">
+                <ChevronLeft size={24} />
+            </button>
             <div className="w-full h-full p-1">
                 <PlayerCard player={players[activePlayerIndex]} index={activePlayerIndex} />
             </div>
-            <button onClick={nextPlayer} className="absolute right-0 z-20 p-2 text-white/50 hover:text-white bg-black/50 h-full flex items-center"><ChevronRight size={32} /></button>
+            <button onClick={nextPlayer} className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/50 rounded-full text-white/70 hover:text-white hover:bg-black/80 transition-all border border-gray-700 shadow-lg active:scale-95">
+                <ChevronRight size={24} />
+            </button>
         </div>
       </div>
 
