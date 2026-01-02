@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, ChevronLeft, ChevronRight, Users, Wifi, WifiOff, Minus, Plus, LogOut } from 'lucide-react';
+import { Save, Upload, RefreshCw, Skull, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, Users, Wifi, WifiOff, Minus, Plus, LogOut } from 'lucide-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -23,12 +23,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [activeRuleSection, setActiveRuleSection] = useState(null);
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
 
-  // Swipe Refs
+  // Refs
+  const fileInputRef = useRef(null);
   const touchStart = useRef(null);
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
 
-  // --- CONTENT DATA (THE ORIGINAL STAGGING DATA) ---
+  // --- CONTENT DATA (STAGGING ORIGINALS) ---
   const staggingTimeline = [
       { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
       { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
@@ -65,7 +66,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   // --- DATA ENGINE ---
   useEffect(() => {
     if (!campaignId) return;
-
     const loadCampaign = async () => {
       const { data } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
       if (data) {
@@ -76,12 +76,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       }
     };
     loadCampaign();
-
     const channel = supabase.channel(`campaign_${campaignId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'campaigns', filter: `id=eq.${campaignId}` }, (payload) => {
         if (payload.new && payload.new.active_state) applyActiveState(payload.new.active_state);
       }).subscribe();
-
     return () => { supabase.removeChannel(channel); };
   }, [campaignId]);
 
@@ -101,7 +99,45 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     await supabase.from('campaigns').update({ active_state: { players: newPlayers, stalemate: newStalemate, epilogueMode: newEpilogue, last_roll: newRoll } }).eq('id', campaignId);
   };
 
-  // --- ACTIONS ---
+  // --- SAVE / LOAD ACTIONS ---
+  const exportData = () => {
+    const data = JSON.stringify({ players, stalemate, epilogueMode, last_roll: lastRollRecord }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${meta.title.replace(/\s+/g, '_')}_backup.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
+  const importData = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.players) {
+            syncState(data.players, data.stalemate || 0, data.epilogueMode || false, data.last_roll || { type: '-', value: '-' });
+            alert("File Loaded & Synced!");
+            setShowRules(false);
+        }
+      } catch (err) { alert("File error"); }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
+  const resetData = async () => {
+      if (!window.confirm("RESET CAMPAIGN? This cannot be undone.")) return;
+      // Fetch default state from DB static_config or just clear specific fields? 
+      // For safety, we just reload page or could implement a hard reset if needed.
+      window.location.reload(); 
+  };
+
+  // --- GAME ACTIONS ---
   const rollDice = (sides) => {
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
@@ -153,6 +189,12 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         }
     }
     syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
+  };
+
+  // --- HELPERS ---
+  const toggleEpilogue = () => {
+    syncState(players, stalemate, !epilogueMode, lastRollRecord);
+    setShowRules(false); // Close codex when changing modes
   };
 
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
@@ -357,8 +399,14 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </div>
             </div>
 
-            <button onClick={() => setShowRules(!showRules)} className="hidden md:block p-2 bg-yellow-600 text-black rounded font-bold hover:bg-yellow-500"><BookOpen size={16}/></button>
-            <button onClick={() => setEpilogueMode(!epilogueMode)} className={`hidden md:block p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`}><Crown size={16}/></button>
+            {/* DESKTOP HEADER BUTTONS */}
+            <div className="hidden md:flex gap-1">
+                <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
+                <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
+                <button onClick={() => setShowRules(!showRules)} className="p-2 bg-yellow-600 text-black rounded font-bold hover:bg-yellow-500"><BookOpen size={16}/></button>
+                <button onClick={toggleEpilogue} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`}><Crown size={16}/></button>
+                <button onClick={resetData} className="p-2 hover:bg-white/10 rounded text-red-500"><RefreshCw size={16}/></button>
+            </div>
         </div>
 
         <div className="w-full px-0 mt-0 md:hidden">
@@ -379,18 +427,19 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         </div>
       </div>
 
-      {/* --- CODEX PANE (THE HYBRID: STAGGING CONTENT OR GENERIC) --- */}
+      {/* --- CODEX PANE --- */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-full md:w-1/3 translate-x-0' : 'w-full md:w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex: {meta.title}</h2>
             <button onClick={() => setShowRules(false)} className="text-gray-500 hover:text-white"><X size={20}/></button>
         </div>
         
+        {/* MOBILE CONTROLS IN PANE */}
         <div className="md:hidden grid grid-cols-4 gap-2 p-4 border-b border-gray-800">
-            <button className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-green-500 text-[10px] font-bold"><Save size={16}/> SAVE</button>
-            <button className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-blue-500 text-[10px] font-bold"><Upload size={16}/> LOAD</button>
-            <button onClick={() => setEpilogueMode(!epilogueMode)} className={`flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-[10px] font-bold ${epilogueMode ? 'text-yellow-400' : 'text-gray-500'}`}><Crown size={16}/> MODE</button>
-            <button className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-red-500 text-[10px] font-bold"><RefreshCw size={16}/> RESET</button>
+            <button onClick={exportData} className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-green-500 text-[10px] font-bold"><Save size={16}/> SAVE</button>
+            <label className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-blue-500 text-[10px] font-bold cursor-pointer"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /> LOAD</label>
+            <button onClick={toggleEpilogue} className={`flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-[10px] font-bold ${epilogueMode ? 'text-yellow-400' : 'text-gray-500'}`}><Crown size={16}/> MODE</button>
+            <button onClick={resetData} className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-red-500 text-[10px] font-bold"><RefreshCw size={16}/> RESET</button>
         </div>
 
         <div className="flex-grow overflow-y-auto p-2 space-y-2 text-sm text-gray-300 custom-scrollbar pb-20">
@@ -484,7 +533,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             ) : (
                 // --- CASE: ALL OTHER CAMPAIGNS (GENERIC DB LOADER) ---
                 <>
-                    {/* Rules Text from DB */}
                     {config?.rules_text && config.rules_text.map((rule, i) => (
                         <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                             <button onClick={() => toggleRuleSection(`rule-${i}`)} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors text-blue-500">
@@ -497,7 +545,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         </div>
                     ))}
 
-                    {/* Timeline from DB */}
                     {config?.timeline && config.timeline.map((event, i) => (
                         <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                             <button onClick={() => toggleRuleSection(`event-${i}`)} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors text-red-500">
