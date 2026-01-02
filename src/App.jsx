@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, RefreshCw, Dice5, Skull, Scroll, Heart, Shield, Crown, Zap, Users, Hammer, Ghost } from 'lucide-react';
+import { Save, Upload, RefreshCw, Skull, Zap, Users, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost } from 'lucide-react';
 
 const CampaignManager = () => {
-  // --- STATE MANAGEMENT ---
+  // --- STATE ---
   const [players, setPlayers] = useState([]);
   const [stalemate, setStalemate] = useState(0);
   const [epilogueMode, setEpilogueMode] = useState(false);
   const [currentBattle, setCurrentBattle] = useState('Heidi');
   
   // Dice State
-  const [lastRoll, setLastRoll] = useState('-');
-  const [isRolling, setIsRolling] = useState(false);
+  const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20 });
   
   // Import State
   const fileInputRef = useRef(null);
@@ -18,7 +17,7 @@ const CampaignManager = () => {
 
   // --- INITIAL LOAD & AUTO-SAVE ---
   useEffect(() => {
-    const saved = localStorage.getItem('staggingData_v2');
+    const saved = localStorage.getItem('staggingData_v3');
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -27,7 +26,6 @@ const CampaignManager = () => {
         setEpilogueMode(data.epilogueMode || false);
         setCurrentBattle(data.currentBattle || 'Heidi');
       } catch (e) {
-        console.error("Save file corrupted, resetting...");
         resetData(true);
       }
     } else {
@@ -35,28 +33,20 @@ const CampaignManager = () => {
     }
   }, []);
 
-  // Save whenever state changes (skip if importing)
   useEffect(() => {
     if (!isImporting && players.length > 0) {
-      localStorage.setItem('staggingData_v2', JSON.stringify({
-        players,
-        stalemate,
-        epilogueMode,
-        currentBattle
-      }));
+      localStorage.setItem('staggingData_v3', JSON.stringify({ players, stalemate, epilogueMode, currentBattle }));
     }
   }, [players, stalemate, epilogueMode, currentBattle, isImporting]);
 
   // --- ACTIONS ---
-
   const resetData = (force = false) => {
-    if (!force && !window.confirm("This will reset all progress. Are you sure?")) return;
-
+    if (!force && !window.confirm("Reset campaign?")) return;
     setPlayers([
-      { name: 'Repwich (Christian)', deck: '', role: '', vp: 2, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' },
-      { name: 'MountainIsland (Andreas)', deck: '', role: '', vp: 1, xp: 13, lt: 20, hs: 7, drunk: 0, spouse: '' },
-      { name: 'Repmance (Frederik)', deck: '', role: '', vp: 1, xp: 16, lt: 20, hs: 7, drunk: 0, spouse: '' },
-      { name: 'Camp Badeferie (Matias)', deck: '', role: '', vp: 3, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' }
+      { name: 'Christian', role: '', vp: 2, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' },
+      { name: 'Andreas', role: '', vp: 1, xp: 13, lt: 20, hs: 7, drunk: 0, spouse: '' },
+      { name: 'Frederik', role: '', vp: 1, xp: 16, lt: 20, hs: 7, drunk: 0, spouse: '' },
+      { name: 'Matias', role: '', vp: 3, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' }
     ]);
     setStalemate(0);
     setEpilogueMode(false);
@@ -64,15 +54,16 @@ const CampaignManager = () => {
   };
 
   const rollDice = (sides) => {
-    if (isRolling) return;
-    setIsRolling(true);
+    setDiceOverlay({ active: true, value: '-', type: sides });
+    
+    // Animation phases
     let counter = 0;
     const interval = setInterval(() => {
-      setLastRoll(Math.floor(Math.random() * sides) + 1);
+      setDiceOverlay(prev => ({ ...prev, value: Math.floor(Math.random() * sides) + 1 }));
       counter++;
-      if (counter > 10) {
+      if (counter > 20) { // Run for ~1 second
         clearInterval(interval);
-        setIsRolling(false);
+        setTimeout(() => setDiceOverlay(prev => ({ ...prev, active: false })), 1500); // Show result for 1.5s
       }
     }, 50);
   };
@@ -85,28 +76,17 @@ const CampaignManager = () => {
 
   const adjustValue = (index, field, amount) => {
     const newPlayers = [...players];
-    const currentVal = newPlayers[index][field] || 0;
-    let newVal = currentVal + amount;
-    
-    // XP limits
-    if (field === 'xp') {
-        if (newVal > 20) newVal = 20;
-        if (newVal < 0) newVal = 0;
-    }
-    
+    let newVal = (newPlayers[index][field] || 0) + amount;
+    if (field === 'xp') newVal = Math.max(0, Math.min(20, newVal));
     newPlayers[index][field] = newVal;
     setPlayers(newPlayers);
   };
 
-  const getLevel = (xp) => {
-    if (xp < 10) return 1;
-    if (xp < 20) return 2;
-    return 3;
-  };
+  const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
 
   // --- FILE SYSTEM ---
   const exportData = () => {
-    const data = JSON.stringify({ players, stalemate, epilogueMode, currentBattle, timestamp: new Date().toISOString() }, null, 2);
+    const data = JSON.stringify({ players, stalemate, epilogueMode, currentBattle }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -121,7 +101,6 @@ const CampaignManager = () => {
     const file = event.target.files[0];
     if (!file) return;
     setIsImporting(true);
-    
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -131,312 +110,266 @@ const CampaignManager = () => {
           setStalemate(data.stalemate || 0);
           setEpilogueMode(data.epilogueMode || false);
           setCurrentBattle(data.currentBattle || 'Heidi');
-          setTimeout(() => { setIsImporting(false); alert("Campaign Loaded!"); }, 100);
-        } else {
-          alert("Invalid file.");
-          setIsImporting(false);
+          setTimeout(() => setIsImporting(false), 100);
         }
-      } catch (err) {
-        alert("Error reading file.");
-        setIsImporting(false);
-      }
+      } catch (err) { setIsImporting(false); }
     };
     reader.readAsText(file);
     event.target.value = '';
   };
 
-  // --- TEXT HELPERS ---
+  // --- CONTENT HELPERS ---
   const getRoleText = (role, level) => {
     const abilities = {
         'Doctor': ["Creature enters: Remove counter.", "Gain Drunk: Target gets Metaxa.", "Creatures have Infect. End: Proliferate."],
-        'Monk': ["Discard & Pay (2): Heresy counter logic.", "Activate OG abilities twice.", "Tap 3 creatures: Summon random OG."],
-        'Smith': ["Artifact spells cost (1) less/Lvl.", "Equipped: Vigilance, Trample, Reach.", "Metalcraft: Discard to copy artifact."],
-        'Knight': ["(1) Discard: 1/2 Horse w/ Haste.", "Equipped creatures have Mentor.", "Battalion: Fight target creature."],
-        'Fool': ["Opponent turn spells cost (1) less.", "Creature spells: Ninjutsu = CMC.", "Creature spells: Ninjutsu = CMC."],
+        'Monk': ["Discard/Pay(2): Heresy logic.", "Activate OG abilities 2x.", "Tap 3: Summon random OG."],
+        'Smith': ["Artifact spells cost (1) less/Lvl.", "Equip: Vigilance, Trample, Reach.", "Metalcraft: Copy artifact."],
+        'Knight': ["(1) Discard: 1/2 Horse Haste.", "Equip: Mentor.", "Battalion: Fight target."],
+        'Fool': ["Opp. turn spells cost (1) less.", "Creatures: Ninjutsu = CMC.", "Creatures: Ninjutsu = CMC."],
         'King': ["Creatures +1/+1 per Level.", "Extra land & fix mana.", "Draw extra card."]
     };
     return abilities[role] ? `Lvl ${level}: ${abilities[role][level-1]}` : "";
   };
 
-  const getRoleReward = (role) => {
-    const rewards = {
-        'Doctor': 'Reward: Creature dies on your turn -> +1 XP',
-        'Monk': 'Reward: Life total changes -> +1 XP',
-        'Smith': 'Reward: Artifact enters under control -> +1 XP',
-        'Knight': 'Reward: Creatures deal damage -> +1 XP',
-        'Fool': 'Reward: Target opponent/their perm -> +1 XP',
-        'King': 'Reward: Every 3rd time another player gains XP -> +1 XP'
-    };
-    return rewards[role] || '';
-  };
-
   const getRoleIcon = (role) => {
       switch(role) {
-          case 'Doctor': return <Heart size={14} />;
-          case 'Monk': return <Scroll size={14} />;
-          case 'Smith': return <Hammer size={14} />;
-          case 'Knight': return <Shield size={14} />;
-          case 'Fool': return <Ghost size={14} />;
-          case 'King': return <Crown size={14} />;
+          case 'Doctor': return <Heart size={12} />;
+          case 'Monk': return <Scroll size={12} />;
+          case 'Smith': return <Hammer size={12} />;
+          case 'Knight': return <Shield size={12} />;
+          case 'Fool': return <Ghost size={12} />;
+          case 'King': return <Crown size={12} />;
           default: return null;
       }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-gray-300 font-sans p-4 md:p-8" 
-         style={{ backgroundImage: 'radial-gradient(circle at 50% 0%, #2a1b1b 0%, transparent 70%), radial-gradient(circle at 0% 100%, #1a1a2e 0%, transparent 50%)' }}>
+    <div className="h-screen w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative">
       
-      {/* --- HEADER --- */}
-      <div className="max-w-7xl mx-auto mb-8 flex flex-col xl:flex-row justify-between items-center gap-6 border-b border-gray-800 pb-6">
-        <div className="text-center xl:text-left">
-          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-yellow-600 drop-shadow-lg" style={{ fontFamily: 'Cinzel, serif' }}>
-            STAGGING IT UP
-          </h1>
-          <p className="text-xs text-gray-500 uppercase tracking-[0.3em] mt-1">Campaign Manager</p>
-        </div>
-
-        {/* Dice Roller */}
-        <div className="flex gap-3 bg-black/50 p-3 rounded-xl border border-gray-700 backdrop-blur-md items-center">
-          {[6, 10, 20].map(sides => (
-            <button key={sides} onClick={() => rollDice(sides)} className="px-4 py-2 bg-blue-900/40 border border-blue-600/50 hover:bg-blue-800 text-blue-200 rounded font-bold text-xs transition-all active:scale-95 shadow-[0_0_10px_rgba(37,99,235,0.2)]">
-              D{sides}
-            </button>
-          ))}
-          <div className={`w-20 h-10 flex items-center justify-center font-mono text-2xl bg-black rounded text-yellow-500 border border-gray-700 shadow-inner transition-all ${isRolling ? 'text-red-500 border-red-500 scale-110' : ''}`}>
-            {isRolling ? <Dice5 className="animate-spin" /> : lastRoll}
-          </div>
-        </div>
-
-        {/* Controls */}
-        <div className="flex gap-2 flex-wrap justify-center">
-          <button onClick={exportData} className="flex items-center gap-2 px-3 py-1 bg-gray-900 border border-green-800 text-green-500 hover:text-green-300 rounded text-xs uppercase font-bold tracking-wider hover:bg-gray-800 transition-colors">
-            <Save size={14} /> Save
-          </button>
-          <label className="flex items-center gap-2 px-3 py-1 bg-gray-900 border border-blue-800 text-blue-500 hover:text-blue-300 rounded text-xs uppercase font-bold tracking-wider hover:bg-gray-800 transition-colors cursor-pointer">
-            <Upload size={14} /> Load
-            <input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" />
-          </label>
-          <button onClick={() => setEpilogueMode(!epilogueMode)} className="flex items-center gap-2 px-3 py-1 bg-gray-900 border border-yellow-800 text-yellow-500 hover:text-yellow-300 rounded text-xs uppercase font-bold tracking-wider hover:bg-gray-800 transition-colors">
-            {epilogueMode ? 'Back to Main' : 'Epilogue Mode'}
-          </button>
-          <button onClick={() => resetData()} className="flex items-center gap-2 px-3 py-1 bg-gray-900 border border-red-900 text-red-700 hover:text-red-500 rounded text-xs uppercase font-bold tracking-wider hover:bg-gray-800 transition-colors">
-            <RefreshCw size={14} /> Reset
-          </button>
-        </div>
+      {/* --- ANIMATED BACKGROUND --- */}
+      <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
+        <style>{`
+          @keyframes nebula {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          .nebula-bg {
+            background: linear-gradient(-45deg, #1a0b0b, #2e1010, #0f172a, #000000);
+            background-size: 400% 400%;
+            animation: nebula 15s ease infinite;
+          }
+        `}</style>
+        <div className="w-full h-full nebula-bg"></div>
       </div>
 
-      {/* --- GLOBAL STATS --- */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {/* Stalemate Timer */}
-        <div className="p-4 rounded-lg bg-gradient-to-r from-gray-900 to-black border border-gray-800 flex justify-between items-center shadow-lg">
-          <div>
-            <h3 className="text-red-600 uppercase text-xs font-bold tracking-widest flex items-center gap-2">
-              <Skull size={16} /> Stalemate Clock
-            </h3>
-            <p className="text-[10px] text-gray-500 mt-1">Battle ends automatically at count 10</p>
-          </div>
-          <div className="flex items-center gap-4">
-            <button onClick={() => setStalemate(Math.max(0, stalemate - 1))} className="w-10 h-10 rounded-full bg-gray-800 border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 text-xl font-bold transition-all">-</button>
-            <span className="text-4xl font-mono font-bold text-red-500 w-12 text-center drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]">{stalemate}</span>
-            <button onClick={() => setStalemate(stalemate + 1)} className="w-10 h-10 rounded-full bg-gray-800 border border-gray-600 text-gray-400 hover:text-white hover:border-gray-400 text-xl font-bold transition-all">+</button>
-          </div>
+      {/* --- MEGA DICE OVERLAY --- */}
+      {diceOverlay.active && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+            <style>{`
+                @keyframes chaos {
+                    0% { transform: rotate(0deg) scale(0.5) translate(0,0); color: #444; text-shadow: 0 0 0 #000; }
+                    25% { transform: rotate(90deg) scale(1.5) translate(20px, -20px); color: #d00; text-shadow: 5px 5px 0 #000; }
+                    50% { transform: rotate(-180deg) scale(0.8) translate(-20px, 20px); color: #f59e0b; text-shadow: -5px -5px 0 #000; }
+                    75% { transform: rotate(270deg) scale(1.2) translate(10px, 10px); color: #fff; text-shadow: 0 0 20px #f00; }
+                    100% { transform: rotate(360deg) scale(1) translate(0,0); color: #d4af37; text-shadow: 0 0 50px #d4af37; }
+                }
+                .mega-dice { animation: chaos 0.5s infinite linear; }
+            `}</style>
+            <div className="mega-dice font-black text-[20rem] fantasy-font leading-none">
+                {diceOverlay.value}
+            </div>
         </div>
+      )}
 
-        {/* Battle Selector */}
-        <div className="p-4 rounded-lg bg-[#141419] border border-gray-800 flex justify-between items-center shadow-lg">
-          <span className="text-gray-400 font-bold text-sm uppercase tracking-widest flex items-center gap-2">
-            <Zap size={16} /> Active Battle
-          </span>
-          <select 
-            value={currentBattle} 
-            onChange={(e) => setCurrentBattle(e.target.value)} 
-            className="bg-black border border-gray-700 text-gray-300 text-sm rounded-lg focus:ring-yellow-500 focus:border-yellow-500 block w-1/2 p-2.5"
-          >
-            <option value="Dinner">Dinner a'la card</option>
-            <option value="Heidi">Heidi's Bierbar</option>
-            <option value="Epilogue1">Epilogue: The Day After</option>
-            <option value="Epilogue2">Epilogue: The Big Day</option>
-          </select>
-        </div>
-      </div>
-
-      {/* --- PLAYERS GRID --- */}
-      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
-        {players.map((player, index) => (
-          <div key={index} className="relative bg-[#141419]/90 backdrop-blur-sm border border-gray-800 border-b-2 border-b-black rounded-lg p-5 shadow-xl hover:border-gray-600 transition-colors group">
-            <div className={`absolute inset-x-0 top-0 h-1 rounded-t-lg ${index === 0 ? 'bg-red-900' : (index === 1 ? 'bg-blue-900' : (index === 2 ? 'bg-green-900' : 'bg-yellow-900'))}`}></div>
-            
-            {/* Header */}
-            <div className="mb-4 pb-3 border-b border-gray-700">
-              <input 
-                value={player.name} 
-                onChange={(e) => updatePlayer(index, 'name', e.target.value)}
-                className="bg-transparent text-xl font-bold text-yellow-500 w-full focus:outline-none focus:border-b focus:border-yellow-500 mb-1" 
-                placeholder="Player Name"
-                style={{ fontFamily: 'Cinzel, serif' }}
-              />
-              <input 
-                value={player.deck} 
-                onChange={(e) => updatePlayer(index, 'deck', e.target.value)}
-                className="bg-transparent text-xs text-gray-500 italic w-full focus:outline-none" 
-                placeholder="Deck / Archetype"
-              />
+      {/* --- MAIN LAYOUT --- */}
+      <div className="relative z-10 h-full flex flex-col p-2 gap-2">
+        
+        {/* HEADER (Compact) */}
+        <div className="flex justify-between items-center bg-[#111]/80 backdrop-blur border-b border-white/10 p-2 rounded-lg shrink-0">
+            <div className="flex flex-col">
+                <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest" style={{ fontFamily: 'Cinzel, serif' }}>
+                    STAGGING IT UP
+                </h1>
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-gray-500">
+                    <Zap size={10} /> Campaign Manager
+                </div>
             </div>
 
-            {/* CAMPAIGN STATS */}
-            {!epilogueMode && (
-              <div className="flex flex-col gap-4">
-                {/* Role */}
+            {/* DICE BUTTONS */}
+            <div className="flex gap-2">
+                {[6, 10, 20].map(sides => (
+                    <button key={sides} onClick={() => rollDice(sides)} className="px-3 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 hover:border-blue-400 text-blue-200 rounded font-bold text-sm shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all active:scale-95">
+                        D{sides}
+                    </button>
+                ))}
+            </div>
+
+            {/* CONTROLS */}
+            <div className="flex gap-1">
+                <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500" title="Save"><Save size={16}/></button>
+                <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load">
+                    <Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" />
+                </label>
+                <button onClick={() => setEpilogueMode(!epilogueMode)} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`} title="Toggle Mode"><Crown size={16}/></button>
+                <button onClick={() => resetData()} className="p-2 hover:bg-white/10 rounded text-red-500" title="Reset"><RefreshCw size={16}/></button>
+            </div>
+        </div>
+
+        {/* GLOBAL BAR (Very Compact) */}
+        <div className="grid grid-cols-[auto_1fr] gap-2 shrink-0 h-12">
+            <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-4 gap-4">
+                <div className="text-xs text-red-500 font-bold uppercase flex items-center gap-1"><Skull size={12} /> Stalemate</div>
+                <div className="flex items-center gap-2">
+                    <button onClick={() => setStalemate(Math.max(0, stalemate - 1))} className="text-gray-500 hover:text-white">-</button>
+                    <span className="text-2xl font-mono font-bold text-white w-8 text-center">{stalemate}</span>
+                    <button onClick={() => setStalemate(stalemate + 1)} className="text-gray-500 hover:text-white">+</button>
+                </div>
+            </div>
+            <div className="bg-black/60 border border-gray-800 rounded flex items-center px-4 justify-between">
+                <span className="text-xs text-gray-500 uppercase font-bold">Battle</span>
+                <select value={currentBattle} onChange={(e) => setCurrentBattle(e.target.value)} className="bg-transparent text-yellow-500 font-bold text-sm focus:outline-none text-right w-full">
+                    <option value="Dinner">Dinner a'la card</option>
+                    <option value="Heidi">Heidi's Bierbar</option>
+                    <option value="Epilogue1">Epilogue: The Day After</option>
+                    <option value="Epilogue2">Epilogue: The Big Day</option>
+                </select>
+            </div>
+        </div>
+
+        {/* PLAYERS GRID (Fills remaining space) */}
+        <div className="grid grid-cols-4 gap-2 flex-grow min-h-0">
+            {players.map((player, index) => (
+                <div key={index} className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative">
+                    {/* Top Color Bar */}
+                    <div className={`h-1 w-full ${['bg-red-600','bg-blue-600','bg-green-600','bg-yellow-600'][index]}`}></div>
+                    
+                    {/* Player Name */}
+                    <div className="p-3 bg-gradient-to-b from-white/5 to-transparent">
+                        <input value={player.name} onChange={(e) => updatePlayer(index, 'name', e.target.value)} className="bg-transparent text-center w-full font-black text-xl text-gray-200 focus:text-white focus:outline-none placeholder-gray-700" style={{ fontFamily: 'Cinzel, serif' }} placeholder="Name" />
+                    </div>
+
+                    {/* Stats Area */}
+                    <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden">
+                        
+                        {!epilogueMode ? (
+                            <>
+                                {/* Role & Level Row */}
+                                <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+                                    <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black/40 border border-gray-800 text-xs rounded p-1 text-yellow-600 font-bold focus:outline-none w-full">
+                                        <option value="">No Role</option>
+                                        <option value="Doctor">Doctor</option>
+                                        <option value="Monk">Monk</option>
+                                        <option value="Smith">Smith</option>
+                                        <option value="Knight">Knight</option>
+                                        <option value="Fool">Fool</option>
+                                        <option value="King">King</option>
+                                    </select>
+                                    <div className="flex flex-col items-center leading-none">
+                                        <span className="text-[8px] text-gray-600 uppercase">Lvl</span>
+                                        <span className="text-xl font-bold text-blue-500" style={{ fontFamily: 'Cinzel, serif' }}>{getLevel(player.xp)}</span>
+                                    </div>
+                                </div>
+
+                                {/* XP / VP Controls */}
+                                <div className="grid grid-cols-2 gap-2">
+                                    <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
+                                        <span className="text-[8px] text-blue-500 font-bold">XP</span>
+                                        <div className="flex items-center gap-1 w-full justify-between px-1">
+                                            <button onClick={() => adjustValue(index, 'xp', -1)} className="text-gray-600 hover:text-white">-</button>
+                                            <span className="font-mono text-lg font-bold">{player.xp}</span>
+                                            <button onClick={() => adjustValue(index, 'xp', 1)} className="text-gray-600 hover:text-white">+</button>
+                                        </div>
+                                    </div>
+                                    <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
+                                        <span className="text-[8px] text-green-500 font-bold">VP</span>
+                                        <div className="flex items-center gap-1 w-full justify-between px-1">
+                                            <button onClick={() => adjustValue(index, 'vp', -1)} className="text-gray-600 hover:text-white">-</button>
+                                            <span className="font-mono text-lg font-bold text-green-400">{player.vp}</span>
+                                            <button onClick={() => adjustValue(index, 'vp', 1)} className="text-gray-600 hover:text-white">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Abilities Text Area (Fixed height, scroll if needed) */}
+                                <div className="flex-grow bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto no-scrollbar relative">
+                                    <div className="absolute top-1 right-2 text-yellow-700">{getRoleIcon(player.role)}</div>
+                                    {player.role ? (
+                                        <div className="text-[10px] text-gray-400 leading-snug space-y-2">
+                                            {[1, 2, 3].map(lvl => (
+                                                <p key={lvl} className={getLevel(player.xp) >= lvl ? 'text-green-300' : 'text-gray-700 line-through'}>
+                                                    {getRoleText(player.role, lvl)}
+                                                </p>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <div className="h-full flex items-center justify-center text-[10px] text-gray-700 italic">Select Role</div>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            // EPILOGUE UI
+                            <div className="flex-grow flex flex-col gap-4 justify-center">
+                                <div className="bg-indigo-900/20 p-2 rounded border border-indigo-500/30">
+                                    <label className="text-[9px] text-indigo-400 uppercase font-bold block mb-1">Marriage</label>
+                                    <select value={player.spouse} onChange={(e) => updatePlayer(index, 'spouse', e.target.value)} className="w-full bg-black text-xs text-indigo-200 border-none outline-none">
+                                        <option value="">Single</option>
+                                        {players.filter(p => p.name !== player.name).map((p, i) => (
+                                            <option key={i} value={p.name}>+ {p.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="bg-purple-900/20 p-2 rounded border border-purple-500/30 flex justify-between items-center">
+                                    <span className="text-[9px] text-purple-400 font-bold uppercase">Drunk</span>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={() => adjustValue(index, 'drunk', -1)} className="text-gray-500 hover:text-white">-</button>
+                                        <span className="text-xl font-bold text-purple-400 w-6 text-center">{player.drunk}</span>
+                                        <button onClick={() => adjustValue(index, 'drunk', 1)} className="text-gray-500 hover:text-white">+</button>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* LIFE / HAND (Always at bottom) */}
+                        <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-800">
+                            <div className="text-center bg-red-900/10 rounded border border-red-900/30">
+                                <label className="text-[8px] text-red-700 font-bold block">LIFE</label>
+                                <input type="number" value={player.lt} onChange={(e) => updatePlayer(index, 'lt', parseInt(e.target.value))} className="bg-transparent text-center font-bold w-full text-xl text-red-500 focus:outline-none" />
+                            </div>
+                            <div className="text-center bg-blue-900/10 rounded border border-blue-900/30">
+                                <label className="text-[8px] text-blue-700 font-bold block">HAND</label>
+                                <input type="number" value={player.hs} onChange={(e) => updatePlayer(index, 'hs', parseInt(e.target.value))} className="bg-transparent text-center font-bold w-full text-xl text-blue-500 focus:outline-none" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+
+        {/* CODEX FOOTER (Toggle) */}
+        <details className="mt-2 bg-[#111] border border-gray-800 rounded shrink-0 group relative z-20">
+            <summary className="p-2 text-center text-[10px] text-gray-500 uppercase tracking-widest cursor-pointer hover:text-gray-300">
+                View Rules Codex
+            </summary>
+            <div className="p-4 grid grid-cols-2 gap-4 text-xs text-gray-400 absolute bottom-full left-0 right-0 bg-[#0a0a0a] border-t border-gray-800 shadow-2xl">
                 <div>
-                  <div className="flex justify-between items-center mb-1">
-                    <label className="text-[10px] text-gray-500 uppercase font-bold tracking-wider">Role</label>
-                    <span className="text-yellow-600">{getRoleIcon(player.role)}</span>
-                  </div>
-                  <select 
-                    value={player.role} 
-                    onChange={(e) => updatePlayer(index, 'role', e.target.value)}
-                    className="w-full bg-black border border-gray-700 text-gray-300 text-sm rounded px-2 py-1 focus:border-yellow-600 focus:outline-none"
-                  >
-                    <option value="">-- No Role --</option>
-                    <option value="Doctor">Doctor</option>
-                    <option value="Monk">Monk</option>
-                    <option value="Smith">Smith</option>
-                    <option value="Knight">Knight</option>
-                    <option value="Fool">Fool</option>
-                    <option value="King">King</option>
-                  </select>
+                    <h4 className="font-bold text-white mb-1">Standard</h4>
+                    <ul className="list-disc pl-4 space-y-1">
+                        <li>XP Cap: 20. Lvl 1 (0-9), Lvl 2 (10-19), Lvl 3 (20).</li>
+                        <li>Ranking: VP > Recent Win.</li>
+                        <li>Mulligan: London (Draw 7, bottom X).</li>
+                        <li>Stalemate: 2 players left -> Timer starts. Ends at 10.</li>
+                    </ul>
                 </div>
-
-                {/* XP */}
-                <div className="flex justify-between items-center bg-black/40 p-2 rounded border border-gray-800">
-                  <div>
-                    <span className="text-[10px] text-blue-500 font-bold uppercase block mb-1">Experience</span>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => adjustValue(index, 'xp', -1)} className="w-6 h-6 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-xs text-gray-400">-</button>
-                      <span className="text-xl font-bold text-white w-6 text-center font-mono">{player.xp}</span>
-                      <button onClick={() => adjustValue(index, 'xp', 1)} className="w-6 h-6 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-xs text-gray-400">+</button>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-gray-500 uppercase block">Level</span>
-                    <span className="text-3xl font-bold text-blue-500" style={{ fontFamily: 'Cinzel, serif', textShadow: '0 0 10px rgba(59, 130, 246, 0.4)' }}>
-                      {getLevel(player.xp)}
-                    </span>
-                  </div>
+                <div>
+                    <h4 className="font-bold text-white mb-1">Epilogue</h4>
+                    <p className="mb-1"><span className="text-purple-400">Day After:</span> Drunk based on loss rank. Remove counter = Draw. Pay 1 (2 drunk) to remove.</p>
+                    <p><span className="text-indigo-400">Big Day:</span> Marriage = Shared library, peace treaty. Divorce = Give hand.</p>
                 </div>
-
-                {/* VP */}
-                <div className="flex justify-between items-center bg-black/40 p-2 rounded border border-gray-800">
-                  <span className="text-[10px] text-green-500 font-bold uppercase">Victory Points</span>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => adjustValue(index, 'vp', -1)} className="w-6 h-6 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-xs text-gray-400">-</button>
-                    <span className="text-xl font-bold text-green-500 w-6 text-center font-mono">{player.vp}</span>
-                    <button onClick={() => adjustValue(index, 'vp', 1)} className="w-6 h-6 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-xs text-gray-400">+</button>
-                  </div>
-                </div>
-
-                {/* Abilities */}
-                <div className="mt-1 p-3 bg-black/60 rounded border border-gray-800 min-h-[140px] shadow-inner">
-                  {player.role ? (
-                    <div className="flex flex-col gap-2">
-                      {[1, 2, 3].map(lvl => (
-                        <p key={lvl} className={`text-xs leading-tight ${getLevel(player.xp) >= lvl ? 'text-green-300 font-medium' : 'text-gray-600 line-through'}`}>
-                          {getRoleText(player.role, lvl)}
-                        </p>
-                      ))}
-                      <div className="w-full h-px bg-gray-700 my-1"></div>
-                      <p className="text-[10px] text-yellow-600 italic">{getRoleReward(player.role)}</p>
-                    </div>
-                  ) : (
-                    <div className="h-full flex items-center justify-center text-xs text-gray-700 italic">Select a role</div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* EPILOGUE STATS */}
-            {epilogueMode && (
-              <div className="flex flex-col gap-4">
-                <div className="p-3 bg-indigo-950/30 rounded border border-indigo-900/50">
-                  <label className="text-[10px] text-indigo-400 uppercase font-bold tracking-widest mb-1 block">Marriage Status</label>
-                  <select 
-                    value={player.spouse} 
-                    onChange={(e) => updatePlayer(index, 'spouse', e.target.value)}
-                    className="w-full bg-black border border-gray-700 text-indigo-200 text-sm rounded px-2 py-1 focus:border-indigo-500 focus:outline-none"
-                  >
-                    <option value="">Single / Unmarried</option>
-                    {players.filter(p => p.name !== player.name).map((p, i) => (
-                      <option key={i} value={p.name}>Married to {p.name.split(' ')[0]}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div className="flex justify-between items-center p-3 bg-purple-950/20 rounded border border-purple-900/30">
-                  <span className="text-[10px] text-purple-400 font-bold uppercase">Drunk Counters</span>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => adjustValue(index, 'drunk', -1)} className="w-6 h-6 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-xs text-gray-400">-</button>
-                    <span className="text-xl font-bold text-purple-400 w-6 text-center font-mono">{player.drunk}</span>
-                    <button onClick={() => adjustValue(index, 'drunk', 1)} className="w-6 h-6 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-xs text-gray-400">+</button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Footer Stats */}
-            <div className="grid grid-cols-2 gap-3 mt-auto pt-4 border-t border-gray-800">
-              <div className="text-center">
-                <label className="text-[9px] text-red-600 font-bold tracking-widest block mb-1">LIFE</label>
-                <input 
-                  type="number" 
-                  value={player.lt} 
-                  onChange={(e) => updatePlayer(index, 'lt', parseInt(e.target.value))}
-                  className="bg-black/50 border border-gray-800 rounded text-center font-bold w-full text-2xl text-red-500 py-1 focus:border-red-900 focus:outline-none" 
-                />
-              </div>
-              <div className="text-center">
-                <label className="text-[9px] text-blue-600 font-bold tracking-widest block mb-1">HAND</label>
-                <input 
-                  type="number" 
-                  value={player.hs} 
-                  onChange={(e) => updatePlayer(index, 'hs', parseInt(e.target.value))}
-                  className="bg-black/50 border border-gray-800 rounded text-center font-bold w-full text-2xl text-blue-500 py-1 focus:border-blue-900 focus:outline-none" 
-                />
-              </div>
             </div>
+        </details>
 
-          </div>
-        ))}
       </div>
-
-      {/* --- CODEX --- */}
-      <div className="max-w-7xl mx-auto mt-12 pt-6 border-t border-gray-800">
-        <h3 className="text-lg font-bold text-gray-500 mb-4 uppercase" style={{ fontFamily: 'Cinzel, serif' }}>Campaign Codex</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <details className="bg-black/40 border border-gray-800 rounded group">
-            <summary className="p-3 cursor-pointer font-bold text-xs text-gray-400 hover:text-white uppercase tracking-wider transition-colors flex justify-between">
-              General Rules <span className="text-gray-600 group-open:rotate-180 transition-transform">▼</span>
-            </summary>
-            <div className="p-4 text-sm text-gray-400 border-t border-gray-800 leading-relaxed">
-              <ul className="list-disc pl-4 space-y-2">
-                <li><strong>Levels:</strong> <span className="text-blue-400">Lvl 1</span> (&lt;10 XP), <span className="text-blue-400">Lvl 2</span> (10-19 XP), <span className="text-blue-400">Lvl 3</span> (20+ XP).</li>
-                <li><strong>Ranking:</strong> Determined by VP. Tie-breaker: Most recent win.</li>
-                <li><strong>Mulligan:</strong> Draw 7, put X cards on bottom (London Mulligan).</li>
-                <li><strong>Stalemate:</strong> Starts when 2 players remain. Battle ends at count 10.</li>
-              </ul>
-            </div>
-          </details>
-          <details className="bg-black/40 border border-gray-800 rounded group">
-            <summary className="p-3 cursor-pointer font-bold text-xs text-gray-400 hover:text-white uppercase tracking-wider transition-colors flex justify-between">
-              Epilogue Rules <span className="text-gray-600 group-open:rotate-180 transition-transform">▼</span>
-            </summary>
-            <div className="p-4 text-sm text-gray-400 border-t border-gray-800 leading-relaxed">
-              <p className="mb-2"><strong className="text-purple-400">The Day After:</strong> Start with Drunk counters based on inverse placement. Remove counter = Draw card. Upkeep: Pay 1 (effectively 2) to remove Drunk counter.</p>
-              <p><strong className="text-indigo-400">The Big Day:</strong> Winner proposes. Married players share library, cannot attack each other. Divorce: Sorcery speed, give hand to partner.</p>
-            </div>
-          </details>
-        </div>
-      </div>
-
     </div>
   );
 };
