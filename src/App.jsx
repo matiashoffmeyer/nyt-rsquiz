@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import CampaignLobby from './CampaignLobby';
+import GameLobby from './GameLobby';
 import UniversalCampaignManager from './UniversalCampaignManager';
 
 const App = () => {
@@ -8,7 +8,7 @@ const App = () => {
   return (
     <>
       {!selectedCampaignId ? (
-        <CampaignLobby onSelectCampaign={(id) => setSelectedCampaignId(id)} />
+        <GameLobby onSelectCampaign={(id) => setSelectedCampaignId(id)} />
       ) : (
         <UniversalCampaignManager 
           campaignId={selectedCampaignId} 
