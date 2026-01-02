@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer } from 'lucide-react';
+import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock } from 'lucide-react';
 
 const CampaignManager = () => {
   // --- STATE ---
   const [players, setPlayers] = useState([]);
   const [stalemate, setStalemate] = useState(0);
   const [epilogueMode, setEpilogueMode] = useState(false);
+  
+  // UI State
   const [showRules, setShowRules] = useState(false);
+  const [activeRuleSection, setActiveRuleSection] = useState(null); // Controls the exclusive accordion
   
   // Dice State
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
@@ -17,7 +20,7 @@ const CampaignManager = () => {
 
   // --- INITIAL LOAD & AUTO-SAVE ---
   useEffect(() => {
-    const saved = localStorage.getItem('staggingData_v6');
+    const saved = localStorage.getItem('staggingData_v7');
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -34,7 +37,7 @@ const CampaignManager = () => {
 
   useEffect(() => {
     if (!isImporting && players.length > 0) {
-      localStorage.setItem('staggingData_v6', JSON.stringify({ players, stalemate, epilogueMode }));
+      localStorage.setItem('staggingData_v7', JSON.stringify({ players, stalemate, epilogueMode }));
     }
   }, [players, stalemate, epilogueMode, isImporting]);
 
@@ -81,6 +84,10 @@ const CampaignManager = () => {
 
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
 
+  const toggleRuleSection = (id) => {
+    setActiveRuleSection(activeRuleSection === id ? null : id);
+  };
+
   // --- FILE SYSTEM ---
   const exportData = () => {
     const data = JSON.stringify({ players, stalemate, epilogueMode, timestamp: new Date().toISOString() }, null, 2);
@@ -118,33 +125,33 @@ const CampaignManager = () => {
   const getRoleAbilities = (role) => {
     const data = {
         'Doctor': [
-            "Creature enters: Remove counter from perm/player.",
-            "Gain Drunk counter: Target creature gets Metaxa eot.",
-            "Creatures have Infect. End turn: Proliferate."
+            "When a creature enters play under your control, you may remove a counter from a permanent or player.",
+            "Gain a Drunk counter: Target creature gains Metaxa until end of turn.",
+            "Creatures under your control have Infect. At the end of your turn: Proliferate."
         ],
         'Monk': [
-            "Discard & Pay (2) (Sorcery): Place Heresy counter. Attacking creatures +X/+0 vs Heresy. Attack Heresy player = Draw card.",
-            "Activate OG/Planeswalker abilities twice per turn.",
-            "Tap 3 creatures (Sorcery): Put random OG in play. Sac if tappers untap. Max 1 OG."
+            "Discard a card and pay (2) (sorcery speed) (max once pr turn): Place a Heresy counter on target player. Attacking creatures have +X/+0 where X is the number of Heresy counters on the defending player. When a player attacks a player with one or more Heresy counters, he draws a card.",
+            "You may activate abilities of OGs and planeswalkers under your control twice per turn (as if the OG had two turns, so not the same ability twice if used on an OG).",
+            "Tap 3 creatures under your control (sorcery speed): Put a random OG in play under your control. Sacrifice it if one or more of the tapped creatures become untapped. You can’t control more than one OG, this way, at a time."
         ],
         'Smith': [
-            "Artifact spells in hand cost (1) less per Level.",
-            "Equipped creatures you control have Vigilance, Trample, and Reach.",
-            "Metalcraft (3+ artifacts): Discard to create token copy of target artifact. (Sorcery, 1/turn)."
+            "Artifact spells in your hand cost (1) less for every level you have.",
+            "Equipped creatures under your control have Vigilance, Trample and Reach.",
+            "Metalcraft (If you control 3 or more artifacts) you may discard a card to create a token that is a copy of target artifact. (Sorcery speed only and max once pr turn)."
         ],
         'Knight': [
-            "(1) Discard: Create 1/2 Green horse creature token w/ Haste (Sorcery).",
-            "Equipped creatures you control have Mentor.",
-            "Battalion (3+ attackers): You may have a creature under your control fight target creature."
+            "(1) discard a card to create a 1/2 Green horse creature token with Haste (Sorcery speed only).",
+            "Equipped creatures you control have Mentor (Whenever this creature attacks, put a +1/+1 counter on target attacking creature with lesser power.)",
+            "Battalion (When you attack with 3 or more creatures): You may have a creature under your control fight target creature."
         ],
         'Fool': [
-            "Spells you cast on opponent's turn cost (1) less. (Kill King -> Gain Role).",
-            "Creature spells in your hand have Ninjutsu = CMC.",
-            "(Same as Lvl 2) Creature spells in your hand have Ninjutsu = CMC."
+            "Spells you cast on your opponent's turn cost (1) less. If you caused the King to die, you may gain his role for the rest of the battle.",
+            "Creature spells in your hand have Ninjutsu equal to their CMC. (Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)",
+            "(Same as Level 2) Creature spells in your hand have Ninjutsu equal to their CMC."
         ],
         'King': [
-            "Creatures under your control have +1/+1 per Level.",
-            "Play extra land. Lands have 'T: Add one mana any color'.",
+            "Creatures under your control have +1/+1 for each of your levels.",
+            "You may play an extra land during your turn and lands you control also have 'T: Add one mana of any colour.'",
             "You draw an extra card in your draw step."
         ]
     };
@@ -153,12 +160,12 @@ const CampaignManager = () => {
 
   const getRoleReward = (role) => {
     const rewards = {
-        'Doctor': 'REWARD: Creature dies on your turn -> +1 XP',
-        'Monk': 'REWARD: Life total changes -> +1 XP',
-        'Smith': 'REWARD: Artifact enters under control -> +1 XP',
-        'Knight': 'REWARD: Creatures deal damage -> +1 XP',
-        'Fool': 'REWARD: Target opponent/their perm -> +1 XP (1/turn)',
-        'King': 'REWARD: Every 3rd time another player gains XP -> +1 XP'
+        'Doctor': 'Rewards: When one or more creatures die during your turn, gain 1 xp.',
+        'Monk': 'Rewards: Whenever your life total changes, gain 1 xp.',
+        'Smith': 'Rewards: When an artifact enters play under your control, gain 1 xp.',
+        'Knight': 'Rewards: Whenever one or more creatures under your control deal damage, gain 1 XP.',
+        'Fool': 'Rewards: Whenever you target an opponent or a permanent under his control with a spell or ability, gain 1 xp (max once pr turn)',
+        'King': 'Rewards: Every third time another player gains xp you gain 1 xp.'
     };
     return rewards[role] || '';
   };
@@ -174,46 +181,6 @@ const CampaignManager = () => {
           default: return null;
       }
   };
-
-  // --- TIMELINE DATA ---
-  const timelineData = [
-      {
-          title: "Battle 1: Repentance", type: "battle",
-          desc: "All vs All. You may pay life instead of mana for your spells."
-      },
-      {
-          title: "Post-Battle 1", type: "post",
-          desc: "Losers: Bid i det sure løg #101.\nDraft: Quilt draft a Booster (#105)."
-      },
-      {
-          title: "Battle 2: Grand Melee", type: "battle",
-          desc: "Creatures have Haste and attack each turn if able."
-      },
-      {
-          title: "Post-Battle 2", type: "post",
-          desc: "Event: Workout Session #114 (All buffs up).\nDraft: Housmann draft a booster (#107)."
-      },
-      {
-          title: "Battle 3: Hunters Loge", type: "battle",
-          desc: "Stack 3 OGs facedown. Defeat one -> Next flips (X = cycle # of defeated).\nOG 1: Draw from player to left.\nOG 2: Can't pay own mana (others must transfer).\nOG 3: Vote to skip Main or Attack steps.\nIf OG wins: No King next battle. Kill OG = VP. Die to OG = Lose 5 XP & Discard 3 lands."
-      },
-      {
-          title: "Post-Battle 3", type: "post",
-          desc: "Event: Mobile Hammock (#59).\nDraft: Minesweeper draft a land booster (#107)."
-      },
-      {
-          title: "Battle 4: Spikeball", type: "battle",
-          desc: "All vs All. Coin flip for direction (Left/Right).\nShuffle 2 markers into decks. Draw marker -> Change direction.\nWin condition: Eliminate target in direction."
-      },
-      {
-          title: "Post-Battle 4", type: "post",
-          desc: "Draft: Dinner a'la card (#105). Draft piles in descending rank order. Cards go to deck or starting hand."
-      },
-      {
-          title: "Battle 5: Heidi's Bierbar", type: "battle",
-          desc: "All vs All.\nEnd step: Gain 2 Drunk or 2 Poison counters.\nCause loss = Gain their role.\nLast player wins campaign."
-      }
-  ];
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative flex">
@@ -287,8 +254,8 @@ const CampaignManager = () => {
                     <div className={`h-1 w-full ${['bg-red-600','bg-blue-600','bg-green-600','bg-yellow-600'][index]}`}></div>
                     
                     <div className="p-3 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center">
-                        <input value={player.name} onChange={(e) => updatePlayer(index, 'name', e.target.value)} className="bg-transparent w-full font-black text-xl text-gray-200 focus:text-white focus:outline-none placeholder-gray-700" style={{ fontFamily: 'Cinzel, serif' }} />
-                        {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide">Epilogue</span>}
+                        <span className="w-full font-black text-xl text-center text-gray-200" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
+                        {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
                     </div>
 
                     <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden">
@@ -390,83 +357,223 @@ const CampaignManager = () => {
         </div>
       </div>
 
-      {/* --- RIGHT SIDE: RULE PANE (EXPANDED) --- */}
+      {/* --- RIGHT SIDE: CODEX PANE --- */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-1/3 translate-x-0' : 'w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex</h2>
             <button onClick={() => setShowRules(false)} className="text-gray-500 hover:text-white"><X size={20}/></button>
         </div>
-        <div className="flex-grow overflow-y-auto p-4 space-y-4 text-sm text-gray-300 custom-scrollbar pb-20">
+        <div className="flex-grow overflow-y-auto p-2 space-y-2 text-sm text-gray-300 custom-scrollbar pb-20">
             
-            {/* CORE */}
-            <details className="group border border-gray-800 rounded bg-black/20 open:bg-black/40 transition-colors">
-                <summary className="p-3 font-bold cursor-pointer text-blue-400 hover:text-blue-300 uppercase tracking-widest flex justify-between">Core Rules <span className="group-open:rotate-180 transition-transform">▼</span></summary>
-                <div className="p-3 border-t border-gray-800 space-y-2 text-xs leading-relaxed">
-                    <p><strong>Setup:</strong> 4-5 players, 5 battles. HS 6, LT 15. Dual land market = 40 cards.</p>
-                    <p><strong>Roles & XP:</strong> Choose non-King role (descending rank). Levels: 0-9 (Lvl 1), 10-19 (Lvl 2), 20+ (Lvl 3). XP Cap: 0-20.</p>
-                    <p><strong>Ranking:</strong> Based on VPs. Tie-breaker: Most recent win. Win battle = 1 VP.</p>
-                    <p><strong>Mulligans:</strong> London (Draw 7, bottom X).</p>
-                    <p><strong>Draw-out:</strong> Sac non-land permanent OR lose 2 life.</p>
-                    <p><strong>Stalemate:</strong> 2 players left -> Timer starts. Ends at 10. Winner: Life > Non-lands > Hand > Library.</p>
-                </div>
-            </details>
+            {/* CORE RULES */}
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('core')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'core' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
+                    <span><Info size={12} className="inline mr-2"/> Core Rules</span>
+                    <span>{activeRuleSection === 'core' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'core' && (
+                    <div className="p-3 border-t border-gray-800 space-y-3 text-xs leading-relaxed text-gray-400">
+                        <p><strong>Setup:</strong> 4-5 players, 5 battles, 6 boosters and a land booster. HS 6, LT 15. Dual land market is 2 x types (20) = 40 cards.</p>
+                        <p><strong>Bidding & Roles:</strong> At the beginning of the campaign players secretly bid a number to subtract from their LT. Players choose a non-King-role to gain, starting with the highest bidder and then in descending order. Only one player can have a role at a time.</p>
+                        <p><strong>King Role:</strong> When a player wins a battle, he gains the King role for the next battle.</p>
+                        <p><strong>Role Selection:</strong> At the beginning of a battle, all non-King players may gain an available role, in descending ranking order.</p>
+                        <p><strong>Dead Players:</strong> After a player is dead in battle 1-4 other players can’t gain more XP in that battle (except rewards based on the outcome of the battle).</p>
+                        <p><strong>Levels:</strong> Level 1 (&lt; 10 xp), Level 2 (10 xp), Level 3 (20 xp). Players can’t have more than 20 xp or less than 0.</p>
+                        <p><strong>Ranking:</strong> Player ranking is determined by the number of VPs, if tied, the most recent wins count highest. Gain a VP by winning a battle. The winner of the campaign is the winner of the final battle.</p>
+                        <p><strong>Mulligans:</strong> If you want to mulligan your starting hand, you may shuffle your hand and draw a new hand, then, before looking at it, put one card from your hand on the bottom of your library. For each time you mulligan, put an extra card on the bottom of your library.</p>
+                        <p><strong>Draw-out:</strong> If, at any point, you can’t draw a card from your library you may instead sacrifice a non-land permanent. If you don’t, you lose 2 life.</p>
+                        <p><strong>Stalemate:</strong> The moment 2 players are left in any battle, put a timer dice to 1. Increase it at the beginning of turns. When it reaches 10 (in consensus only), the battle ends and the winner is the player with the most lives, if tied, the most non-land permanents in play, if tied, the most cards on hand, if tied, the most cards left in his library.</p>
+                    </div>
+                )}
+            </div>
 
             {/* ROLES */}
-            <details className="group border border-gray-800 rounded bg-black/20 open:bg-black/40 transition-colors">
-                <summary className="p-3 font-bold cursor-pointer text-green-400 hover:text-green-300 uppercase tracking-widest flex justify-between">Roles <span className="group-open:rotate-180 transition-transform">▼</span></summary>
-                <div className="p-3 border-t border-gray-800 space-y-4 text-xs leading-relaxed">
-                    <p className="italic text-gray-500">Players have abilities of current AND lower levels.</p>
-                    {/* (Role details logic is handled here, abbreviated for brevity in this display but fully in code) */}
-                    <div className="grid gap-2">
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('roles')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'roles' ? 'text-green-300 bg-white/5' : 'text-green-500'}`}>
+                    <span><Crown size={12} className="inline mr-2"/> Roles</span>
+                    <span>{activeRuleSection === 'roles' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'roles' && (
+                    <div className="p-3 border-t border-gray-800 space-y-4 text-xs leading-relaxed text-gray-400">
                         {['Doctor','Monk','Smith','Knight','Fool','King'].map(r => (
-                            <div key={r} className="border-b border-gray-800 pb-2 mb-2 last:border-0">
+                            <div key={r} className="border-b border-gray-800 last:border-0 pb-2">
                                 <strong className="text-yellow-600 block mb-1 uppercase">{r}</strong>
-                                <ul className="list-disc pl-4 space-y-1 text-gray-400">
-                                    {getRoleAbilities(r).map((ab, i) => <li key={i} className="leading-tight">{ab}</li>)}
+                                <ul className="list-disc pl-4 space-y-1">
+                                    {getRoleAbilities(r).map((ab, i) => <li key={i}>{ab}</li>)}
                                     <li className="text-yellow-500/80 italic">{getRoleReward(r)}</li>
                                 </ul>
                             </div>
                         ))}
                     </div>
-                </div>
-            </details>
+                )}
+            </div>
 
-            {/* TIMELINE (NEW INTERACTIVE) */}
-            <div className="border border-gray-800 rounded bg-black/20">
-                <div className="p-3 font-bold text-red-400 uppercase tracking-widest border-b border-gray-800">Campaign Timeline</div>
-                {timelineData.map((event, i) => (
-                    <details key={i} className="group border-b border-gray-800 last:border-0 transition-colors open:bg-white/5">
-                        <summary className="p-3 cursor-pointer text-xs font-bold hover:text-white flex justify-between items-center">
-                            <span className={event.type === 'battle' ? 'text-red-300' : 'text-blue-300'}>
-                                {event.type === 'battle' ? <Sword size={12} className="inline mr-2"/> : <Beer size={12} className="inline mr-2"/>}
-                                {event.title}
-                            </span>
-                            <span className="text-gray-600 group-open:rotate-180 transition-transform">▼</span>
-                        </summary>
-                        <div className="p-3 pt-0 text-xs text-gray-400 leading-relaxed whitespace-pre-wrap pl-8">
-                            {event.desc}
-                        </div>
-                    </details>
-                ))}
+            {/* BATTLE 1 */}
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('b1')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'b1' ? 'text-red-300 bg-white/5' : 'text-red-500'}`}>
+                    <span><Sword size={12} className="inline mr-2"/> Battle 1: Repentance</span>
+                    <span>{activeRuleSection === 'b1' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'b1' && (
+                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
+                        <p>All vs All, you may pay life instead of mana for your spells.</p>
+                    </div>
+                )}
+            </div>
+
+            {/* POST BATTLE 1 */}
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('pb1')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'pb1' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
+                    <span><Beer size={12} className="inline mr-2"/> Post-Battle 1</span>
+                    <span>{activeRuleSection === 'pb1' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'pb1' && (
+                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
+                        <p>Bid i det sure løg #101 for each loser.</p>
+                        <p>Quilt draft a Booster.</p>
+                    </div>
+                )}
+            </div>
+
+            {/* BATTLE 2 */}
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('b2')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'b2' ? 'text-red-300 bg-white/5' : 'text-red-500'}`}>
+                    <span><Sword size={12} className="inline mr-2"/> Battle 2: Grand Melee</span>
+                    <span>{activeRuleSection === 'b2' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'b2' && (
+                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
+                        <p>Creatures have haste and attack each turn if able.</p>
+                    </div>
+                )}
+            </div>
+
+            {/* POST BATTLE 2 */}
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('pb2')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'pb2' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
+                    <span><Beer size={12} className="inline mr-2"/> Post-Battle 2</span>
+                    <span>{activeRuleSection === 'pb2' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'pb2' && (
+                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
+                        <p>Workout Session #114 (all buffs up).</p>
+                        <p>Housmann draft a booster. #107</p>
+                    </div>
+                )}
+            </div>
+
+            {/* BATTLE 3 */}
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('b3')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'b3' ? 'text-red-300 bg-white/5' : 'text-red-500'}`}>
+                    <span><Sword size={12} className="inline mr-2"/> Battle 3: Hunters Loge</span>
+                    <span>{activeRuleSection === 'b3' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'b3' && (
+                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 space-y-2">
+                        <p>#59 Pre-battle, stack 3 OG’s facedown, when the top OG is defeated, the next OG is turned face up, it's cycle number (X) is equal to the cycle number of the defeated OG, and it becomes the new OG’s turn. The 3 OGs are treated as a single, combined OG.</p>
+                        <p>As long as there is an OG in play, players may block for each other.</p>
+                        <p>Until the first OG dies, players draw their cards from the library of the player to their left.</p>
+                        <p>As long as the second OG is in play, players can’t pay mana for their own spells or abilities, but other players can transfer them mana from their manapools.</p>
+                        <p>As long as the third OG is in play, each time the first player takes his turn, players must vote to skip their main phases or attack step until the first player's next turn. The top voted phases are skipped. If the vote is tied, both main phases and attack steps are skipped.</p>
+                        <p>If the OG wins there is no King in the next battle.</p>
+                        <p>If you cause an OG to die, gain a VP. If you die while an OG is in play, lose 5 XP and discard 3 random non-basic land cards.</p>
+                    </div>
+                )}
+            </div>
+
+            {/* POST BATTLE 3 */}
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('pb3')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'pb3' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
+                    <span><Beer size={12} className="inline mr-2"/> Post-Battle 3</span>
+                    <span>{activeRuleSection === 'pb3' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'pb3' && (
+                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
+                        <p>Mobile Hammock: Minesweeper draft a land booster.</p>
+                        <p>#107</p>
+                    </div>
+                )}
+            </div>
+
+            {/* BATTLE 4 */}
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('b4')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'b4' ? 'text-red-300 bg-white/5' : 'text-red-500'}`}>
+                    <span><Sword size={12} className="inline mr-2"/> Battle 4: Spikeball</span>
+                    <span>{activeRuleSection === 'b4' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'b4' && (
+                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
+                        <p>All vs. All</p>
+                        <p>Flip a coin to decide the starting attack direction (left or right).</p>
+                        <p>Start of game: Shuffle 2 markers into each player's deck, when a marker is drawn, the attack direction changes. (The marker is shuffled back into the deck and the player draws another card).</p>
+                        <p>The winner is the first player to eliminate the player in his attack direction (or when said player dies for another reason).</p>
+                    </div>
+                )}
+            </div>
+
+            {/* POST BATTLE 4 */}
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('pb4')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'pb4' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
+                    <span><Beer size={12} className="inline mr-2"/> Post-Battle 4</span>
+                    <span>{activeRuleSection === 'pb4' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'pb4' && (
+                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 space-y-2">
+                        <p><strong>Dinner a´la card:</strong> #105</p>
+                        <p>Shuffle a booster, divide it into piles equal to the number of players. Reveal 1 pile. Players choose in turn (descending ranking order: 1, 2, 3, 4) to add one to their deck (you may skip your turn), until each player has had a turn. Then the pile is replaced with a new pile and the process is repeated with a new starting player (descending by rank: 2, 1, 3, 4, Then: 3, 1, 2, 4 and so on) until all players have had a turn with the starting pick.</p>
+                        <p>Remaining cards go in Skraldespanden.</p>
+                        <p>Any of the chosen cards may be added to your starting hand in the following battle. (Players draw cards for the starting hand, minus the number they chose to put in the starting hand).</p>
+                        <p>Players may, in ranking order, gain an available role or switch role with a non-King player of lower ranking.</p>
+                    </div>
+                )}
+            </div>
+
+            {/* BATTLE 5 */}
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('b5')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'b5' ? 'text-red-300 bg-white/5' : 'text-red-500'}`}>
+                    <span><Sword size={12} className="inline mr-2"/> Battle 5: Heidi's Bierbar</span>
+                    <span>{activeRuleSection === 'b5' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'b5' && (
+                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
+                        <p>All vs All</p>
+                        <p>In each player’s end step, he gains his choice of 2 Drunk- or 2 Poison counters.</p>
+                        <p>When a permanent, spell or ability you control causes a player to lose, you may gain his role.</p>
+                        <p>Last remaining player wins the campaign, if all the last players are killed at the same time (for example by a player-owned OG), the tie breaker is VP, then randomly.</p>
+                    </div>
+                )}
             </div>
 
             {/* EPILOGUE */}
-            <details className="group border border-gray-800 rounded bg-black/20 open:bg-black/40 transition-colors">
-                <summary className="p-3 font-bold cursor-pointer text-indigo-400 hover:text-indigo-300 uppercase tracking-widest flex justify-between">Epilogue Rules <span className="group-open:rotate-180 transition-transform">▼</span></summary>
-                <div className="p-3 border-t border-gray-800 space-y-4 text-xs leading-relaxed">
-                    <div>
-                        <strong className="text-white block mb-1">The Day After</strong>
-                        <p>Start with Drunk counters (inverse placement: Last=3, 2nd=4...). Remove counter = Draw card. Upkeep: Pay 1 (effectively 2) to remove Drunk. Spells have Suspend logic. Creatures enter tapped.</p>
+            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                <button onClick={() => toggleRuleSection('epi')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'epi' ? 'text-indigo-300 bg-white/5' : 'text-indigo-500'}`}>
+                    <span><Clock size={12} className="inline mr-2"/> Epilogue</span>
+                    <span>{activeRuleSection === 'epi' ? '−' : '+'}</span>
+                </button>
+                {activeRuleSection === 'epi' && (
+                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 space-y-2">
+                        <p>The Role and XP system is abandoned. Booster draft a non mono booster #105.</p>
+                        <strong className="text-white block mt-2">The Day After (All vs All)</strong>
+                        <p>Players start with a number of Drunk counters corresponding to their inverse placement in the previous battle (Last place starts with 3 Drunk counter, second last with 4 Drunk counters and so on).</p>
+                        <p>When a Drunk counter is removed from a player he draws a card.</p>
+                        <p>Sober Up: At the beginning of your upkeep, you may pay 1 (so 2 because you’re Drunk) mana to remove a Drunk counter.</p>
+                        <p>All spells have “Rather than cast this card from your hand, you must pay its mana cost and exile it with a time counter on it. At the beginning of your upkeep, remove a time counter. When the last is removed, cast it without paying its mana cost.“ and all creatures enter tapped.</p>
+                        <p>Last place gains +1 LT, second last +2 LT and so on. LTs can exceed 20.</p>
+                        
+                        <strong className="text-white block mt-2">The Big Day (All vs All)</strong>
+                        <p>The winner of the previous battle proposes marriage to another player. That player may refuse. If a player accepts, the 2 become married. The winner continues asking other players until one accepts. The final player asked, can’t refuse.</p>
+                        <p>The highest ranked remaining player repeats the proposal process with the remaining unmarried player(s).</p>
+                        <p>The married players shuffle their decks and share a library (the library remains in play when one of the married players dies).</p>
+                        <p>Married players can’t attack each other unless they are the only remaining players.</p>
+                        <p>A player may end the marriage with his partner with sorcery speed by giving all cards in his hand to the abandoned partner.</p>
+                        <p>2 unmarried players may marry with sorcery speed. As long as they remain married, they may draw from the other players library.</p>
+                        <p>The final remaining player wins the Epilogue of Stagging It Up.</p>
                     </div>
-                    <div>
-                        <strong className="text-white block mb-1">The Big Day</strong>
-                        <p>Winner proposes. Marriage = Shared library, no attacks. Divorce = Give hand (Sorcery). Win = Final survivor.</p>
-                    </div>
-                </div>
-            </details>
+                )}
+            </div>
 
         </div>
-    </div>
+      </div>
 
     </div>
   );
