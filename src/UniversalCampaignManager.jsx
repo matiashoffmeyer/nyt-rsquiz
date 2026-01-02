@@ -9,7 +9,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 const UniversalCampaignManager = ({ campaignId, onExit }) => {
   // --- STATE ---
   const [players, setPlayers] = useState([]);
-  const [config, setConfig] = useState(null); // Rules & Mechanics from DB
+  const [config, setConfig] = useState(null); 
   const [meta, setMeta] = useState({ title: '', engine: '' });
   
   const [stalemate, setStalemate] = useState(0);
@@ -28,17 +28,46 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
 
+  // --- CONTENT DATA (THE ORIGINAL STAGGING DATA) ---
+  const staggingTimeline = [
+      { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
+      { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
+      { title: "Battle 2: Grand Melee", type: "battle", desc: "Creatures have haste and attack each turn if able." },
+      { title: "Post-Battle 2", type: "post", desc: "Workout Session #114 (all buffs up).\nHousmann draft a booster. #107" },
+      { title: "Battle 3: Hunters Loge", type: "battle", desc: "#59 Pre-battle, stack 3 OG’s facedown, when the top OG is defeated, the next OG is turned face up, it's cycle number (X) is equal to the cycle number of the defeated OG, and it becomes the new OG’s turn. The 3 OGs are treated as a single, combined OG.\n\nAs long as there is an OG in play, players may block for each other.\nUntil the first OG dies, players draw their cards from the library of the player to their left.\nAs long as the second OG is in play, players can’t pay mana for their own spells or abilities, but other players can transfer them mana from their manapools.\nAs long as the third OG is in play, each time the first player takes his turn, players must vote to skip their main phases or attack step until the first player's next turn. The top voted phases are skipped. If the vote is tied, both main phases and attack steps are skipped.\n\nIf the OG wins there is no King in the next battle.\nIf you cause an OG to die, gain a VP. If you die while an OG is in play, lose 5 XP and discard 3 random non-basic land cards." },
+      { title: "Post-Battle 3", type: "post", desc: "Mobile Hammock: Minesweeper draft a land booster.\n#107" },
+      { title: "Battle 4: Spikeball", type: "battle", desc: "All vs. All\nFlip a coin to decide the starting attack direction (left or right).\nStart of game: Shuffle 2 markers into each player's deck, when a marker is drawn, the attack direction changes. (The marker is shuffled back into the deck and the player draws another card).\nThe winner is the first player to eliminate the player in his attack direction (or when said player dies for another reason)." },
+      { title: "Post-Battle 4", type: "post", desc: "Dinner a´la card: #105\nShuffle a booster, divide it into piles equal to the number of players. Reveal 1 pile. Players choose in turn (descending ranking order: 1, 2, 3, 4) to add one to their deck (you may skip your turn), until each player has had a turn. Then the pile is replaced with a new pile and the process is repeated with a new starting player (descending by rank: 2, 1, 3, 4, Then: 3, 1, 2, 4 and so on) until all players have had a turn with the starting pick.\nRemaining cards go in Skraldespanden.\nAny of the chosen cards may be added to your starting hand in the following battle. (Players draw cards for the starting hand, minus the number they chose to put in the starting hand)\nPlayers may, in ranking order, gain an available role or switch role with a non-King player of lower ranking." },
+      { title: "Battle 5: Heidi's Bierbar", type: "battle", desc: "All vs All\nIn each player’s end step, he gains his choice of 2 Drunk- or 2 Poison counters.\nWhen a permanent, spell or ability you control causes a player to lose, you may gain his role.\nLast remaining player wins the campaign, if all the last players are killed at the same time (for example by a player-owned OG), the tie breaker is VP, then randomly." }
+  ];
+
+  const getRoleAbilities = (role) => {
+    const data = {
+        'Doctor': ["Creature enters: Remove counter.", "Gain Drunk: Target gets Metaxa.", "Creatures have Infect. End: Proliferate."],
+        'Monk': ["Discard/Pay(2): Heresy logic.", "Activate OG abilities 2x.", "Tap 3: Summon random OG."],
+        'Smith': ["Artifact spells cost (1) less/Lvl.", "Equip: Vigilance, Trample, Reach.", "Metalcraft: Copy artifact."],
+        'Knight': ["(1) Discard: 1/2 Horse Haste.", "Equip: Mentor.", "Battalion: Fight target."],
+        'Fool': ["Opp. turn spells cost (1) less.", "Creatures: Ninjutsu = CMC.", "Creatures: Ninjutsu = CMC."],
+        'King': ["Creatures +1/+1 per Level.", "Extra land & fix mana.", "Draw extra card."]
+    };
+    return data[role] || [];
+  };
+  
+  const getRoleReward = (role) => {
+    const rewards = { 'Doctor': 'Creature dies on your turn -> +1 XP', 'Monk': 'Life total changes -> +1 XP', 'Smith': 'Artifact enters -> +1 XP', 'Knight': 'Creatures deal damage -> +1 XP', 'Fool': 'Target opponent/perm -> +1 XP', 'King': 'Every 3rd time another gains xp -> +1 XP' };
+    return rewards[role] || '';
+  };
+  
+  const getRoleIcon = (role) => {
+      switch(role) { case 'Doctor': return <Heart size={12} />; case 'Monk': return <Scroll size={12} />; case 'Smith': return <Hammer size={12} />; case 'Knight': return <Shield size={12} />; case 'Fool': return <Ghost size={12} />; case 'King': return <Crown size={12} />; default: return null; }
+  };
+
   // --- DATA ENGINE ---
   useEffect(() => {
     if (!campaignId) return;
 
     const loadCampaign = async () => {
-      const { data, error } = await supabase
-        .from('campaigns')
-        .select('*')
-        .eq('id', campaignId)
-        .single();
-
+      const { data } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
       if (data) {
         setMeta({ title: data.title, engine: data.engine });
         setConfig(data.static_config);
@@ -46,19 +75,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         setIsConnected(true);
       }
     };
-
     loadCampaign();
 
     const channel = supabase.channel(`campaign_${campaignId}`)
-      .on('postgres_changes', { 
-        event: 'UPDATE', 
-        schema: 'public', 
-        table: 'campaigns', 
-        filter: `id=eq.${campaignId}` 
-      }, (payload) => {
-        if (payload.new && payload.new.active_state) {
-          applyActiveState(payload.new.active_state);
-        }
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'campaigns', filter: `id=eq.${campaignId}` }, (payload) => {
+        if (payload.new && payload.new.active_state) applyActiveState(payload.new.active_state);
       }).subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -77,18 +98,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     setStalemate(newStalemate);
     setEpilogueMode(newEpilogue);
     setLastRollRecord(newRoll);
-
-    const newState = {
-      players: newPlayers,
-      stalemate: newStalemate,
-      epilogueMode: newEpilogue,
-      last_roll: newRoll
-    };
-
-    await supabase
-      .from('campaigns')
-      .update({ active_state: newState })
-      .eq('id', campaignId);
+    await supabase.from('campaigns').update({ active_state: { players: newPlayers, stalemate: newStalemate, epilogueMode: newEpilogue, last_roll: newRoll } }).eq('id', campaignId);
   };
 
   // --- ACTIONS ---
@@ -96,8 +106,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
     const interval = setInterval(() => {
-      const randomVal = Math.floor(Math.random() * sides) + 1;
-      setDiceOverlay(prev => ({ ...prev, value: randomVal }));
+      setDiceOverlay(prev => ({ ...prev, value: Math.floor(Math.random() * sides) + 1 }));
       counter++;
       if (counter > 20) { 
         clearInterval(interval);
@@ -123,21 +132,15 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
   };
 
-  // --- SPECIFIC GAME LOGIC (Marriage) ---
   const handleMarriage = (playerIndex, newSpouseName) => {
     const newPlayers = [...players];
     const currentPlayer = newPlayers[playerIndex];
-    
-    // Clear old spouse logic
     const oldSpouseName = currentPlayer.spouse;
     if (oldSpouseName) {
         const oldSpouseIndex = newPlayers.findIndex(p => p.name === oldSpouseName);
         if (oldSpouseIndex !== -1) newPlayers[oldSpouseIndex].spouse = "";
     }
-    
     currentPlayer.spouse = newSpouseName;
-    
-    // Set new spouse logic
     if (newSpouseName) {
         const newSpouseIndex = newPlayers.findIndex(p => p.name === newSpouseName);
         if (newSpouseIndex !== -1) {
@@ -152,42 +155,16 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
   };
 
-  // --- CONTENT HELPERS ---
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
-  
-  const getRoleAbilities = (role) => {
-    const data = {
-        'Doctor': ["Creature enters: Remove counter.", "Gain Drunk: Target gets Metaxa.", "Creatures have Infect. End: Proliferate."],
-        'Monk': ["Discard/Pay(2): Heresy logic.", "Activate OG abilities 2x.", "Tap 3: Summon random OG."],
-        'Smith': ["Artifact spells cost (1) less/Lvl.", "Equip: Vigilance, Trample, Reach.", "Metalcraft: Copy artifact."],
-        'Knight': ["(1) Discard: 1/2 Horse Haste.", "Equip: Mentor.", "Battalion: Fight target."],
-        'Fool': ["Opp. turn spells cost (1) less.", "Creatures: Ninjutsu = CMC.", "Creatures: Ninjutsu = CMC."],
-        'King': ["Creatures +1/+1 per Level.", "Extra land & fix mana.", "Draw extra card."]
-    };
-    return data[role] || [];
-  };
-  
-  const getRoleReward = (role) => {
-    const rewards = { 'Doctor': 'Creature dies on your turn -> +1 XP', 'Monk': 'Life total changes -> +1 XP', 'Smith': 'Artifact enters -> +1 XP', 'Knight': 'Creatures deal damage -> +1 XP', 'Fool': 'Target opponent/perm -> +1 XP', 'King': 'Every 3rd time another gains xp -> +1 XP' };
-    return rewards[role] || '';
-  };
-  
-  const getRoleIcon = (role) => {
-      switch(role) { case 'Doctor': return <Heart size={12} />; case 'Monk': return <Scroll size={12} />; case 'Smith': return <Hammer size={12} />; case 'Knight': return <Shield size={12} />; case 'Fool': return <Ghost size={12} />; case 'King': return <Crown size={12} />; default: return null; }
-  };
-
-  // Feature Checker
+  const toggleRuleSection = (id) => setActiveRuleSection(activeRuleSection === id ? null : id);
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
-  // --- PLAYER CARD COMPONENT (RESTORED DESIGN) ---
+  // --- PLAYER CARD ---
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
     return (
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full select-none">
-            {/* Color Bar */}
             <div className={`h-1 w-full ${player.color || 'bg-gray-600'}`}></div>
-            
-            {/* Header */}
             <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center shrink-0">
                 <span className="w-full font-black text-lg text-center text-gray-200" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
                 {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
@@ -196,7 +173,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden min-h-0">
                 {!epilogueMode ? (
                     <>
-                        {/* --- RPG: Roles & Level --- */}
                         {useFeature('use_roles') && (
                             <div className="grid grid-cols-[1fr_auto] gap-2 items-center shrink-0">
                                 <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-2 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none hover:border-gray-500 transition-colors">
@@ -212,7 +188,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                             </div>
                         )}
 
-                        {/* --- RPG: XP & VP Grid --- */}
                         {(useFeature('use_xp') || useFeature('use_vp') || player.vp !== undefined) && (
                             <div className="grid grid-cols-2 gap-2 shrink-0">
                                 {useFeature('use_xp') && (
@@ -236,7 +211,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                             </div>
                         )}
 
-                        {/* --- RPG: Role Info Box --- */}
                         {useFeature('use_roles') && (
                             <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative">
                                 <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
@@ -262,7 +236,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         )}
                     </>
                 ) : (
-                    // --- EPILOGUE MODE (Simplified) ---
                     <div className="flex-grow flex flex-col gap-4 justify-center">
                         {useFeature('use_marriage') && (
                             <div className="bg-indigo-900/20 p-2 rounded border border-indigo-500/30">
@@ -293,7 +266,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     </div>
                 )}
 
-                {/* --- STANDARD STATS (Always visible bottom) --- */}
                 <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-800 shrink-0">
                     {useFeature('track_life_total') && (
                         <div className="bg-red-900/10 rounded border border-red-900/30 flex flex-col items-center p-1">
@@ -331,17 +303,15 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     if (distance < -minSwipeDistance) setActivePlayerIndex((prev) => (prev - 1 + players.length) % players.length);
   };
 
-  if (!config) return <div className="text-white p-10 font-serif">Loading Rules...</div>;
+  if (!config) return <div className="text-white p-10 font-serif">Loading Chronicles...</div>;
 
   return (
     <div className="h-dvh w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative flex">
-      {/* Background Effect */}
       <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
         <style>{`@keyframes nebula { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } .nebula-bg { background: linear-gradient(-45deg, #1a0b0b, #2e1010, #0f172a, #000000); background-size: 400% 400%; animation: nebula 15s ease infinite; }`}</style>
         <div className="w-full h-full nebula-bg"></div>
       </div>
       
-      {/* DICE OVERLAY */}
       {diceOverlay.active && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
             <style>{`@keyframes chaos { 0% { transform: rotate(0deg) scale(0.5); } 100% { transform: rotate(360deg) scale(1); } } @keyframes landing { 0% { transform: scale(3); opacity: 0; } 50% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1); } } .rolling-anim { animation: chaos 0.1s infinite linear; opacity: 0.7; color: #444; } .landed-anim { animation: landing 0.4s ease-out forwards; text-shadow: 0 0 50px #d4af37; color: #d4af37; transform: scale(1.5); }`}</style>
@@ -351,10 +321,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
       <div className={`flex-grow flex flex-col p-2 gap-2 relative z-10 transition-all duration-300 ${showRules ? 'w-full md:w-2/3' : 'w-full'}`}>
         
-        {/* HEADER */}
         <div className="flex justify-between items-center bg-[#111]/90 backdrop-blur border-b border-white/10 p-2 rounded-lg shrink-0 gap-2">
             <div className="flex flex-col shrink-0">
-                {/* BACK TO LOBBY BUTTON */}
                 <button onClick={onExit} className="flex items-center gap-1 text-[10px] uppercase text-stone-500 hover:text-white mb-1">
                     <LogOut size={10}/> Exit
                 </button>
@@ -364,7 +332,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
             </div>
 
-            {/* STALEMATE COUNTER */}
             <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
                 <div className="hidden md:flex text-[10px] text-red-500 font-bold uppercase items-center gap-1"><Skull size={10} /> Stalemate</div>
                 <div className="flex items-center gap-1">
@@ -374,7 +341,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </div>
             </div>
 
-            {/* DICE */}
             <div className="flex items-center gap-2">
                 <div className="hidden md:flex gap-1">
                     {[4, 6, 8, 10, 12, 20].map(sides => (
@@ -385,7 +351,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     <button onClick={() => rollDice(6)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 text-blue-200 rounded font-bold text-xs">D6</button>
                     <button onClick={() => rollDice(20)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 text-blue-200 rounded font-bold text-xs">D20</button>
                 </div>
-                {/* Last Roll Display */}
                 <div className="bg-black border border-yellow-600/50 rounded px-2 py-1 flex flex-col items-center justify-center min-w-[50px] shadow-[0_0_10px_rgba(234,179,8,0.2)]">
                     <span className="text-[8px] text-gray-500 uppercase">D{lastRollRecord.type}</span>
                     <span className="text-lg font-bold text-yellow-500 leading-none">{lastRollRecord.value}</span>
@@ -396,23 +361,17 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             <button onClick={() => setEpilogueMode(!epilogueMode)} className={`hidden md:block p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`}><Crown size={16}/></button>
         </div>
 
-        {/* --- MOBILE CODEX BUTTON --- */}
         <div className="w-full px-0 mt-0 md:hidden">
-            <button 
-                onClick={() => setShowRules(!showRules)} 
-                className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group"
-            >
+            <button onClick={() => setShowRules(!showRules)} className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group">
                 <BookOpen size={18} className="text-yellow-500 group-hover:text-yellow-300"/>
                 <span className="font-bold uppercase tracking-widest text-sm" style={{ fontFamily: 'Cinzel, serif' }}>Åbn Codex</span>
             </button>
         </div>
 
-        {/* DESKTOP VIEW */}
         <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0">
             {players.map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
         </div>
 
-        {/* MOBILE VIEW (SWIPE) */}
         <div className="md:hidden flex flex-grow items-center justify-center relative overflow-hidden select-none touch-pan-y" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
             <div className="w-full h-full p-1 transition-transform duration-200">
                 <PlayerCard player={players[activePlayerIndex]} index={activePlayerIndex} />
@@ -420,14 +379,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         </div>
       </div>
 
-      {/* --- CODEX PANE (Dynamic Content) --- */}
+      {/* --- CODEX PANE (THE HYBRID: STAGGING CONTENT OR GENERIC) --- */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-full md:w-1/3 translate-x-0' : 'w-full md:w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex: {meta.title}</h2>
             <button onClick={() => setShowRules(false)} className="text-gray-500 hover:text-white"><X size={20}/></button>
         </div>
         
-        {/* MOBILE CONTROLS IN PANE */}
         <div className="md:hidden grid grid-cols-4 gap-2 p-4 border-b border-gray-800">
             <button className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-green-500 text-[10px] font-bold"><Save size={16}/> SAVE</button>
             <button className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-blue-500 text-[10px] font-bold"><Upload size={16}/> LOAD</button>
@@ -436,31 +394,123 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         </div>
 
         <div className="flex-grow overflow-y-auto p-2 space-y-2 text-sm text-gray-300 custom-scrollbar pb-20">
-            {/* Rules Text from DB */}
-            {config.rules_text && config.rules_text.map((rule, i) => (
-                <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                    <button onClick={() => setActiveRuleSection(activeRuleSection === `rule-${i}` ? null : `rule-${i}`)} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors text-blue-500">
-                        <span><Info size={12} className="inline mr-2"/> {rule.title}</span>
-                        <span>{activeRuleSection === `rule-${i}` ? '−' : '+'}</span>
-                    </button>
-                    {activeRuleSection === `rule-${i}` && (
-                        <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{rule.desc}</div>
-                    )}
-                </div>
-            ))}
+            
+            {/* --- CASE: STAGGING IT UP (RPG ENGINE) --- */}
+            {meta.engine === 'rpg' ? (
+                <>
+                    {/* Core Rules Section */}
+                    <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                        <button onClick={() => toggleRuleSection('core')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'core' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
+                            <span><Info size={12} className="inline mr-2"/> Core Rules</span>
+                            <span>{activeRuleSection === 'core' ? '−' : '+'}</span>
+                        </button>
+                        {activeRuleSection === 'core' && (
+                            <div className="p-3 border-t border-gray-800 space-y-3 text-xs leading-relaxed text-gray-400">
+                                <p><strong>Setup:</strong> 4-5 players, 5 battles, 6 boosters and a land booster. HS 6, LT 15. Dual land market is 2 x types (20) = 40 cards.</p>
+                                <p><strong>Bidding & Roles:</strong> At the beginning of the campaign players secretly bid a number to subtract from their LT. Players choose a non-King-role to gain, starting with the highest bidder and then in descending order. Only one player can have a role at a time.</p>
+                                <p><strong>King Role:</strong> When a player wins a battle, he gains the King role for the next battle.</p>
+                                <p><strong>Role Selection:</strong> At the beginning of a battle, all non-King players may gain an available role, in descending ranking order.</p>
+                                <p><strong>Dead Players:</strong> After a player is dead in battle 1-4 other players can’t gain more XP in that battle (except rewards based on the outcome of the battle).</p>
+                                <p><strong>Levels:</strong> Level 1 (&lt; 10 xp), Level 2 (10 xp), Level 3 (20 xp). Players can’t have more than 20 xp or less than 0.</p>
+                                <p><strong>Ranking:</strong> Player ranking is determined by the number of VPs, if tied, the most recent wins count highest. Gain a VP by winning a battle. The winner of the campaign is the winner of the final battle.</p>
+                                <p><strong>Mulligans:</strong> If you want to mulligan your starting hand, you may shuffle your hand and draw a new hand, then, before looking at it, put one card from your hand on the bottom of your library. For each time you mulligan, put an extra card on the bottom of your library.</p>
+                                <p><strong>Draw-out:</strong> If, at any point, you can’t draw a card from your library you may instead sacrifice a non-land permanent. If you don’t, you lose 2 life.</p>
+                                <p><strong>Stalemate:</strong> The moment 2 players are left in any battle, put a timer dice to 1. Increase it at the beginning of turns. When it reaches 10 (in consensus only), the battle ends and the winner is the player with the most lives, if tied, the most non-land permanents in play, if tied, the most cards on hand, if tied, the most cards left in his library.</p>
+                            </div>
+                        )}
+                    </div>
 
-            {/* Timeline from DB */}
-            {config.timeline && config.timeline.map((event, i) => (
-                <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                    <button onClick={() => setActiveRuleSection(`event-${i}`)} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors text-red-500">
-                        <span><Sword size={12} className="inline mr-2"/> {event.title}</span>
-                        <span>{activeRuleSection === `event-${i}` ? '−' : '+'}</span>
-                    </button>
-                    {activeRuleSection === `event-${i}` && (
-                        <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{event.desc}</div>
-                    )}
-                </div>
-            ))}
+                    {/* Roles Section */}
+                    <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                        <button onClick={() => toggleRuleSection('roles')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'roles' ? 'text-green-300 bg-white/5' : 'text-green-500'}`}>
+                            <span><Crown size={12} className="inline mr-2"/> Roles</span>
+                            <span>{activeRuleSection === 'roles' ? '−' : '+'}</span>
+                        </button>
+                        {activeRuleSection === 'roles' && (
+                            <div className="p-3 border-t border-gray-800 space-y-4 text-xs leading-relaxed text-gray-400">
+                                {['Doctor','Monk','Smith','Knight','Fool','King'].map(r => (
+                                    <div key={r} className="border-b border-gray-800 last:border-0 pb-2">
+                                        <strong className="text-yellow-600 block mb-1 uppercase">{r}</strong>
+                                        <ul className="list-disc pl-4 space-y-1">
+                                            {getRoleAbilities(r).map((ab, i) => <li key={i}>{ab}</li>)}
+                                            <li className="text-yellow-500/80 italic">{getRoleReward(r)}</li>
+                                        </ul>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Timeline Section */}
+                    {staggingTimeline.map((event, i) => (
+                        <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                            <button onClick={() => toggleRuleSection(`event-${i}`)} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === `event-${i}` ? (event.type === 'battle' ? 'text-red-300 bg-white/5' : 'text-blue-300 bg-white/5') : (event.type === 'battle' ? 'text-red-500' : 'text-blue-500')}`}>
+                                <span>{event.type === 'battle' ? <Sword size={12} className="inline mr-2"/> : <Beer size={12} className="inline mr-2"/>} {event.title}</span>
+                                <span>{activeRuleSection === `event-${i}` ? '−' : '+'}</span>
+                            </button>
+                            {activeRuleSection === `event-${i}` && (
+                                <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{event.desc}</div>
+                            )}
+                        </div>
+                    ))}
+
+                    {/* Epilogue Section */}
+                    <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                        <button onClick={() => toggleRuleSection('epi')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'epi' ? 'text-indigo-300 bg-white/5' : 'text-indigo-500'}`}>
+                            <span><Clock size={12} className="inline mr-2"/> Epilogue</span>
+                            <span>{activeRuleSection === 'epi' ? '−' : '+'}</span>
+                        </button>
+                        {activeRuleSection === 'epi' && (
+                            <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 space-y-2">
+                                <p>The Role and XP system is abandoned. Booster draft a non mono booster #105.</p>
+                                <strong className="text-white block mt-2">The Day After (All vs All)</strong>
+                                <p>Players start with a number of Drunk counters corresponding to their inverse placement in the previous battle (Last place starts with 3 Drunk counter, second last with 4 Drunk counters and so on).</p>
+                                <p>When a Drunk counter is removed from a player he draws a card.</p>
+                                <p>Sober Up: At the beginning of your upkeep, you may pay 1 (so 2 because you’re Drunk) mana to remove a Drunk counter.</p>
+                                <p>All spells have “Rather than cast this card from your hand, you must pay its mana cost and exile it with a time counter on it. At the beginning of your upkeep, remove a time counter. When the last is removed, cast it without paying its mana cost.“ and all creatures enter tapped.</p>
+                                <p>Last place gains +1 LT, second last +2 LT and so on. LTs can exceed 20.</p>
+                                <strong className="text-white block mt-2">The Big Day (All vs All)</strong>
+                                <p>The winner of the previous battle proposes marriage to another player. That player may refuse. If a player accepts, the 2 become married. The winner continues asking other players until one accepts. The final player asked, can’t refuse.</p>
+                                <p>The highest ranked remaining player repeats the proposal process with the remaining unmarried player(s).</p>
+                                <p>The married players shuffle their decks and share a library (the library remains in play when one of the married players dies).</p>
+                                <p>Married players can’t attack each other unless they are the only remaining players.</p>
+                                <p>A player may end the marriage with his partner with sorcery speed by giving all cards in his hand to the abandoned partner.</p>
+                                <p>2 unmarried players may marry with sorcery speed. As long as they remain married, they may draw from the other players library.</p>
+                                <p>The final remaining player wins the Epilogue of Stagging It Up.</p>
+                            </div>
+                        )}
+                    </div>
+                </>
+            ) : (
+                // --- CASE: ALL OTHER CAMPAIGNS (GENERIC DB LOADER) ---
+                <>
+                    {/* Rules Text from DB */}
+                    {config?.rules_text && config.rules_text.map((rule, i) => (
+                        <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                            <button onClick={() => toggleRuleSection(`rule-${i}`)} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors text-blue-500">
+                                <span><Info size={12} className="inline mr-2"/> {rule.title}</span>
+                                <span>{activeRuleSection === `rule-${i}` ? '−' : '+'}</span>
+                            </button>
+                            {activeRuleSection === `rule-${i}` && (
+                                <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{rule.desc}</div>
+                            )}
+                        </div>
+                    ))}
+
+                    {/* Timeline from DB */}
+                    {config?.timeline && config.timeline.map((event, i) => (
+                        <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                            <button onClick={() => toggleRuleSection(`event-${i}`)} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors text-red-500">
+                                <span><Sword size={12} className="inline mr-2"/> {event.title}</span>
+                                <span>{activeRuleSection === `event-${i}` ? '−' : '+'}</span>
+                            </button>
+                            {activeRuleSection === `event-${i}` && (
+                                <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{event.desc}</div>
+                            )}
+                        </div>
+                    ))}
+                </>
+            )}
         </div>
       </div>
     </div>
