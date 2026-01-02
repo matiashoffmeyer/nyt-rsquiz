@@ -34,13 +34,18 @@ const CampaignManager = () => {
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [showRules, setShowRules] = useState(false);
   const [activeRuleSection, setActiveRuleSection] = useState(null);
-  
+   
   // Dice Animation State
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
 
   // Import State
   const fileInputRef = useRef(null);
   const [isImporting, setIsImporting] = useState(false);
+
+  // --- SWIPE LOGIC STATE ---
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
 
   // --- DATA ENGINE (HYBRID: CLOUD + LOCAL) ---
   useEffect(() => {
@@ -205,6 +210,26 @@ const CampaignManager = () => {
   const prevPlayer = () => setActivePlayerIndex((prev) => (prev - 1 + players.length) % players.length);
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
   const toggleRuleSection = (id) => setActiveRuleSection(activeRuleSection === id ? null : id);
+
+  // --- SWIPE HANDLERS ---
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe) nextPlayer();
+    if (isRightSwipe) prevPlayer();
+  };
 
   // --- CONTENT HELPERS ---
   const getRoleAbilities = (role) => {
@@ -398,7 +423,8 @@ const CampaignManager = () => {
                 </div>
             </div>
 
-            <button onClick={() => setShowRules(!showRules)} className="p-2 bg-yellow-600 text-black rounded font-bold hover:bg-yellow-500"><BookOpen size={16}/></button>
+            {/* Desktop Only Rules Button */}
+            <button onClick={() => setShowRules(!showRules)} className="hidden md:block p-2 bg-yellow-600 text-black rounded font-bold hover:bg-yellow-500"><BookOpen size={16}/></button>
 
             <div className="hidden md:flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
@@ -408,16 +434,39 @@ const CampaignManager = () => {
             </div>
         </div>
 
+        {/* --- MELLEM HYLDE: CODEX KNAP (Fuld bredde) --- */}
+        <div className="w-full px-0 mt-0 md:hidden">
+            <button 
+                onClick={() => setShowRules(!showRules)} 
+                className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group"
+            >
+                <BookOpen size={18} className="text-yellow-500 group-hover:text-yellow-300"/>
+                <span className="font-bold uppercase tracking-widest text-sm" style={{ fontFamily: 'Cinzel, serif' }}>Åbn Codex</span>
+            </button>
+        </div>
+
         {/* DESKTOP VIEW */}
         <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0">
             {players.map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
         </div>
 
-        {/* MOBILE VIEW */}
-        <div className="md:hidden flex flex-grow items-center justify-center relative overflow-hidden">
-            <button onClick={prevPlayer} className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/50 rounded-full text-white/70 hover:text-white hover:bg-black/80 transition-all border border-gray-700 shadow-lg active:scale-95"><ChevronLeft size={24} /></button>
-            <div className="w-full h-full p-1"><PlayerCard player={players[activePlayerIndex]} index={activePlayerIndex} /></div>
-            <button onClick={nextPlayer} className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/50 rounded-full text-white/70 hover:text-white hover:bg-black/80 transition-all border border-gray-700 shadow-lg active:scale-95"><ChevronRight size={24} /></button>
+        {/* MOBILE VIEW (SWIPE ENABLED) */}
+        <div 
+            className="md:hidden flex flex-grow items-center justify-center relative overflow-hidden select-none"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+        >
+            {/* Pile er fjernet. Kun Swipe. */}
+            
+            <div className="w-full h-full p-1 transition-transform duration-200">
+                <PlayerCard player={players[activePlayerIndex]} index={activePlayerIndex} />
+            </div>
+
+            {/* Hint text */}
+            <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none opacity-50">
+                <span className="text-[9px] uppercase tracking-[0.2em] text-gray-500">Swipe for at skifte</span>
+            </div>
         </div>
       </div>
 
