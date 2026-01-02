@@ -1,79 +1,135 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { Save, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, ChevronLeft, ChevronRight, Users, Wifi } from 'lucide-react';
+
+// --- SUPABASE SETUP ---
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 const CampaignManager = () => {
   // --- STATE ---
-  const [players, setPlayers] = useState([
-      { name: 'Christian', role: '', vp: 2, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' },
-      { name: 'Andreas', role: '', vp: 1, xp: 13, lt: 20, hs: 7, drunk: 0, spouse: '' },
-      { name: 'Frederik', role: '', vp: 1, xp: 16, lt: 20, hs: 7, drunk: 0, spouse: '' },
-      { name: 'Matias', role: '', vp: 3, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' }
-  ]);
+  const [players, setPlayers] = useState([]);
   const [stalemate, setStalemate] = useState(0);
   const [epilogueMode, setEpilogueMode] = useState(false);
-  const [activePlayerIndex, setActivePlayerIndex] = useState(0);
-  
+  const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
+  const [isConnected, setIsConnected] = useState(false); // Connection status
+
   // UI State
+  const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [showRules, setShowRules] = useState(false);
   const [activeRuleSection, setActiveRuleSection] = useState(null);
   
-  // Dice State
+  // Dice Animation State (Local only - we don't sync the animation frames, just the result)
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
-  const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
-  
-  // Import State
-  const fileInputRef = useRef(null);
-  const [isImporting, setIsImporting] = useState(false);
 
-  // --- INITIAL LOAD & AUTO-SAVE ---
+  // --- REALTIME SYNC ENGINE ---
+  
+  // 1. Fetch initial data & Subscribe to changes
   useEffect(() => {
-    const saved = localStorage.getItem('staggingData_v12');
-    if (saved) {
-      try {
-        const data = JSON.parse(saved);
-        if (data.players && data.players.length > 0) {
-            setPlayers(data.players);
-            setStalemate(data.stalemate || 0);
-            setEpilogueMode(data.epilogueMode || false);
-            if (data.lastRollRecord) setLastRollRecord(data.lastRollRecord);
-        }
-      } catch (e) {
-        console.error("Save file issue");
+    const fetchData = async () => {
+      const { data, error } = await supabase
+        .from('campaign_state')
+        .select('game_data')
+        .eq('id', 1)
+        .single();
+
+      if (data && data.game_data) {
+        applyCloudData(data.game_data);
+        setIsConnected(true);
+      } else if (error) {
+        console.error("Error connecting to DB:", error);
+        // Fallback if DB is empty/error: Init defaults
+        resetData();
       }
-    }
+    };
+
+    fetchData();
+
+    // Listen for updates from OTHER phones
+    const channel = supabase
+      .channel('campaign_updates')
+      .on('postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'campaign_state', filter: 'id=eq.1' }, 
+        (payload) => {
+          if (payload.new && payload.new.game_data) {
+            applyCloudData(payload.new.game_data);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, []);
 
-  useEffect(() => {
-    if (!isImporting && players.length > 0) {
-      localStorage.setItem('staggingData_v12', JSON.stringify({ players, stalemate, epilogueMode, lastRollRecord }));
-    }
-  }, [players, stalemate, epilogueMode, lastRollRecord, isImporting]);
+  // Helper to apply data from cloud to local state
+  const applyCloudData = (data) => {
+    if (data.players) setPlayers(data.players);
+    if (data.stalemate !== undefined) setStalemate(data.stalemate);
+    if (data.epilogueMode !== undefined) setEpilogueMode(data.epilogueMode);
+    if (data.lastRollRecord) setLastRollRecord(data.lastRollRecord);
+  };
 
-  // --- ACTIONS ---
-  const resetData = (force = false) => {
-    if (!force && !window.confirm("Reset campaign?")) return;
-    setPlayers([
+  // 2. Push changes to Cloud (Single Source of Truth)
+  const pushToCloud = async (newPlayers, newStalemate, newEpilogue, newRoll) => {
+    // Optimistic Update (update screen immediately)
+    setPlayers(newPlayers);
+    setStalemate(newStalemate);
+    setEpilogueMode(newEpilogue);
+    setLastRollRecord(newRoll);
+
+    // Send to DB
+    await supabase
+      .from('campaign_state')
+      .update({ 
+        game_data: { 
+          players: newPlayers, 
+          stalemate: newStalemate, 
+          epilogueMode: newEpilogue, 
+          lastRollRecord: newRoll 
+        } 
+      })
+      .eq('id', 1);
+  };
+
+  // --- GAME ACTIONS ---
+
+  const resetData = async () => {
+    if (players.length > 0 && !window.confirm("RESET CAMPAIGN FOR EVERYONE?")) return;
+    
+    const defaults = [
       { name: 'Christian', role: '', vp: 2, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' },
       { name: 'Andreas', role: '', vp: 1, xp: 13, lt: 20, hs: 7, drunk: 0, spouse: '' },
       { name: 'Frederik', role: '', vp: 1, xp: 16, lt: 20, hs: 7, drunk: 0, spouse: '' },
       { name: 'Matias', role: '', vp: 3, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' }
-    ]);
-    setStalemate(0);
-    setEpilogueMode(false);
-    setLastRollRecord({ type: '-', value: '-' });
+    ];
+    
+    pushToCloud(defaults, 0, false, { type: '-', value: '-' });
   };
 
   const rollDice = (sides) => {
+    // 1. Show Local Animation immediately
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
+    
     let counter = 0;
     const interval = setInterval(() => {
       const randomVal = Math.floor(Math.random() * sides) + 1;
       setDiceOverlay(prev => ({ ...prev, value: randomVal }));
       counter++;
+      
       if (counter > 20) { 
         clearInterval(interval);
         setDiceOverlay(prev => ({ ...prev, finished: true }));
-        setLastRollRecord({ type: sides, value: randomVal });
+        
+        // 2. Sync RESULT to everyone else (Animation is local, result is global)
+        const finalRoll = { type: sides, value: randomVal }; // Use the last randomVal
+        // Vi skal bruge den faktiske værdi fra sidste interval tick, så vi genberegner en gang for at være sikker eller bruger state logic. 
+        // For at være præcis:
+        const trueFinal = Math.floor(Math.random() * sides) + 1; 
+        setDiceOverlay(prev => ({...prev, value: trueFinal})); // Ensure visual matches data
+        
+        pushToCloud(players, stalemate, epilogueMode, { type: sides, value: trueFinal });
+
         setTimeout(() => setDiceOverlay(prev => ({ ...prev, active: false })), 2000);
       }
     }, 50);
@@ -82,40 +138,7 @@ const CampaignManager = () => {
   const updatePlayer = (index, field, value) => {
     const newPlayers = [...players];
     newPlayers[index][field] = value;
-    setPlayers(newPlayers);
-  };
-
-  // --- MARRIAGE LOGIC (BIDIRECTIONAL SYNC) ---
-  const handleMarriage = (playerIndex, newSpouseName) => {
-    const newPlayers = [...players];
-    const currentPlayer = newPlayers[playerIndex];
-    const oldSpouseName = currentPlayer.spouse;
-
-    // 1. Break old marriage if exists (Divorce previous partner)
-    if (oldSpouseName) {
-        const oldSpouseIndex = newPlayers.findIndex(p => p.name === oldSpouseName);
-        if (oldSpouseIndex !== -1) newPlayers[oldSpouseIndex].spouse = "";
-    }
-
-    // 2. Set new marriage for current player
-    currentPlayer.spouse = newSpouseName;
-
-    // 3. Set new marriage for target player (if not single)
-    if (newSpouseName) {
-        const newSpouseIndex = newPlayers.findIndex(p => p.name === newSpouseName);
-        if (newSpouseIndex !== -1) {
-            // If target was married to someone else, divorce them first
-            const targetExName = newPlayers[newSpouseIndex].spouse;
-            if (targetExName) {
-                const targetExIndex = newPlayers.findIndex(p => p.name === targetExName);
-                if (targetExIndex !== -1) newPlayers[targetExIndex].spouse = "";
-            }
-            // Link them to current player
-            newPlayers[newSpouseIndex].spouse = currentPlayer.name;
-        }
-    }
-
-    setPlayers(newPlayers);
+    pushToCloud(newPlayers, stalemate, epilogueMode, lastRollRecord);
   };
 
   const adjustValue = (index, field, amount) => {
@@ -123,48 +146,53 @@ const CampaignManager = () => {
     let newVal = (newPlayers[index][field] || 0) + amount;
     if (field === 'xp') newVal = Math.max(0, Math.min(20, newVal));
     newPlayers[index][field] = newVal;
-    setPlayers(newPlayers);
+    pushToCloud(newPlayers, stalemate, epilogueMode, lastRollRecord);
   };
 
+  const adjustStalemate = (amount) => {
+    const newVal = Math.max(0, stalemate + amount);
+    pushToCloud(players, newVal, epilogueMode, lastRollRecord);
+  };
+
+  const toggleEpilogue = () => {
+    pushToCloud(players, stalemate, !epilogueMode, lastRollRecord);
+  };
+
+  // --- MARRIAGE LOGIC ---
+  const handleMarriage = (playerIndex, newSpouseName) => {
+    const newPlayers = [...players];
+    const currentPlayer = newPlayers[playerIndex];
+    const oldSpouseName = currentPlayer.spouse;
+
+    // Break old
+    if (oldSpouseName) {
+        const oldSpouseIndex = newPlayers.findIndex(p => p.name === oldSpouseName);
+        if (oldSpouseIndex !== -1) newPlayers[oldSpouseIndex].spouse = "";
+    }
+
+    // Set new
+    currentPlayer.spouse = newSpouseName;
+
+    // Link target
+    if (newSpouseName) {
+        const newSpouseIndex = newPlayers.findIndex(p => p.name === newSpouseName);
+        if (newSpouseIndex !== -1) {
+            const targetExName = newPlayers[newSpouseIndex].spouse;
+            if (targetExName) {
+                const targetExIndex = newPlayers.findIndex(p => p.name === targetExName);
+                if (targetExIndex !== -1) newPlayers[targetExIndex].spouse = "";
+            }
+            newPlayers[newSpouseIndex].spouse = currentPlayer.name;
+        }
+    }
+    pushToCloud(newPlayers, stalemate, epilogueMode, lastRollRecord);
+  };
+
+  // UI Helpers
   const nextPlayer = () => setActivePlayerIndex((prev) => (prev + 1) % players.length);
   const prevPlayer = () => setActivePlayerIndex((prev) => (prev - 1 + players.length) % players.length);
-
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
   const toggleRuleSection = (id) => setActiveRuleSection(activeRuleSection === id ? null : id);
-
-  // --- FILE SYSTEM ---
-  const exportData = () => {
-    const data = JSON.stringify({ players, stalemate, epilogueMode, lastRollRecord, timestamp: new Date().toISOString() }, null, 2);
-    const blob = new Blob([data], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `stagging_save_${new Date().toISOString().slice(0,10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
-  const importData = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-    setIsImporting(true);
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-        if (data.players) {
-          setPlayers(data.players);
-          setStalemate(data.stalemate || 0);
-          setEpilogueMode(data.epilogueMode || false);
-          if (data.lastRollRecord) setLastRollRecord(data.lastRollRecord);
-          setTimeout(() => setIsImporting(false), 100);
-        }
-      } catch (err) { setIsImporting(false); }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
-  };
 
   // --- DATA HELPERS ---
   const getRoleAbilities = (role) => {
@@ -180,27 +208,12 @@ const CampaignManager = () => {
   };
 
   const getRoleReward = (role) => {
-    const rewards = {
-        'Doctor': 'Rewards: When one or more creatures die during your turn, gain 1 xp.',
-        'Monk': 'Rewards: Whenever your life total changes, gain 1 xp.',
-        'Smith': 'Rewards: When an artifact enters play under your control, gain 1 xp.',
-        'Knight': 'Rewards: Whenever one or more creatures under your control deal damage, gain 1 XP.',
-        'Fool': 'Rewards: Whenever you target an opponent or a permanent under his control with a spell or ability, gain 1 xp (max once pr turn)',
-        'King': 'Rewards: Every third time another player gains xp you gain 1 xp.'
-    };
+    const rewards = { 'Doctor': 'Rewards: When one or more creatures die during your turn, gain 1 xp.', 'Monk': 'Rewards: Whenever your life total changes, gain 1 xp.', 'Smith': 'Rewards: When an artifact enters play under your control, gain 1 xp.', 'Knight': 'Rewards: Whenever one or more creatures under your control deal damage, gain 1 XP.', 'Fool': 'Rewards: Whenever you target an opponent or a permanent under his control with a spell or ability, gain 1 xp (max once pr turn)', 'King': 'Rewards: Every third time another player gains xp you gain 1 xp.' };
     return rewards[role] || '';
   };
 
   const getRoleIcon = (role) => {
-      switch(role) {
-          case 'Doctor': return <Heart size={12} />;
-          case 'Monk': return <Scroll size={12} />;
-          case 'Smith': return <Hammer size={12} />;
-          case 'Knight': return <Shield size={12} />;
-          case 'Fool': return <Ghost size={12} />;
-          case 'King': return <Crown size={12} />;
-          default: return null;
-      }
+      switch(role) { case 'Doctor': return <Heart size={12} />; case 'Monk': return <Scroll size={12} />; case 'Smith': return <Hammer size={12} />; case 'Knight': return <Shield size={12} />; case 'Fool': return <Ghost size={12} />; case 'King': return <Crown size={12} />; default: return null; }
   };
 
   const timelineData = [
@@ -218,7 +231,6 @@ const CampaignManager = () => {
   // --- PLAYER CARD COMPONENT ---
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
-    
     return (
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full">
             <div className={`h-1 w-full ${['bg-red-600','bg-blue-600','bg-green-600','bg-yellow-600'][index]}`}></div>
@@ -231,7 +243,6 @@ const CampaignManager = () => {
             <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden">
                 {!epilogueMode ? (
                     <>
-                        {/* Role Selection */}
                         <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
                             <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-2 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none hover:border-gray-500 transition-colors">
                                 <option value="">-- No Role --</option>
@@ -248,7 +259,6 @@ const CampaignManager = () => {
                             </div>
                         </div>
 
-                        {/* XP & VP */}
                         <div className="grid grid-cols-2 gap-2">
                             <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
                                 <span className="text-[8px] text-blue-500 font-bold">XP</span>
@@ -268,7 +278,6 @@ const CampaignManager = () => {
                             </div>
                         </div>
 
-                        {/* Abilities Scrollable */}
                         <div className="flex-grow bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative">
                             <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
                             {player.role ? (
@@ -303,7 +312,6 @@ const CampaignManager = () => {
                                     <option key={i} value={p.name}>Married to {p.name}</option>
                                 ))}
                             </select>
-                            {/* MARRIAGE RULES DISPLAY */}
                             {player.spouse && (
                                 <div className="mt-2 text-[10px] text-pink-300 italic bg-black/40 p-2 rounded border border-pink-500/20 leading-tight">
                                     ❤️ <strong>Rules:</strong> Shared Library. Cannot attack each other. 
@@ -322,7 +330,6 @@ const CampaignManager = () => {
                     </div>
                 )}
 
-                {/* Life / Hand */}
                 <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-800">
                     <div className="bg-red-900/10 rounded border border-red-900/30 flex flex-col items-center p-1">
                         <span className="text-[8px] text-red-600 font-bold uppercase mb-1">LIFE</span>
@@ -348,106 +355,78 @@ const CampaignManager = () => {
 
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative flex">
-      
-      {/* --- ANIMATED BACKGROUND --- */}
+      {/* Background */}
       <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
-        <style>{`
-          @keyframes nebula { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
-          .nebula-bg { background: linear-gradient(-45deg, #1a0b0b, #2e1010, #0f172a, #000000); background-size: 400% 400%; animation: nebula 15s ease infinite; }
-        `}</style>
+        <style>{`@keyframes nebula { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } .nebula-bg { background: linear-gradient(-45deg, #1a0b0b, #2e1010, #0f172a, #000000); background-size: 400% 400%; animation: nebula 15s ease infinite; }`}</style>
         <div className="w-full h-full nebula-bg"></div>
       </div>
 
-      {/* --- MEGA DICE OVERLAY --- */}
+      {/* Dice Overlay */}
       {diceOverlay.active && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
-            <style>{`
-                @keyframes chaos { 0% { transform: rotate(0deg) scale(0.5); } 100% { transform: rotate(360deg) scale(1); } }
-                @keyframes landing { 0% { transform: scale(3); opacity: 0; } 50% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1); } }
-                .rolling-anim { animation: chaos 0.1s infinite linear; opacity: 0.7; color: #444; }
-                .landed-anim { animation: landing 0.4s ease-out forwards; text-shadow: 0 0 50px #d4af37; color: #d4af37; transform: scale(1.5); }
-            `}</style>
-            <div className={`font-black text-[20rem] fantasy-font leading-none ${diceOverlay.finished ? 'landed-anim' : 'rolling-anim'}`}>
-                {diceOverlay.value}
-            </div>
+            <style>{`@keyframes chaos { 0% { transform: rotate(0deg) scale(0.5); } 100% { transform: rotate(360deg) scale(1); } } @keyframes landing { 0% { transform: scale(3); opacity: 0; } 50% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1); } } .rolling-anim { animation: chaos 0.1s infinite linear; opacity: 0.7; color: #444; } .landed-anim { animation: landing 0.4s ease-out forwards; text-shadow: 0 0 50px #d4af37; color: #d4af37; transform: scale(1.5); }`}</style>
+            <div className={`font-black text-[20rem] fantasy-font leading-none ${diceOverlay.finished ? 'landed-anim' : 'rolling-anim'}`}>{diceOverlay.value}</div>
         </div>
       )}
 
-      {/* --- MAIN APP AREA --- */}
+      {/* MAIN APP AREA */}
       <div className={`flex-grow flex flex-col p-2 gap-2 relative z-10 transition-all duration-300 ${showRules ? 'w-full md:w-2/3' : 'w-full'}`}>
         
-        {/* HEADER (RESPONSIVE) */}
+        {/* HEADER */}
         <div className="flex justify-between items-center bg-[#111]/90 backdrop-blur border-b border-white/10 p-2 rounded-lg shrink-0 gap-2">
-            
-            {/* Title */}
             <div className="flex flex-col shrink-0">
                 <h1 className="text-sm md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest" style={{ fontFamily: 'Cinzel, serif' }}>STAGGING IT UP</h1>
+                {isConnected && <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div>}
             </div>
 
-            {/* STALEMATE (Compact on mobile) */}
             <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-2 gap-2">
                 <div className="hidden md:flex text-[10px] text-red-500 font-bold uppercase items-center gap-1"><Skull size={10} /> Stalemate</div>
                 <div className="md:hidden text-red-500"><Skull size={14} /></div>
                 <div className="flex items-center gap-1">
-                    <button onClick={() => setStalemate(Math.max(0, stalemate - 1))} className="text-gray-500 hover:text-white font-bold w-4">-</button>
+                    <button onClick={() => adjustStalemate(-1)} className="text-gray-500 hover:text-white font-bold w-4">-</button>
                     <span className="text-xl font-mono font-bold text-white w-6 text-center">{stalemate}</span>
-                    <button onClick={() => setStalemate(stalemate + 1)} className="text-gray-500 hover:text-white font-bold w-4">+</button>
+                    <button onClick={() => adjustStalemate(1)} className="text-gray-500 hover:text-white font-bold w-4">+</button>
                 </div>
             </div>
 
-            {/* DICE & RESULT */}
             <div className="flex items-center gap-2">
-                {/* Desktop Dice: All */}
                 <div className="hidden md:flex gap-1">
                     {[4, 6, 8, 10, 12, 20].map(sides => (
-                        <button key={sides} onClick={() => rollDice(sides)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 hover:border-blue-400 text-blue-200 rounded font-bold text-[10px] shadow-[0_0_10px_rgba(59,130,246,0.3)] transition-all active:scale-95">D{sides}</button>
+                        <button key={sides} onClick={() => rollDice(sides)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 hover:border-blue-400 text-blue-200 rounded font-bold text-[10px] active:scale-95">D{sides}</button>
                     ))}
                 </div>
-                {/* Mobile Dice: D6 & D20 Only */}
                 <div className="flex md:hidden gap-1">
                     <button onClick={() => rollDice(6)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 text-blue-200 rounded font-bold text-xs">D6</button>
                     <button onClick={() => rollDice(20)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 text-blue-200 rounded font-bold text-xs">D20</button>
                 </div>
-                {/* LAST ROLL BOX */}
                 <div className="bg-black border border-yellow-600/50 rounded px-2 py-1 flex flex-col items-center justify-center min-w-[50px] shadow-[0_0_10px_rgba(234,179,8,0.2)]">
                     <span className="text-[8px] text-gray-500 uppercase">D{lastRollRecord.type}</span>
                     <span className="text-lg font-bold text-yellow-500 leading-none">{lastRollRecord.value}</span>
                 </div>
             </div>
 
-            {/* CONTROLS */}
             <div className="flex gap-1">
-                <button onClick={exportData} className="hidden md:block p-2 hover:bg-white/10 rounded text-green-500" title="Save"><Save size={16}/></button>
-                <label className="hidden md:block p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
-                <button onClick={() => setEpilogueMode(!epilogueMode)} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`} title="Epilogue"><Crown size={16}/></button>
-                <button onClick={() => resetData()} className="p-2 hover:bg-white/10 rounded text-red-500" title="Reset"><RefreshCw size={16}/></button>
+                <button onClick={exportData} className="hidden md:block p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
+                <button onClick={toggleEpilogue} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`} title="Epilogue"><Crown size={16}/></button>
+                <button onClick={resetData} className="p-2 hover:bg-white/10 rounded text-red-500" title="Reset"><RefreshCw size={16}/></button>
                 <button onClick={() => setShowRules(!showRules)} className={`hidden md:block p-2 rounded border border-yellow-700/50 ${showRules ? 'bg-yellow-900/50 text-white' : 'hover:bg-white/10 text-yellow-600'}`} title="Rules"><BookOpen size={16}/></button>
             </div>
         </div>
 
-        {/* DESKTOP VIEW: GRID OF 4 PLAYERS */}
+        {/* DESKTOP VIEW */}
         <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0">
-            {players.map((player, index) => (
-                <PlayerCard key={index} player={player} index={index} />
-            ))}
+            {players.map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
         </div>
 
-        {/* MOBILE VIEW: CAROUSEL (1 PLAYER) */}
+        {/* MOBILE VIEW */}
         <div className="md:hidden flex flex-grow items-center justify-center relative overflow-hidden">
-            {/* FIXED MOBILE ARROWS - Floating circles that don't block content */}
-            <button onClick={prevPlayer} className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/50 rounded-full text-white/70 hover:text-white hover:bg-black/80 transition-all border border-gray-700 shadow-lg active:scale-95">
-                <ChevronLeft size={24} />
-            </button>
-            <div className="w-full h-full p-1">
-                <PlayerCard player={players[activePlayerIndex]} index={activePlayerIndex} />
-            </div>
-            <button onClick={nextPlayer} className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/50 rounded-full text-white/70 hover:text-white hover:bg-black/80 transition-all border border-gray-700 shadow-lg active:scale-95">
-                <ChevronRight size={24} />
-            </button>
+            <button onClick={prevPlayer} className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/50 rounded-full text-white/70 hover:text-white hover:bg-black/80 transition-all border border-gray-700 shadow-lg active:scale-95"><ChevronLeft size={24} /></button>
+            <div className="w-full h-full p-1"><PlayerCard player={players[activePlayerIndex]} index={activePlayerIndex} /></div>
+            <button onClick={nextPlayer} className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-2 bg-black/50 rounded-full text-white/70 hover:text-white hover:bg-black/80 transition-all border border-gray-700 shadow-lg active:scale-95"><ChevronRight size={24} /></button>
         </div>
       </div>
 
-      {/* --- RIGHT SIDE: CODEX PANE (Desktop & Mobile) --- */}
+      {/* --- CODEX PANE --- */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-full md:w-1/3 translate-x-0' : 'w-full md:w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex</h2>
@@ -455,7 +434,6 @@ const CampaignManager = () => {
         </div>
         <div className="flex-grow overflow-y-auto p-2 space-y-2 text-sm text-gray-300 custom-scrollbar pb-20">
             
-            {/* CORE RULES */}
             <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                 <button onClick={() => toggleRuleSection('core')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'core' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
                     <span><Info size={12} className="inline mr-2"/> Core Rules</span>
@@ -477,7 +455,6 @@ const CampaignManager = () => {
                 )}
             </div>
 
-            {/* ROLES */}
             <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                 <button onClick={() => toggleRuleSection('roles')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'roles' ? 'text-green-300 bg-white/5' : 'text-green-500'}`}>
                     <span><Crown size={12} className="inline mr-2"/> Roles</span>
@@ -505,14 +482,11 @@ const CampaignManager = () => {
                         <span>{activeRuleSection === `event-${i}` ? '−' : '+'}</span>
                     </button>
                     {activeRuleSection === `event-${i}` && (
-                        <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">
-                            {event.desc}
-                        </div>
+                        <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{event.desc}</div>
                     )}
                 </div>
             ))}
 
-            {/* EPILOGUE */}
             <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                 <button onClick={() => toggleRuleSection('epi')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'epi' ? 'text-indigo-300 bg-white/5' : 'text-indigo-500'}`}>
                     <span><Clock size={12} className="inline mr-2"/> Epilogue</span>
@@ -538,18 +512,10 @@ const CampaignManager = () => {
                     </div>
                 )}
             </div>
-
         </div>
       </div>
 
-      {/* MOBILE FLOATING ACTION BUTTON (RULES) */}
-      <button 
-        onClick={() => setShowRules(true)} 
-        className="md:hidden fixed bottom-4 right-4 bg-yellow-600 text-black p-4 rounded-full shadow-2xl z-50 border-2 border-yellow-400 active:scale-95"
-      >
-        <BookOpen size={24} />
-      </button>
-
+      <button onClick={() => setShowRules(true)} className="md:hidden fixed bottom-4 right-4 bg-yellow-600 text-black p-4 rounded-full shadow-2xl z-50 border-2 border-yellow-400 active:scale-95"><BookOpen size={24} /></button>
     </div>
   );
 };
