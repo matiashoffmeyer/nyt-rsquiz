@@ -1,12 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X } from 'lucide-react';
+import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer } from 'lucide-react';
 
 const CampaignManager = () => {
   // --- STATE ---
   const [players, setPlayers] = useState([]);
   const [stalemate, setStalemate] = useState(0);
   const [epilogueMode, setEpilogueMode] = useState(false);
-  const [currentBattle, setCurrentBattle] = useState('Heidi');
   const [showRules, setShowRules] = useState(false);
   
   // Dice State
@@ -18,14 +17,13 @@ const CampaignManager = () => {
 
   // --- INITIAL LOAD & AUTO-SAVE ---
   useEffect(() => {
-    const saved = localStorage.getItem('staggingData_v5');
+    const saved = localStorage.getItem('staggingData_v6');
     if (saved) {
       try {
         const data = JSON.parse(saved);
         setPlayers(data.players || []);
         setStalemate(data.stalemate || 0);
         setEpilogueMode(data.epilogueMode || false);
-        setCurrentBattle(data.currentBattle || 'Heidi');
       } catch (e) {
         resetData(true);
       }
@@ -36,9 +34,9 @@ const CampaignManager = () => {
 
   useEffect(() => {
     if (!isImporting && players.length > 0) {
-      localStorage.setItem('staggingData_v5', JSON.stringify({ players, stalemate, epilogueMode, currentBattle }));
+      localStorage.setItem('staggingData_v6', JSON.stringify({ players, stalemate, epilogueMode }));
     }
-  }, [players, stalemate, epilogueMode, currentBattle, isImporting]);
+  }, [players, stalemate, epilogueMode, isImporting]);
 
   // --- ACTIONS ---
   const resetData = (force = false) => {
@@ -51,24 +49,17 @@ const CampaignManager = () => {
     ]);
     setStalemate(0);
     setEpilogueMode(false);
-    setCurrentBattle('Heidi');
   };
 
   const rollDice = (sides) => {
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
-    
     let counter = 0;
     const interval = setInterval(() => {
-      // Random numbers showing while rolling
       setDiceOverlay(prev => ({ ...prev, value: Math.floor(Math.random() * sides) + 1 }));
       counter++;
-      
-      if (counter > 20) { // Stop after approx 1 second
+      if (counter > 20) { 
         clearInterval(interval);
-        // Set finished state to show result clearly
         setDiceOverlay(prev => ({ ...prev, finished: true }));
-        
-        // Hide overlay after 2 seconds
         setTimeout(() => setDiceOverlay(prev => ({ ...prev, active: false })), 2000);
       }
     }, 50);
@@ -92,7 +83,7 @@ const CampaignManager = () => {
 
   // --- FILE SYSTEM ---
   const exportData = () => {
-    const data = JSON.stringify({ players, stalemate, epilogueMode, currentBattle }, null, 2);
+    const data = JSON.stringify({ players, stalemate, epilogueMode, timestamp: new Date().toISOString() }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -115,7 +106,6 @@ const CampaignManager = () => {
           setPlayers(data.players);
           setStalemate(data.stalemate || 0);
           setEpilogueMode(data.epilogueMode || false);
-          setCurrentBattle(data.currentBattle || 'Heidi');
           setTimeout(() => setIsImporting(false), 100);
         }
       } catch (err) { setIsImporting(false); }
@@ -124,7 +114,7 @@ const CampaignManager = () => {
     event.target.value = '';
   };
 
-  // --- CONTENT HELPERS ---
+  // --- DATA HELPERS ---
   const getRoleAbilities = (role) => {
     const data = {
         'Doctor': [
@@ -185,6 +175,46 @@ const CampaignManager = () => {
       }
   };
 
+  // --- TIMELINE DATA ---
+  const timelineData = [
+      {
+          title: "Battle 1: Repentance", type: "battle",
+          desc: "All vs All. You may pay life instead of mana for your spells."
+      },
+      {
+          title: "Post-Battle 1", type: "post",
+          desc: "Losers: Bid i det sure løg #101.\nDraft: Quilt draft a Booster (#105)."
+      },
+      {
+          title: "Battle 2: Grand Melee", type: "battle",
+          desc: "Creatures have Haste and attack each turn if able."
+      },
+      {
+          title: "Post-Battle 2", type: "post",
+          desc: "Event: Workout Session #114 (All buffs up).\nDraft: Housmann draft a booster (#107)."
+      },
+      {
+          title: "Battle 3: Hunters Loge", type: "battle",
+          desc: "Stack 3 OGs facedown. Defeat one -> Next flips (X = cycle # of defeated).\nOG 1: Draw from player to left.\nOG 2: Can't pay own mana (others must transfer).\nOG 3: Vote to skip Main or Attack steps.\nIf OG wins: No King next battle. Kill OG = VP. Die to OG = Lose 5 XP & Discard 3 lands."
+      },
+      {
+          title: "Post-Battle 3", type: "post",
+          desc: "Event: Mobile Hammock (#59).\nDraft: Minesweeper draft a land booster (#107)."
+      },
+      {
+          title: "Battle 4: Spikeball", type: "battle",
+          desc: "All vs All. Coin flip for direction (Left/Right).\nShuffle 2 markers into decks. Draw marker -> Change direction.\nWin condition: Eliminate target in direction."
+      },
+      {
+          title: "Post-Battle 4", type: "post",
+          desc: "Draft: Dinner a'la card (#105). Draft piles in descending rank order. Cards go to deck or starting hand."
+      },
+      {
+          title: "Battle 5: Heidi's Bierbar", type: "battle",
+          desc: "All vs All.\nEnd step: Gain 2 Drunk or 2 Poison counters.\nCause loss = Gain their role.\nLast player wins campaign."
+      }
+  ];
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative flex">
       
@@ -201,31 +231,15 @@ const CampaignManager = () => {
       {diceOverlay.active && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
             <style>{`
-                @keyframes chaos {
-                    0% { transform: rotate(0deg) scale(0.5) translate(0,0); color: #444; }
-                    25% { transform: rotate(90deg) scale(1.5) translate(20px, -20px); color: #800; }
-                    50% { transform: rotate(-180deg) scale(0.8) translate(-20px, 20px); color: #d00; }
-                    75% { transform: rotate(270deg) scale(1.2) translate(10px, 10px); color: #f00; }
-                    100% { transform: rotate(360deg) scale(1) translate(0,0); color: #444; }
-                }
-                @keyframes landing {
-                    0% { transform: scale(3); opacity: 0; }
-                    50% { transform: scale(0.8); opacity: 1; }
-                    75% { transform: scale(1.1); }
-                    100% { transform: scale(1); }
-                }
-                .rolling-anim { animation: chaos 0.1s infinite linear; opacity: 0.7; }
-                .landed-anim { animation: landing 0.4s ease-out forwards; text-shadow: 0 0 50px #d4af37, 0 0 100px #f59e0b; color: #d4af37; transform: scale(1.5); }
+                @keyframes chaos { 0% { transform: rotate(0deg) scale(0.5); } 100% { transform: rotate(360deg) scale(1); } }
+                @keyframes landing { 0% { transform: scale(3); opacity: 0; } 50% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1); } }
+                .rolling-anim { animation: chaos 0.1s infinite linear; opacity: 0.7; color: #444; }
+                .landed-anim { animation: landing 0.4s ease-out forwards; text-shadow: 0 0 50px #d4af37; color: #d4af37; transform: scale(1.5); }
             `}</style>
-            
             <div className={`font-black text-[20rem] fantasy-font leading-none ${diceOverlay.finished ? 'landed-anim' : 'rolling-anim'}`}>
                 {diceOverlay.value}
             </div>
-            {diceOverlay.finished && (
-                <div className="mt-8 text-4xl text-yellow-500 font-bold tracking-[1em] uppercase animate-pulse">
-                    RESULT
-                </div>
-            )}
+            {diceOverlay.finished && <div className="mt-8 text-4xl text-yellow-500 font-bold tracking-[1em] uppercase animate-pulse">RESULT</div>}
         </div>
       )}
 
@@ -235,51 +249,34 @@ const CampaignManager = () => {
         {/* HEADER */}
         <div className="flex justify-between items-center bg-[#111]/80 backdrop-blur border-b border-white/10 p-2 rounded-lg shrink-0">
             <div className="flex flex-col">
-                <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest" style={{ fontFamily: 'Cinzel, serif' }}>
-                    STAGGING IT UP
-                </h1>
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-gray-500">
-                    <Zap size={10} /> Campaign Manager
-                </div>
+                <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest" style={{ fontFamily: 'Cinzel, serif' }}>STAGGING IT UP</h1>
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-gray-500"><Zap size={10} /> Campaign Manager</div>
             </div>
 
             <div className="flex gap-2">
                 {[6, 10, 20].map(sides => (
-                    <button key={sides} onClick={() => rollDice(sides)} className="px-3 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 hover:border-blue-400 text-blue-200 rounded font-bold text-sm shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all active:scale-95">
-                        D{sides}
-                    </button>
+                    <button key={sides} onClick={() => rollDice(sides)} className="px-3 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 hover:border-blue-400 text-blue-200 rounded font-bold text-sm shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all active:scale-95">D{sides}</button>
                 ))}
             </div>
 
             <div className="flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500" title="Save"><Save size={16}/></button>
-                <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load">
-                    <Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" />
-                </label>
-                <button onClick={() => setEpilogueMode(!epilogueMode)} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`} title="Toggle Mode"><Crown size={16}/></button>
+                <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
+                <button onClick={() => setEpilogueMode(!epilogueMode)} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`} title="Epilogue"><Crown size={16}/></button>
                 <button onClick={() => resetData()} className="p-2 hover:bg-white/10 rounded text-red-500" title="Reset"><RefreshCw size={16}/></button>
                 <button onClick={() => setShowRules(!showRules)} className={`p-2 rounded border border-yellow-700/50 ${showRules ? 'bg-yellow-900/50 text-white' : 'hover:bg-white/10 text-yellow-600'}`} title="Rules"><BookOpen size={16}/></button>
             </div>
         </div>
 
         {/* GLOBAL BAR */}
-        <div className="grid grid-cols-[auto_1fr] gap-2 shrink-0 h-12">
-            <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-4 gap-4">
-                <div className="text-xs text-red-500 font-bold uppercase flex items-center gap-1"><Skull size={12} /> Stalemate</div>
-                <div className="flex items-center gap-2">
-                    <button onClick={() => setStalemate(Math.max(0, stalemate - 1))} className="text-gray-500 hover:text-white">-</button>
-                    <span className="text-2xl font-mono font-bold text-white w-8 text-center">{stalemate}</span>
-                    <button onClick={() => setStalemate(stalemate + 1)} className="text-gray-500 hover:text-white">+</button>
+        <div className="flex justify-center shrink-0 h-12">
+            <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-6 gap-6">
+                <div className="text-xs text-red-500 font-bold uppercase flex items-center gap-2"><Skull size={14} /> Stalemate Timer</div>
+                <div className="flex items-center gap-4">
+                    <button onClick={() => setStalemate(Math.max(0, stalemate - 1))} className="text-gray-500 hover:text-white text-2xl font-bold">-</button>
+                    <span className="text-3xl font-mono font-bold text-white w-10 text-center">{stalemate}</span>
+                    <button onClick={() => setStalemate(stalemate + 1)} className="text-gray-500 hover:text-white text-2xl font-bold">+</button>
                 </div>
-            </div>
-            <div className="bg-black/60 border border-gray-800 rounded flex items-center px-4 justify-between">
-                <span className="text-xs text-gray-500 uppercase font-bold">Battle</span>
-                <select value={currentBattle} onChange={(e) => setCurrentBattle(e.target.value)} className="bg-transparent text-yellow-500 font-bold text-sm focus:outline-none text-right w-full">
-                    <option value="Dinner">Dinner a'la card</option>
-                    <option value="Heidi">Heidi's Bierbar</option>
-                    <option value="Epilogue1">Epilogue: The Day After</option>
-                    <option value="Epilogue2">Epilogue: The Big Day</option>
-                </select>
             </div>
         </div>
 
@@ -290,16 +287,17 @@ const CampaignManager = () => {
                     <div className={`h-1 w-full ${['bg-red-600','bg-blue-600','bg-green-600','bg-yellow-600'][index]}`}></div>
                     
                     <div className="p-3 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center">
-                        <span className="font-black text-xl text-gray-200" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
-                        {epilogueMode && <span className="text-[10px] text-gray-500">EPILOGUE</span>}
+                        <input value={player.name} onChange={(e) => updatePlayer(index, 'name', e.target.value)} className="bg-transparent w-full font-black text-xl text-gray-200 focus:text-white focus:outline-none placeholder-gray-700" style={{ fontFamily: 'Cinzel, serif' }} />
+                        {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide">Epilogue</span>}
                     </div>
 
                     <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden">
                         {!epilogueMode ? (
                             <>
+                                {/* PREMIUM DROPDOWN */}
                                 <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
-                                    <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black/40 border border-gray-800 text-xs rounded p-1 text-yellow-600 font-bold focus:outline-none w-full">
-                                        <option value="">No Role</option>
+                                    <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-2 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none hover:border-gray-500 transition-colors">
+                                        <option value="">-- No Role --</option>
                                         <option value="Doctor">Doctor</option>
                                         <option value="Monk">Monk</option>
                                         <option value="Smith">Smith</option>
@@ -332,7 +330,6 @@ const CampaignManager = () => {
                                     </div>
                                 </div>
 
-                                {/* FULL ABILITIES LIST (SCROLLABLE) */}
                                 <div className="flex-grow bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative">
                                     <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
                                     {player.role ? (
@@ -348,9 +345,7 @@ const CampaignManager = () => {
                                                 )
                                             })}
                                             <div className="w-full h-px bg-gray-800 my-1"></div>
-                                            <div className="text-yellow-600 italic">
-                                                {getRoleReward(player.role)}
-                                            </div>
+                                            <div className="text-yellow-600 italic">{getRoleReward(player.role)}</div>
                                         </div>
                                     ) : (
                                         <div className="h-full flex items-center justify-center text-[10px] text-gray-700 italic">Select Role</div>
@@ -361,7 +356,7 @@ const CampaignManager = () => {
                             <div className="flex-grow flex flex-col gap-4 justify-center">
                                 <div className="bg-indigo-900/20 p-2 rounded border border-indigo-500/30">
                                     <label className="text-[9px] text-indigo-400 uppercase font-bold block mb-1">Marriage</label>
-                                    <select value={player.spouse} onChange={(e) => updatePlayer(index, 'spouse', e.target.value)} className="w-full bg-black text-xs text-indigo-200 border-none outline-none">
+                                    <select value={player.spouse} onChange={(e) => updatePlayer(index, 'spouse', e.target.value)} className="w-full bg-black text-gray-300 border border-gray-700 rounded p-2 text-xs focus:outline-none focus:border-indigo-500">
                                         <option value="">Single</option>
                                         {players.filter(p => p.name !== player.name).map((p, i) => (
                                             <option key={i} value={p.name}>+ {p.name}</option>
@@ -395,147 +390,83 @@ const CampaignManager = () => {
         </div>
       </div>
 
-      {/* --- RIGHT SIDE: RULE PANE --- */}
+      {/* --- RIGHT SIDE: RULE PANE (EXPANDED) --- */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-1/3 translate-x-0' : 'w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
-            <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Campaign Codex</h2>
+            <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex</h2>
             <button onClick={() => setShowRules(false)} className="text-gray-500 hover:text-white"><X size={20}/></button>
         </div>
-        <div className="flex-grow overflow-y-auto p-4 space-y-4 text-sm text-gray-300 custom-scrollbar">
+        <div className="flex-grow overflow-y-auto p-4 space-y-4 text-sm text-gray-300 custom-scrollbar pb-20">
             
-            {/* 1. CORE RULES */}
+            {/* CORE */}
             <details className="group border border-gray-800 rounded bg-black/20 open:bg-black/40 transition-colors">
                 <summary className="p-3 font-bold cursor-pointer text-blue-400 hover:text-blue-300 uppercase tracking-widest flex justify-between">Core Rules <span className="group-open:rotate-180 transition-transform">▼</span></summary>
                 <div className="p-3 border-t border-gray-800 space-y-2 text-xs leading-relaxed">
                     <p><strong>Setup:</strong> 4-5 players, 5 battles. HS 6, LT 15. Dual land market = 40 cards.</p>
-                    <p><strong>Roles & XP:</strong> Choose non-King role (descending rank). Levels based on XP: 0-9 (Lvl 1), 10-19 (Lvl 2), 20+ (Lvl 3). Cap at 0 and 20.</p>
+                    <p><strong>Roles & XP:</strong> Choose non-King role (descending rank). Levels: 0-9 (Lvl 1), 10-19 (Lvl 2), 20+ (Lvl 3). XP Cap: 0-20.</p>
                     <p><strong>Ranking:</strong> Based on VPs. Tie-breaker: Most recent win. Win battle = 1 VP.</p>
-                    <p><strong>Mulligans:</strong> London Mulligan (Draw 7, put X on bottom). Shuffle hand, draw new, put cards away.</p>
-                    <p><strong>Draw-out:</strong> If you can't draw, sacrifice non-land permanent OR lose 2 life.</p>
-                    <p><strong>Stalemate:</strong> Starts when 2 players left. Timer increases at turn start. At 10, battle ends. Winner: Life > Non-lands > Hand > Library.</p>
+                    <p><strong>Mulligans:</strong> London (Draw 7, bottom X).</p>
+                    <p><strong>Draw-out:</strong> Sac non-land permanent OR lose 2 life.</p>
+                    <p><strong>Stalemate:</strong> 2 players left -> Timer starts. Ends at 10. Winner: Life > Non-lands > Hand > Library.</p>
                 </div>
             </details>
 
-            {/* 2. ROLES */}
+            {/* ROLES */}
             <details className="group border border-gray-800 rounded bg-black/20 open:bg-black/40 transition-colors">
                 <summary className="p-3 font-bold cursor-pointer text-green-400 hover:text-green-300 uppercase tracking-widest flex justify-between">Roles <span className="group-open:rotate-180 transition-transform">▼</span></summary>
                 <div className="p-3 border-t border-gray-800 space-y-4 text-xs leading-relaxed">
-                    <div>
-                        <strong className="text-red-400 block mb-1">DOCTOR</strong>
-                        <ul className="list-disc pl-4 space-y-1">
-                            <li><strong>Lvl 1:</strong> Creature enters: Remove counter from perm/player.</li>
-                            <li><strong>Lvl 2:</strong> Gain Drunk counter: Target creature gains Metaxa eot.</li>
-                            <li><strong>Lvl 3:</strong> Creatures have Infect. End of turn: Proliferate.</li>
-                            <li className="italic text-gray-500">Reward: Creature dies on your turn -> +1 XP.</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong className="text-yellow-400 block mb-1">MONK</strong>
-                        <ul className="list-disc pl-4 space-y-1">
-                            <li><strong>Lvl 1:</strong> Discard & Pay (2) (Sorcery, 1/turn): Place Heresy counter on player. Attackers get +X/+0 vs Heresy player. Attack Heresy player = Draw card.</li>
-                            <li><strong>Lvl 2:</strong> Activate OG/Planeswalker abilities twice per turn.</li>
-                            <li><strong>Lvl 3:</strong> Tap 3 creatures (Sorcery): Put random OG in play. Sac if tappers untap. Max 1 OG this way.</li>
-                            <li className="italic text-gray-500">Reward: Life total changes -> +1 XP.</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong className="text-blue-400 block mb-1">SMITH</strong>
-                        <ul className="list-disc pl-4 space-y-1">
-                            <li><strong>Lvl 1:</strong> Artifact spells cost (1) less per Level.</li>
-                            <li><strong>Lvl 2:</strong> Equipped creatures have Vigilance, Trample, Reach.</li>
-                            <li><strong>Lvl 3:</strong> Metalcraft (3+ artifacts): Discard to copy target artifact (token). Sorcery speed, 1/turn.</li>
-                            <li className="italic text-gray-500">Reward: Artifact enters under control -> +1 XP.</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong className="text-gray-200 block mb-1">KNIGHT</strong>
-                        <ul className="list-disc pl-4 space-y-1">
-                            <li><strong>Lvl 1:</strong> (1) Discard: Create 1/2 Green horse w/ Haste (Sorcery).</li>
-                            <li><strong>Lvl 2:</strong> Equipped creatures have Mentor.</li>
-                            <li><strong>Lvl 3:</strong> Battalion (3+ attackers): Fight target creature.</li>
-                            <li className="italic text-gray-500">Reward: Creatures deal damage -> +1 XP.</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong className="text-purple-400 block mb-1">FOOL</strong>
-                        <ul className="list-disc pl-4 space-y-1">
-                            <li><strong>Lvl 1:</strong> Spells on opponent's turn cost (1) less. (Kill King -> Gain Role).</li>
-                            <li><strong>Lvl 2:</strong> Creature spells have Ninjutsu = CMC.</li>
-                            <li><strong>Lvl 3:</strong> (Same as Lvl 2).</li>
-                            <li className="italic text-gray-500">Reward: Target opponent/their perm -> +1 XP (1/turn).</li>
-                        </ul>
-                    </div>
-                    <div>
-                        <strong className="text-yellow-600 block mb-1">KING</strong>
-                        <ul className="list-disc pl-4 space-y-1">
-                            <li><strong>Lvl 1:</strong> Creatures +1/+1 per Level.</li>
-                            <li><strong>Lvl 2:</strong> Play extra land. Lands have 'T: Add one mana any color'.</li>
-                            <li><strong>Lvl 3:</strong> Draw extra card in draw step.</li>
-                            <li className="italic text-gray-500">Reward: Every 3rd time another player gains XP -> +1 XP.</li>
-                        </ul>
+                    <p className="italic text-gray-500">Players have abilities of current AND lower levels.</p>
+                    {/* (Role details logic is handled here, abbreviated for brevity in this display but fully in code) */}
+                    <div className="grid gap-2">
+                        {['Doctor','Monk','Smith','Knight','Fool','King'].map(r => (
+                            <div key={r} className="border-b border-gray-800 pb-2 mb-2 last:border-0">
+                                <strong className="text-yellow-600 block mb-1 uppercase">{r}</strong>
+                                <ul className="list-disc pl-4 space-y-1 text-gray-400">
+                                    {getRoleAbilities(r).map((ab, i) => <li key={i} className="leading-tight">{ab}</li>)}
+                                    <li className="text-yellow-500/80 italic">{getRoleReward(r)}</li>
+                                </ul>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </details>
 
-            {/* 3. TIMELINE */}
-            <details className="group border border-gray-800 rounded bg-black/20 open:bg-black/40 transition-colors">
-                <summary className="p-3 font-bold cursor-pointer text-red-400 hover:text-red-300 uppercase tracking-widest flex justify-between">Campaign Timeline <span className="group-open:rotate-180 transition-transform">▼</span></summary>
-                <div className="p-3 border-t border-gray-800 space-y-4 text-xs leading-relaxed">
-                    <div>
-                        <strong className="text-white block">Battle 1: Repentance</strong>
-                        <p>All vs All. Pay life instead of mana for spells.</p>
-                        <p className="text-gray-500 mt-1">POST: Bid i det sure løg #101 for losers. Quilt draft a Booster.</p>
-                    </div>
-                    <div>
-                        <strong className="text-white block">Battle 2: Grand Melee</strong>
-                        <p>Creatures have Haste and attack each turn if able.</p>
-                        <p className="text-gray-500 mt-1">POST: Workout Session #114. Housmann draft a booster.</p>
-                    </div>
-                    <div>
-                        <strong className="text-white block">Battle 3: Hunters Loge</strong>
-                        <p>Stack 3 OGs facedown. Defeat one -> Next flips (X = cycle # of defeated). Players can block for each other.</p>
-                        <ul className="list-disc pl-4 mt-1 text-gray-400">
-                            <li>OG 1: Draw from player to left.</li>
-                            <li>OG 2: Can't pay own mana (others must transfer).</li>
-                            <li>OG 3: Vote to skip Main or Attack steps.</li>
-                        </ul>
-                        <p className="text-gray-500 mt-1">POST: Mobile Hammock (Minesweeper draft land booster).</p>
-                    </div>
-                    <div>
-                        <strong className="text-white block">Battle 4: Spikeball</strong>
-                        <p>All vs All. Coin flip for direction (Left/Right). Markers in deck change direction. Win by eliminating target.</p>
-                        <p className="text-gray-500 mt-1">POST: Dinner a'la card (Draft piles from booster, descending rank).</p>
-                    </div>
-                    <div>
-                        <strong className="text-white block">Battle 5: Heidi's Bierbar</strong>
-                        <p>End step: Gain 2 Drunk or 2 Poison counters. Cause loss = Steal role. Last player wins campaign.</p>
-                    </div>
-                </div>
-            </details>
+            {/* TIMELINE (NEW INTERACTIVE) */}
+            <div className="border border-gray-800 rounded bg-black/20">
+                <div className="p-3 font-bold text-red-400 uppercase tracking-widest border-b border-gray-800">Campaign Timeline</div>
+                {timelineData.map((event, i) => (
+                    <details key={i} className="group border-b border-gray-800 last:border-0 transition-colors open:bg-white/5">
+                        <summary className="p-3 cursor-pointer text-xs font-bold hover:text-white flex justify-between items-center">
+                            <span className={event.type === 'battle' ? 'text-red-300' : 'text-blue-300'}>
+                                {event.type === 'battle' ? <Sword size={12} className="inline mr-2"/> : <Beer size={12} className="inline mr-2"/>}
+                                {event.title}
+                            </span>
+                            <span className="text-gray-600 group-open:rotate-180 transition-transform">▼</span>
+                        </summary>
+                        <div className="p-3 pt-0 text-xs text-gray-400 leading-relaxed whitespace-pre-wrap pl-8">
+                            {event.desc}
+                        </div>
+                    </details>
+                ))}
+            </div>
 
-            {/* 4. EPILOGUE */}
+            {/* EPILOGUE */}
             <details className="group border border-gray-800 rounded bg-black/20 open:bg-black/40 transition-colors">
-                <summary className="p-3 font-bold cursor-pointer text-indigo-400 hover:text-indigo-300 uppercase tracking-widest flex justify-between">Epilogue <span className="group-open:rotate-180 transition-transform">▼</span></summary>
+                <summary className="p-3 font-bold cursor-pointer text-indigo-400 hover:text-indigo-300 uppercase tracking-widest flex justify-between">Epilogue Rules <span className="group-open:rotate-180 transition-transform">▼</span></summary>
                 <div className="p-3 border-t border-gray-800 space-y-4 text-xs leading-relaxed">
-                    <p className="text-gray-500 italic">Role & XP system abandoned.</p>
                     <div>
-                        <strong className="text-white block">The Day After</strong>
-                        <p>Start with Drunk counters (inverse placement: Last=3, 2nd Last=4...). Remove counter = Draw card.</p>
-                        <p><strong>Sober Up:</strong> Upkeep, pay 1 (effectively 2) to remove Drunk counter.</p>
-                        <p><strong>Spells:</strong> All spells have Suspend logic (pay cost, exile with time counters, remove at upkeep, cast for free).</p>
+                        <strong className="text-white block mb-1">The Day After</strong>
+                        <p>Start with Drunk counters (inverse placement: Last=3, 2nd=4...). Remove counter = Draw card. Upkeep: Pay 1 (effectively 2) to remove Drunk. Spells have Suspend logic. Creatures enter tapped.</p>
                     </div>
                     <div>
-                        <strong className="text-white block">The Big Day</strong>
-                        <p>Winner proposes marriage. If accepted -> Married.</p>
-                        <p><strong>Marriage:</strong> Shared library. Cannot attack each other.</p>
-                        <p><strong>Divorce:</strong> Sorcery speed. Give hand to partner to leave.</p>
-                        <p><strong>Win:</strong> Final remaining player.</p>
+                        <strong className="text-white block mb-1">The Big Day</strong>
+                        <p>Winner proposes. Marriage = Shared library, no attacks. Divorce = Give hand (Sorcery). Win = Final survivor.</p>
                     </div>
                 </div>
             </details>
 
         </div>
-      </div>
+    </div>
 
     </div>
   );
