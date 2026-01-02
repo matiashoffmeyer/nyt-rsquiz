@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, ChevronLeft, ChevronRight, Users, Wifi, WifiOff } from 'lucide-react';
+import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, ChevronLeft, ChevronRight, Users, Wifi, WifiOff, Minus, Plus } from 'lucide-react';
 
 // --- SUPABASE SETUP (SAFE MODE) ---
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -44,24 +44,16 @@ const CampaignManager = () => {
 
   // --- DATA ENGINE (HYBRID: CLOUD + LOCAL) ---
   useEffect(() => {
-    // 1. Try Loading from Cloud
     const fetchCloudData = async () => {
       if (!supabase) return;
-      
-      const { data, error } = await supabase
-        .from('campaign_state')
-        .select('game_data')
-        .eq('id', 1)
-        .single();
-
+      const { data, error } = await supabase.from('campaign_state').select('game_data').eq('id', 1).single();
       if (data && data.game_data) {
         applyData(data.game_data);
         setIsConnected(true);
       }
     };
 
-    // 2. Load from LocalStorage (Backup/Fast Load)
-    const saved = localStorage.getItem('staggingData_v15');
+    const saved = localStorage.getItem('staggingData_v16');
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -71,19 +63,10 @@ const CampaignManager = () => {
 
     fetchCloudData();
 
-    // 3. Listen for Cloud Updates
     if (supabase) {
-      const channel = supabase
-        .channel('campaign_updates')
-        .on('postgres_changes', 
-          { event: 'UPDATE', schema: 'public', table: 'campaign_state', filter: 'id=eq.1' }, 
-          (payload) => {
-            if (payload.new && payload.new.game_data) {
-              applyData(payload.new.game_data);
-            }
-          }
-        )
-        .subscribe();
+      const channel = supabase.channel('campaign_updates').on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'campaign_state', filter: 'id=eq.1' }, (payload) => {
+          if (payload.new && payload.new.game_data) { applyData(payload.new.game_data); }
+        }).subscribe();
       return () => { supabase.removeChannel(channel); };
     }
   }, []);
@@ -95,35 +78,21 @@ const CampaignManager = () => {
     if (data.lastRollRecord) setLastRollRecord(data.lastRollRecord);
   };
 
-  // MAIN SAVE FUNCTION (Saves to both Cloud and Local)
   const syncState = async (newPlayers, newStalemate, newEpilogue, newRoll) => {
-    // 1. Update React State (Instant UI)
     setPlayers(newPlayers);
     setStalemate(newStalemate);
     setEpilogueMode(newEpilogue);
     setLastRollRecord(newRoll);
 
-    const gameData = { 
-        players: newPlayers, 
-        stalemate: newStalemate, 
-        epilogueMode: newEpilogue, 
-        lastRollRecord: newRoll 
-    };
+    const gameData = { players: newPlayers, stalemate: newStalemate, epilogueMode: newEpilogue, lastRollRecord: newRoll };
+    localStorage.setItem('staggingData_v16', JSON.stringify(gameData));
 
-    // 2. Save to LocalStorage (Backup)
-    localStorage.setItem('staggingData_v15', JSON.stringify(gameData));
-
-    // 3. Send to Cloud (if online)
     if (supabase) {
-        await supabase
-          .from('campaign_state')
-          .update({ game_data: gameData })
-          .eq('id', 1);
+        await supabase.from('campaign_state').update({ game_data: gameData }).eq('id', 1);
     }
   };
 
-  // --- GAME ACTIONS ---
-
+  // --- ACTIONS ---
   const resetData = async () => {
     if (!window.confirm("RESET CAMPAIGN FOR EVERYONE?")) return;
     const defaults = [
@@ -133,6 +102,7 @@ const CampaignManager = () => {
       { name: 'Matias', role: '', vp: 3, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' }
     ];
     syncState(defaults, 0, false, { type: '-', value: '-' });
+    setShowRules(false); // Close menu on action
   };
 
   const rollDice = (sides) => {
@@ -142,17 +112,12 @@ const CampaignManager = () => {
       const randomVal = Math.floor(Math.random() * sides) + 1;
       setDiceOverlay(prev => ({ ...prev, value: randomVal }));
       counter++;
-      
       if (counter > 20) { 
         clearInterval(interval);
         setDiceOverlay(prev => ({ ...prev, finished: true }));
-        
-        // Sync RESULT to everyone else
         const trueFinal = Math.floor(Math.random() * sides) + 1; 
         setDiceOverlay(prev => ({...prev, value: trueFinal}));
-        
         syncState(players, stalemate, epilogueMode, { type: sides, value: trueFinal });
-
         setTimeout(() => setDiceOverlay(prev => ({ ...prev, active: false })), 2000);
       }
     }, 50);
@@ -168,17 +133,11 @@ const CampaignManager = () => {
     const newPlayers = [...players];
     const currentPlayer = newPlayers[playerIndex];
     const oldSpouseName = currentPlayer.spouse;
-
-    // Break old marriage
     if (oldSpouseName) {
         const oldSpouseIndex = newPlayers.findIndex(p => p.name === oldSpouseName);
         if (oldSpouseIndex !== -1) newPlayers[oldSpouseIndex].spouse = "";
     }
-
-    // Set new marriage
     currentPlayer.spouse = newSpouseName;
-
-    // Link target player
     if (newSpouseName) {
         const newSpouseIndex = newPlayers.findIndex(p => p.name === newSpouseName);
         if (newSpouseIndex !== -1) {
@@ -208,15 +167,9 @@ const CampaignManager = () => {
 
   const toggleEpilogue = () => {
     syncState(players, stalemate, !epilogueMode, lastRollRecord);
+    setShowRules(false);
   };
 
-  // UI Helpers
-  const nextPlayer = () => setActivePlayerIndex((prev) => (prev + 1) % players.length);
-  const prevPlayer = () => setActivePlayerIndex((prev) => (prev - 1 + players.length) % players.length);
-  const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
-  const toggleRuleSection = (id) => setActiveRuleSection(activeRuleSection === id ? null : id);
-
-  // --- FILE EXPORT (Backup) ---
   const exportData = () => {
     const data = JSON.stringify({ players, stalemate, epilogueMode, lastRollRecord }, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
@@ -237,14 +190,9 @@ const CampaignManager = () => {
       try {
         const data = JSON.parse(e.target.result);
         if (data.players) {
-            // CRITICAL: This pushes loaded data to the Cloud for everyone!
-            syncState(
-                data.players, 
-                data.stalemate || 0, 
-                data.epilogueMode || false, 
-                data.lastRollRecord || { type: '-', value: '-' }
-            );
-            alert("File Loaded & Synced to Everyone!");
+            syncState(data.players, data.stalemate || 0, data.epilogueMode || false, data.lastRollRecord || { type: '-', value: '-' });
+            alert("File Loaded & Synced!");
+            setShowRules(false);
         }
       } catch (err) { alert("File error"); }
     };
@@ -252,28 +200,31 @@ const CampaignManager = () => {
     event.target.value = '';
   };
 
-  // --- DATA HELPERS ---
+  // UI Helpers
+  const nextPlayer = () => setActivePlayerIndex((prev) => (prev + 1) % players.length);
+  const prevPlayer = () => setActivePlayerIndex((prev) => (prev - 1 + players.length) % players.length);
+  const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
+  const toggleRuleSection = (id) => setActiveRuleSection(activeRuleSection === id ? null : id);
+
+  // --- CONTENT HELPERS ---
   const getRoleAbilities = (role) => {
     const data = {
-        'Doctor': ["When a creature enters play under your control, you may remove a counter from a permanent or player.", "Gain a Drunk counter: Target creature gains Metaxa until end of turn.", "Creatures under your control have Infect. At the end of your turn: Proliferate."],
-        'Monk': ["Discard a card and pay (2) (sorcery speed) (max once pr turn): Place a Heresy counter on target player. Attacking creatures have +X/+0 where X is the number of Heresy counters on the defending player. When a player attacks a player with one or more Heresy counters, he draws a card.", "You may activate abilities of OGs and planeswalkers under your control twice per turn (as if the OG had two turns, so not the same ability twice if used on an OG).", "Tap 3 creatures under your control (sorcery speed): Put a random OG in play under your control. Sacrifice it if one or more of the tapped creatures become untapped. You can’t control more than one OG, this way, at a time."],
-        'Smith': ["Artifact spells in your hand cost (1) less for every level you have.", "Equipped creatures under your control have Vigilance, Trample and Reach.", "Metalcraft (If you control 3 or more artifacts) you may discard a card to create a token that is a copy of target artifact. (Sorcery speed only and max once pr turn)."],
-        'Knight': ["(1) discard a card to create a 1/2 Green horse creature token with Haste (Sorcery speed only).", "Equipped creatures you control have Mentor (Whenever this creature attacks, put a +1/+1 counter on target attacking creature with lesser power.)", "Battalion (When you attack with 3 or more creatures): You may have a creature under your control fight target creature."],
-        'Fool': ["Spells you cast on your opponent's turn cost (1) less. If you caused the King to die, you may gain his role for the rest of the battle.", "Creature spells in your hand have Ninjutsu equal to their CMC. (Return an unblocked attacker you control to hand: Put this card onto the battlefield from your hand tapped and attacking.)", "(Same as Level 2) Creature spells in your hand have Ninjutsu equal to their CMC."],
-        'King': ["Creatures under your control have +1/+1 for each of your levels.", "You may play an extra land during your turn and lands you control also have 'T: Add one mana of any colour.'", "You draw an extra card in your draw step."]
+        'Doctor': ["Creature enters: Remove counter.", "Gain Drunk: Target gets Metaxa.", "Creatures have Infect. End: Proliferate."],
+        'Monk': ["Discard/Pay(2): Heresy logic.", "Activate OG abilities 2x.", "Tap 3: Summon random OG."],
+        'Smith': ["Artifact spells cost (1) less/Lvl.", "Equip: Vigilance, Trample, Reach.", "Metalcraft: Copy artifact."],
+        'Knight': ["(1) Discard: 1/2 Horse Haste.", "Equip: Mentor.", "Battalion: Fight target."],
+        'Fool': ["Opp. turn spells cost (1) less.", "Creatures: Ninjutsu = CMC.", "Creatures: Ninjutsu = CMC."],
+        'King': ["Creatures +1/+1 per Level.", "Extra land & fix mana.", "Draw extra card."]
     };
     return data[role] || [];
   };
-
   const getRoleReward = (role) => {
-    const rewards = { 'Doctor': 'Rewards: When one or more creatures die during your turn, gain 1 xp.', 'Monk': 'Rewards: Whenever your life total changes, gain 1 xp.', 'Smith': 'Rewards: When an artifact enters play under your control, gain 1 xp.', 'Knight': 'Rewards: Whenever one or more creatures under your control deal damage, gain 1 XP.', 'Fool': 'Rewards: Whenever you target an opponent or a permanent under his control with a spell or ability, gain 1 xp (max once pr turn)', 'King': 'Rewards: Every third time another player gains xp you gain 1 xp.' };
+    const rewards = { 'Doctor': 'Creature dies on your turn -> +1 XP', 'Monk': 'Life total changes -> +1 XP', 'Smith': 'Artifact enters -> +1 XP', 'Knight': 'Creatures deal damage -> +1 XP', 'Fool': 'Target opponent/perm -> +1 XP', 'King': 'Every 3rd time another gains xp -> +1 XP' };
     return rewards[role] || '';
   };
-
   const getRoleIcon = (role) => {
       switch(role) { case 'Doctor': return <Heart size={12} />; case 'Monk': return <Scroll size={12} />; case 'Smith': return <Hammer size={12} />; case 'Knight': return <Shield size={12} />; case 'Fool': return <Ghost size={12} />; case 'King': return <Crown size={12} />; default: return null; }
   };
-
   const timelineData = [
       { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
       { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
@@ -286,56 +237,47 @@ const CampaignManager = () => {
       { title: "Battle 5: Heidi's Bierbar", type: "battle", desc: "All vs All\nIn each player’s end step, he gains his choice of 2 Drunk- or 2 Poison counters.\nWhen a permanent, spell or ability you control causes a player to lose, you may gain his role.\nLast remaining player wins the campaign, if all the last players are killed at the same time (for example by a player-owned OG), the tie breaker is VP, then randomly." }
   ];
 
-  // --- PLAYER CARD COMPONENT ---
+  // --- PLAYER CARD ---
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
     return (
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full">
             <div className={`h-1 w-full ${['bg-red-600','bg-blue-600','bg-green-600','bg-yellow-600'][index]}`}></div>
-            
             <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center">
                 <span className="w-full font-black text-lg text-center text-gray-200" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
                 {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
             </div>
-
             <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden">
                 {!epilogueMode ? (
                     <>
                         <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
                             <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-2 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none hover:border-gray-500 transition-colors">
                                 <option value="">-- No Role --</option>
-                                <option value="Doctor">Doctor</option>
-                                <option value="Monk">Monk</option>
-                                <option value="Smith">Smith</option>
-                                <option value="Knight">Knight</option>
-                                <option value="Fool">Fool</option>
-                                <option value="King">King</option>
+                                {['Doctor','Monk','Smith','Knight','Fool','King'].map(r=><option key={r} value={r}>{r}</option>)}
                             </select>
                             <div className="flex flex-col items-center leading-none">
                                 <span className="text-[8px] text-gray-600 uppercase">Lvl</span>
                                 <span className="text-xl font-bold text-blue-500" style={{ fontFamily: 'Cinzel, serif' }}>{getLevel(player.xp)}</span>
                             </div>
                         </div>
-
                         <div className="grid grid-cols-2 gap-2">
                             <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
-                                <span className="text-[8px] text-blue-500 font-bold">XP</span>
-                                <div className="flex items-center gap-1 w-full justify-between px-1">
-                                    <button onClick={() => adjustValue(index, 'xp', -1)} className="text-gray-600 hover:text-white">-</button>
-                                    <span className="font-mono text-lg font-bold">{player.xp}</span>
-                                    <button onClick={() => adjustValue(index, 'xp', 1)} className="text-gray-600 hover:text-white">+</button>
+                                <span className="text-[8px] text-blue-500 font-bold mb-1">XP</span>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => adjustValue(index, 'xp', -1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
+                                    <span className="font-mono text-lg font-bold w-6 text-center">{player.xp}</span>
+                                    <button onClick={() => adjustValue(index, 'xp', 1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
                                 </div>
                             </div>
                             <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
-                                <span className="text-[8px] text-green-500 font-bold">VP</span>
-                                <div className="flex items-center gap-1 w-full justify-between px-1">
-                                    <button onClick={() => adjustValue(index, 'vp', -1)} className="text-gray-600 hover:text-white">-</button>
-                                    <span className="font-mono text-lg font-bold text-green-400">{player.vp}</span>
-                                    <button onClick={() => adjustValue(index, 'vp', 1)} className="text-gray-600 hover:text-white">+</button>
+                                <span className="text-[8px] text-green-500 font-bold mb-1">VP</span>
+                                <div className="flex items-center gap-2">
+                                    <button onClick={() => adjustValue(index, 'vp', -1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
+                                    <span className="font-mono text-lg font-bold text-green-400 w-6 text-center">{player.vp}</span>
+                                    <button onClick={() => adjustValue(index, 'vp', 1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
                                 </div>
                             </div>
                         </div>
-
                         <div className="flex-grow bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative">
                             <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
                             {player.role ? (
@@ -366,43 +308,39 @@ const CampaignManager = () => {
                             </div>
                             <select value={player.spouse} onChange={(e) => handleMarriage(index, e.target.value)} className="w-full bg-black text-gray-300 border border-gray-700 rounded p-2 text-xs focus:outline-none focus:border-indigo-500">
                                 <option value="">Single (Unmarried)</option>
-                                {players.filter(p => p.name !== player.name).map((p, i) => (
-                                    <option key={i} value={p.name}>Married to {p.name}</option>
-                                ))}
+                                {players.filter(p => p.name !== player.name).map((p, i) => <option key={i} value={p.name}>Married to {p.name}</option>)}
                             </select>
                             {player.spouse && (
                                 <div className="mt-2 text-[10px] text-pink-300 italic bg-black/40 p-2 rounded border border-pink-500/20 leading-tight">
-                                    ❤️ <strong>Rules:</strong> Shared Library. Cannot attack each other. 
-                                    <br/>💔 <strong>Divorce (Sorcery):</strong> Give hand to partner to leave.
+                                    ❤️ <strong>Rules:</strong> Shared Library. Cannot attack each other.<br/>💔 <strong>Divorce:</strong> Give hand to partner to leave.
                                 </div>
                             )}
                         </div>
                         <div className="bg-purple-900/20 p-2 rounded border border-purple-500/30 flex justify-between items-center">
                             <span className="text-[9px] text-purple-400 font-bold uppercase">Drunk</span>
                             <div className="flex items-center gap-2">
-                                <button onClick={() => adjustValue(index, 'drunk', -1)} className="text-gray-500 hover:text-white">-</button>
+                                <button onClick={() => adjustValue(index, 'drunk', -1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
                                 <span className="text-xl font-bold text-purple-400 w-6 text-center">{player.drunk}</span>
-                                <button onClick={() => adjustValue(index, 'drunk', 1)} className="text-gray-500 hover:text-white">+</button>
+                                <button onClick={() => adjustValue(index, 'drunk', 1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
                             </div>
                         </div>
                     </div>
                 )}
-
                 <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-800">
                     <div className="bg-red-900/10 rounded border border-red-900/30 flex flex-col items-center p-1">
                         <span className="text-[8px] text-red-600 font-bold uppercase mb-1">LIFE</span>
                         <div className="flex w-full justify-between px-2 items-center">
-                            <button onClick={() => adjustValue(index, 'lt', -1)} className="text-gray-500 hover:text-white font-bold">-</button>
+                            <button onClick={() => adjustValue(index, 'lt', -1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
                             <span className="text-xl font-mono font-bold text-red-500">{player.lt}</span>
-                            <button onClick={() => adjustValue(index, 'lt', 1)} className="text-gray-500 hover:text-white font-bold">+</button>
+                            <button onClick={() => adjustValue(index, 'lt', 1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
                         </div>
                     </div>
                     <div className="bg-blue-900/10 rounded border border-blue-900/30 flex flex-col items-center p-1">
                         <span className="text-[8px] text-blue-600 font-bold uppercase mb-1">HAND</span>
                         <div className="flex w-full justify-between px-2 items-center">
-                            <button onClick={() => adjustValue(index, 'hs', -1)} className="text-gray-500 hover:text-white font-bold">-</button>
+                            <button onClick={() => adjustValue(index, 'hs', -1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
                             <span className="text-xl font-mono font-bold text-blue-500">{player.hs}</span>
-                            <button onClick={() => adjustValue(index, 'hs', 1)} className="text-gray-500 hover:text-white font-bold">+</button>
+                            <button onClick={() => adjustValue(index, 'hs', 1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
                         </div>
                     </div>
                 </div>
@@ -437,13 +375,12 @@ const CampaignManager = () => {
                 {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
             </div>
 
-            <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-2 gap-2">
+            <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
                 <div className="hidden md:flex text-[10px] text-red-500 font-bold uppercase items-center gap-1"><Skull size={10} /> Stalemate</div>
-                <div className="md:hidden text-red-500"><Skull size={14} /></div>
                 <div className="flex items-center gap-1">
-                    <button onClick={() => adjustStalemate(-1)} className="text-gray-500 hover:text-white font-bold w-4">-</button>
+                    <button onClick={() => adjustStalemate(-1)} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Minus size={14}/></button>
                     <span className="text-xl font-mono font-bold text-white w-6 text-center">{stalemate}</span>
-                    <button onClick={() => adjustStalemate(1)} className="text-gray-500 hover:text-white font-bold w-4">+</button>
+                    <button onClick={() => adjustStalemate(1)} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Plus size={14}/></button>
                 </div>
             </div>
 
@@ -463,12 +400,13 @@ const CampaignManager = () => {
                 </div>
             </div>
 
-            <div className="flex gap-1">
+            {/* DESKTOP CONTROLS */}
+            <div className="hidden md:flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
                 <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
                 <button onClick={toggleEpilogue} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`} title="Epilogue"><Crown size={16}/></button>
                 <button onClick={resetData} className="p-2 hover:bg-white/10 rounded text-red-500" title="Reset"><RefreshCw size={16}/></button>
-                <button onClick={() => setShowRules(!showRules)} className={`hidden md:block p-2 rounded border border-yellow-700/50 ${showRules ? 'bg-yellow-900/50 text-white' : 'hover:bg-white/10 text-yellow-600'}`} title="Rules"><BookOpen size={16}/></button>
+                <button onClick={() => setShowRules(!showRules)} className={`p-2 rounded border border-yellow-700/50 ${showRules ? 'bg-yellow-900/50 text-white' : 'hover:bg-white/10 text-yellow-600'}`} title="Rules"><BookOpen size={16}/></button>
             </div>
         </div>
 
@@ -491,8 +429,16 @@ const CampaignManager = () => {
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex</h2>
             <button onClick={() => setShowRules(false)} className="text-gray-500 hover:text-white"><X size={20}/></button>
         </div>
+        
+        {/* MOBILE CONTROLS IN PANE */}
+        <div className="md:hidden grid grid-cols-4 gap-2 p-4 border-b border-gray-800">
+            <button onClick={exportData} className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-green-500 text-[10px] font-bold"><Save size={16}/> SAVE</button>
+            <label className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-blue-500 text-[10px] font-bold cursor-pointer"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /> LOAD</label>
+            <button onClick={toggleEpilogue} className={`flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-[10px] font-bold ${epilogueMode ? 'text-yellow-400' : 'text-gray-500'}`}><Crown size={16}/> MODE</button>
+            <button onClick={resetData} className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-red-500 text-[10px] font-bold"><RefreshCw size={16}/> RESET</button>
+        </div>
+
         <div className="flex-grow overflow-y-auto p-2 space-y-2 text-sm text-gray-300 custom-scrollbar pb-20">
-            
             <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                 <button onClick={() => toggleRuleSection('core')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'core' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
                     <span><Info size={12} className="inline mr-2"/> Core Rules</span>
