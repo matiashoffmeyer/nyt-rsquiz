@@ -1,33 +1,54 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Save, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, ChevronLeft, ChevronRight, Users, Wifi } from 'lucide-react';
+import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, ChevronLeft, ChevronRight, Users, Wifi, WifiOff } from 'lucide-react';
 
-// --- SUPABASE SETUP ---
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "";
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+// --- SUPABASE SETUP (SAFE MODE) ---
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+let supabase = null;
+try {
+  if (SUPABASE_URL && SUPABASE_KEY) {
+    supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+  } else {
+    console.warn("Supabase credentials missing. Running in Offline Mode.");
+  }
+} catch (error) {
+  console.error("Supabase init error:", error);
+}
 
 const CampaignManager = () => {
   // --- STATE ---
-  const [players, setPlayers] = useState([]);
+  const [players, setPlayers] = useState([
+      { name: 'Christian', role: '', vp: 2, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' },
+      { name: 'Andreas', role: '', vp: 1, xp: 13, lt: 20, hs: 7, drunk: 0, spouse: '' },
+      { name: 'Frederik', role: '', vp: 1, xp: 16, lt: 20, hs: 7, drunk: 0, spouse: '' },
+      { name: 'Matias', role: '', vp: 3, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' }
+  ]);
   const [stalemate, setStalemate] = useState(0);
   const [epilogueMode, setEpilogueMode] = useState(false);
   const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
-  const [isConnected, setIsConnected] = useState(false); // Connection status
+  const [isConnected, setIsConnected] = useState(false);
 
   // UI State
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [showRules, setShowRules] = useState(false);
   const [activeRuleSection, setActiveRuleSection] = useState(null);
   
-  // Dice Animation State (Local only - we don't sync the animation frames, just the result)
+  // Dice Animation State
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
 
-  // --- REALTIME SYNC ENGINE ---
+  // Import State
+  const fileInputRef = useRef(null);
+  const [isImporting, setIsImporting] = useState(false);
+
+  // --- DATA ENGINE (HYBRID: CLOUD + LOCAL) ---
   
-  // 1. Fetch initial data & Subscribe to changes
   useEffect(() => {
-    const fetchData = async () => {
+    // 1. Try Loading from Cloud
+    const fetchCloudData = async () => {
+      if (!supabase) return;
+      
       const { data, error } = await supabase
         .from('campaign_state')
         .select('game_data')
@@ -35,80 +56,88 @@ const CampaignManager = () => {
         .single();
 
       if (data && data.game_data) {
-        applyCloudData(data.game_data);
+        applyData(data.game_data);
         setIsConnected(true);
-      } else if (error) {
-        console.error("Error connecting to DB:", error);
-        // Fallback if DB is empty/error: Init defaults
-        resetData();
       }
     };
 
-    fetchData();
+    // 2. Load from LocalStorage (Backup/Fast Load)
+    const saved = localStorage.getItem('staggingData_v13');
+    if (saved) {
+      try {
+        const data = JSON.parse(saved);
+        if (data.players) applyData(data);
+      } catch(e) {}
+    }
 
-    // Listen for updates from OTHER phones
-    const channel = supabase
-      .channel('campaign_updates')
-      .on('postgres_changes', 
-        { event: 'UPDATE', schema: 'public', table: 'campaign_state', filter: 'id=eq.1' }, 
-        (payload) => {
-          if (payload.new && payload.new.game_data) {
-            applyCloudData(payload.new.game_data);
+    fetchCloudData();
+
+    // 3. Listen for Cloud Updates
+    if (supabase) {
+      const channel = supabase
+        .channel('campaign_updates')
+        .on('postgres_changes', 
+          { event: 'UPDATE', schema: 'public', table: 'campaign_state', filter: 'id=eq.1' }, 
+          (payload) => {
+            if (payload.new && payload.new.game_data) {
+              applyData(payload.new.game_data);
+            }
           }
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+        )
+        .subscribe();
+      return () => { supabase.removeChannel(channel); };
+    }
   }, []);
 
-  // Helper to apply data from cloud to local state
-  const applyCloudData = (data) => {
+  const applyData = (data) => {
     if (data.players) setPlayers(data.players);
     if (data.stalemate !== undefined) setStalemate(data.stalemate);
     if (data.epilogueMode !== undefined) setEpilogueMode(data.epilogueMode);
     if (data.lastRollRecord) setLastRollRecord(data.lastRollRecord);
   };
 
-  // 2. Push changes to Cloud (Single Source of Truth)
-  const pushToCloud = async (newPlayers, newStalemate, newEpilogue, newRoll) => {
-    // Optimistic Update (update screen immediately)
+  // MAIN SAVE FUNCTION (Saves to both Cloud and Local)
+  const syncState = async (newPlayers, newStalemate, newEpilogue, newRoll) => {
+    // 1. Update React State (Instant UI)
     setPlayers(newPlayers);
     setStalemate(newStalemate);
     setEpilogueMode(newEpilogue);
     setLastRollRecord(newRoll);
 
-    // Send to DB
-    await supabase
-      .from('campaign_state')
-      .update({ 
-        game_data: { 
-          players: newPlayers, 
-          stalemate: newStalemate, 
-          epilogueMode: newEpilogue, 
-          lastRollRecord: newRoll 
-        } 
-      })
-      .eq('id', 1);
+    const gameData = { 
+        players: newPlayers, 
+        stalemate: newStalemate, 
+        epilogueMode: newEpilogue, 
+        lastRollRecord: newRoll 
+    };
+
+    // 2. Save to LocalStorage (Backup)
+    localStorage.setItem('staggingData_v13', JSON.stringify(gameData));
+
+    // 3. Send to Cloud (if online)
+    if (supabase) {
+        await supabase
+          .from('campaign_state')
+          .update({ game_data: gameData })
+          .eq('id', 1);
+    }
   };
 
   // --- GAME ACTIONS ---
 
   const resetData = async () => {
-    if (players.length > 0 && !window.confirm("RESET CAMPAIGN FOR EVERYONE?")) return;
-    
+    if (!window.confirm("RESET CAMPAIGN FOR EVERYONE?")) return;
     const defaults = [
       { name: 'Christian', role: '', vp: 2, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' },
       { name: 'Andreas', role: '', vp: 1, xp: 13, lt: 20, hs: 7, drunk: 0, spouse: '' },
       { name: 'Frederik', role: '', vp: 1, xp: 16, lt: 20, hs: 7, drunk: 0, spouse: '' },
       { name: 'Matias', role: '', vp: 3, xp: 10, lt: 20, hs: 7, drunk: 0, spouse: '' }
     ];
-    
-    pushToCloud(defaults, 0, false, { type: '-', value: '-' });
+    syncState(defaults, 0, false, { type: '-', value: '-' });
   };
 
   const rollDice = (sides) => {
-    // 1. Show Local Animation immediately
+    // Show Local Animation
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     
     let counter = 0;
@@ -121,14 +150,11 @@ const CampaignManager = () => {
         clearInterval(interval);
         setDiceOverlay(prev => ({ ...prev, finished: true }));
         
-        // 2. Sync RESULT to everyone else (Animation is local, result is global)
-        const finalRoll = { type: sides, value: randomVal }; // Use the last randomVal
-        // Vi skal bruge den faktiske værdi fra sidste interval tick, så vi genberegner en gang for at være sikker eller bruger state logic. 
-        // For at være præcis:
+        // Sync RESULT to everyone else
         const trueFinal = Math.floor(Math.random() * sides) + 1; 
-        setDiceOverlay(prev => ({...prev, value: trueFinal})); // Ensure visual matches data
+        setDiceOverlay(prev => ({...prev, value: trueFinal}));
         
-        pushToCloud(players, stalemate, epilogueMode, { type: sides, value: trueFinal });
+        syncState(players, stalemate, epilogueMode, { type: sides, value: trueFinal });
 
         setTimeout(() => setDiceOverlay(prev => ({ ...prev, active: false })), 2000);
       }
@@ -138,27 +164,9 @@ const CampaignManager = () => {
   const updatePlayer = (index, field, value) => {
     const newPlayers = [...players];
     newPlayers[index][field] = value;
-    pushToCloud(newPlayers, stalemate, epilogueMode, lastRollRecord);
+    syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
   };
 
-  const adjustValue = (index, field, amount) => {
-    const newPlayers = [...players];
-    let newVal = (newPlayers[index][field] || 0) + amount;
-    if (field === 'xp') newVal = Math.max(0, Math.min(20, newVal));
-    newPlayers[index][field] = newVal;
-    pushToCloud(newPlayers, stalemate, epilogueMode, lastRollRecord);
-  };
-
-  const adjustStalemate = (amount) => {
-    const newVal = Math.max(0, stalemate + amount);
-    pushToCloud(players, newVal, epilogueMode, lastRollRecord);
-  };
-
-  const toggleEpilogue = () => {
-    pushToCloud(players, stalemate, !epilogueMode, lastRollRecord);
-  };
-
-  // --- MARRIAGE LOGIC ---
   const handleMarriage = (playerIndex, newSpouseName) => {
     const newPlayers = [...players];
     const currentPlayer = newPlayers[playerIndex];
@@ -185,7 +193,24 @@ const CampaignManager = () => {
             newPlayers[newSpouseIndex].spouse = currentPlayer.name;
         }
     }
-    pushToCloud(newPlayers, stalemate, epilogueMode, lastRollRecord);
+    syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
+  };
+
+  const adjustValue = (index, field, amount) => {
+    const newPlayers = [...players];
+    let newVal = (newPlayers[index][field] || 0) + amount;
+    if (field === 'xp') newVal = Math.max(0, Math.min(20, newVal));
+    newPlayers[index][field] = newVal;
+    syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
+  };
+
+  const adjustStalemate = (amount) => {
+    const newVal = Math.max(0, stalemate + amount);
+    syncState(players, newVal, epilogueMode, lastRollRecord);
+  };
+
+  const toggleEpilogue = () => {
+    syncState(players, stalemate, !epilogueMode, lastRollRecord);
   };
 
   // UI Helpers
@@ -193,6 +218,19 @@ const CampaignManager = () => {
   const prevPlayer = () => setActivePlayerIndex((prev) => (prev - 1 + players.length) % players.length);
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
   const toggleRuleSection = (id) => setActiveRuleSection(activeRuleSection === id ? null : id);
+
+  // --- FILE EXPORT (Backup) ---
+  const exportData = () => {
+    const data = JSON.stringify({ players, stalemate, epilogueMode, lastRollRecord }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `stagging_backup.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   // --- DATA HELPERS ---
   const getRoleAbilities = (role) => {
@@ -376,7 +414,7 @@ const CampaignManager = () => {
         <div className="flex justify-between items-center bg-[#111]/90 backdrop-blur border-b border-white/10 p-2 rounded-lg shrink-0 gap-2">
             <div className="flex flex-col shrink-0">
                 <h1 className="text-sm md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest" style={{ fontFamily: 'Cinzel, serif' }}>STAGGING IT UP</h1>
-                {isConnected && <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div>}
+                {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
             </div>
 
             <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-2 gap-2">
@@ -433,7 +471,6 @@ const CampaignManager = () => {
             <button onClick={() => setShowRules(false)} className="text-gray-500 hover:text-white"><X size={20}/></button>
         </div>
         <div className="flex-grow overflow-y-auto p-2 space-y-2 text-sm text-gray-300 custom-scrollbar pb-20">
-            
             <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                 <button onClick={() => toggleRuleSection('core')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'core' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
                     <span><Info size={12} className="inline mr-2"/> Core Rules</span>
