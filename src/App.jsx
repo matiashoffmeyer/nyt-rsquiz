@@ -236,20 +236,51 @@ const CampaignManager = () => {
     }
   };
 
-  // --- CONTENT HELPERS ---
+  // --- CONTENT HELPERS (Opdaterede og udpenslede regler) ---
   const getRoleAbilities = (role) => {
     const data = {
-        'Doctor': ["Creature enters: Remove counter.", "Gain Drunk: Target gets Metaxa.", "Creatures have Infect. End: Proliferate."],
-        'Monk': ["Discard/Pay(2): Heresy logic.", "Activate OG abilities 2x.", "Tap 3: Summon random OG."],
-        'Smith': ["Artifact spells cost (1) less/Lvl.", "Equip: Vigilance, Trample, Reach.", "Metalcraft: Copy artifact."],
-        'Knight': ["(1) Discard: 1/2 Horse Haste.", "Equip: Mentor.", "Battalion: Fight target."],
-        'Fool': ["Opp. turn spells cost (1) less.", "Creatures: Ninjutsu = CMC.", "Creatures: Ninjutsu = CMC."],
-        'King': ["Creatures +1/+1 per Level.", "Extra land & fix mana.", "Draw extra card."]
+        'Doctor': [
+            "Whenever a creature enters the battlefield under your control, you may remove a counter from target permanent.", 
+            "Whenever you gain a Drunk counter, you may put a Metaxa counter on target player.", 
+            "Creatures you control have Infect. At the beginning of your end step, Proliferate."
+        ],
+        'Monk': [
+            "Discard a card or Pay (2): Counter target spell unless its controller pays (1).", 
+            "If an ability of an OG source you control is activated, copy it. You may choose new targets for the copy.", 
+            "Tap 3 untapped creatures you control: Create a token that is a copy of a random OG card."
+        ],
+        'Smith': [
+            "Artifact spells you cast cost (1) less to cast for each Level you have.", 
+            "Equipped creatures you control have Vigilance, Trample, and Reach.", 
+            "Metalcraft — At the beginning of combat, if you control 3+ artifacts, you may create a token that's a copy of target artifact."
+        ],
+        'Knight': [
+            "(1), Discard a card: Create a 1/2 white Horse creature token with Haste.", 
+            "Equipped creatures you control have Mentor (When attacking, put a +1/+1 counter on target attacking creature with lesser power).", 
+            "Battalion — Whenever you attack with 3+ creatures, you may have target creature you control fight target creature you don't control."
+        ],
+        'Fool': [
+            "Spells you cast during an opponent's turn cost (1) less to cast.", 
+            "Creature cards in your hand have Ninjutsu [X], where X is their CMC.", 
+            "Creature cards in your hand have Ninjutsu [X-1], where X is their CMC."
+        ],
+        'King': [
+            "Creatures you control get +1/+1 for each Level you possess.", 
+            "You may play an additional land on each of your turns. Lands you control have 'Tap: Add one mana of any color'.", 
+            "At the beginning of your upkeep, draw an additional card."
+        ]
     };
     return data[role] || [];
   };
   const getRoleReward = (role) => {
-    const rewards = { 'Doctor': 'Creature dies on your turn -> +1 XP', 'Monk': 'Life total changes -> +1 XP', 'Smith': 'Artifact enters -> +1 XP', 'Knight': 'Creatures deal damage -> +1 XP', 'Fool': 'Target opponent/perm -> +1 XP', 'King': 'Every 3rd time another gains xp -> +1 XP' };
+    const rewards = { 
+        'Doctor': 'Reward: Creature dies on your turn -> +1 XP', 
+        'Monk': 'Reward: Life total changes -> +1 XP', 
+        'Smith': 'Reward: Artifact enters -> +1 XP', 
+        'Knight': 'Reward: Creatures deal damage -> +1 XP', 
+        'Fool': 'Reward: Target opponent/perm -> +1 XP', 
+        'King': 'Reward: Every 3rd time another gains xp -> +1 XP' 
+    };
     return rewards[role] || '';
   };
   const getRoleIcon = (role) => {
@@ -317,14 +348,14 @@ const CampaignManager = () => {
                                         const lvl = i + 1;
                                         const isUnlocked = getLevel(player.xp) >= lvl;
                                         return (
-                                            <div key={i} className={`flex gap-1 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
-                                                <span className="font-bold whitespace-nowrap mt-0.5">Lvl {lvl}:</span>
-                                                <span>{txt}</span>
+                                            <div key={i} className={`flex flex-col mb-2 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
+                                                <span className="font-bold text-[9px] uppercase tracking-wider mb-0.5">Level {lvl}:</span>
+                                                <span className="italic opacity-90">{txt}</span>
                                             </div>
                                         )
                                     })}
-                                    <div className="w-full h-px bg-gray-800 my-1"></div>
-                                    <div className="text-yellow-600 italic text-[10px]">{getRoleReward(player.role)}</div>
+                                    <div className="w-full h-px bg-gray-800 my-2"></div>
+                                    <div className="text-yellow-600 text-[10px] font-bold">{getRoleReward(player.role)}</div>
                                 </div>
                             ) : (
                                 <div className="h-full flex items-center justify-center text-xs text-gray-700 italic">Select Role</div>
@@ -470,7 +501,7 @@ const CampaignManager = () => {
 
             {/* Hint text */}
             <div className="absolute bottom-4 left-0 right-0 text-center pointer-events-none opacity-50">
-                <span className="text-[9px] uppercase tracking-[0.2em] text-gray-500"></span>
+                <span className="text-[9px] uppercase tracking-[0.2em] text-gray-500">Swipe for at skifte</span>
             </div>
         </div>
       </div>
