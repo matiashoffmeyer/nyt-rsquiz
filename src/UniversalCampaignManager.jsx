@@ -44,18 +44,18 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
   const getRoleAbilities = (role) => {
     const data = {
-        'Doctor': ["Creature enters: Remove counter.", "Gain Drunk: Target gets Metaxa.", "Creatures have Infect. End: Proliferate."],
-        'Monk': ["Discard/Pay(2): Heresy logic.", "Activate OG abilities 2x.", "Tap 3: Summon random OG."],
-        'Smith': ["Artifact spells cost (1) less/Lvl.", "Equip: Vigilance, Trample, Reach.", "Metalcraft: Copy artifact."],
-        'Knight': ["(1) Discard: 1/2 Horse Haste.", "Equip: Mentor.", "Battalion: Fight target."],
-        'Fool': ["Opp. turn spells cost (1) less.", "Creatures: Ninjutsu = CMC.", "Creatures: Ninjutsu = CMC."],
-        'King': ["Creatures +1/+1 per Level.", "Extra land & fix mana.", "Draw extra card."]
+        'Doctor': ["Whenever a creature enters the battlefield under your control, you may remove a counter from target permanent.", "Whenever you gain a Drunk counter, you may put a Metaxa counter on target player.", "Creatures you control have Infect. At the beginning of your end step, Proliferate."],
+        'Monk': ["Discard a card or Pay (2): Counter target spell unless its controller pays (1).", "If an ability of an OG source you control is activated, copy it. You may choose new targets for the copy.", "Tap 3 untapped creatures you control: Create a token that is a copy of a random OG card."],
+        'Smith': ["Artifact spells you cast cost (1) less to cast for each Level you have.", "Equipped creatures you control have Vigilance, Trample, and Reach.", "Metalcraft — At the beginning of combat, if you control 3+ artifacts, you may create a token that's a copy of target artifact."],
+        'Knight': ["(1), Discard a card: Create a 1/2 white Horse creature token with Haste.", "Equipped creatures you control have Mentor (When attacking, put a +1/+1 counter on target attacking creature with lesser power).", "Battalion — Whenever you attack with 3+ creatures, you may have target creature you control fight target creature you don't control."],
+        'Fool': ["Spells you cast during an opponent's turn cost (1) less to cast.", "Creature cards in your hand have Ninjutsu [X], where X is their CMC.", "Creature cards in your hand have Ninjutsu [X-1], where X is their CMC."],
+        'King': ["Creatures you control get +1/+1 for each Level you possess.", "You may play an additional land on each of your turns. Lands you control have 'Tap: Add one mana of any color'.", "At the beginning of your upkeep, draw an additional card."]
     };
     return data[role] || [];
   };
   
   const getRoleReward = (role) => {
-    const rewards = { 'Doctor': 'Creature dies on your turn -> +1 XP', 'Monk': 'Life total changes -> +1 XP', 'Smith': 'Artifact enters -> +1 XP', 'Knight': 'Creatures deal damage -> +1 XP', 'Fool': 'Target opponent/perm -> +1 XP', 'King': 'Every 3rd time another gains xp -> +1 XP' };
+    const rewards = { 'Doctor': 'Reward: Creature dies on your turn -> +1 XP', 'Monk': 'Reward: Life total changes -> +1 XP', 'Smith': 'Reward: Artifact enters -> +1 XP', 'Knight': 'Reward: Creatures deal damage -> +1 XP', 'Fool': 'Reward: Target opponent/perm -> +1 XP', 'King': 'Reward: Every 3rd time another gains xp -> +1 XP' };
     return rewards[role] || '';
   };
   
@@ -99,9 +99,18 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     await supabase.from('campaigns').update({ active_state: { players: newPlayers, stalemate: newStalemate, epilogueMode: newEpilogue, last_roll: newRoll } }).eq('id', campaignId);
   };
 
-  // --- SAVE / LOAD ACTIONS ---
+  // --- SAFE SAVE / LOAD ACTIONS ---
   const exportData = () => {
-    const data = JSON.stringify({ players, stalemate, epilogueMode, last_roll: lastRollRecord }, null, 2);
+    // Vi gemmer nu også campaignId i filen
+    const data = JSON.stringify({ 
+      campaignId, // <--- Sikkerhedsstempel
+      timestamp: new Date().toISOString(),
+      players, 
+      stalemate, 
+      epilogueMode, 
+      last_roll: lastRollRecord 
+    }, null, 2);
+    
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -119,21 +128,36 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
+
+        // 1. SIKKERHEDSTJEK
+        if (data.campaignId && data.campaignId !== campaignId) {
+            const confirmLoad = window.confirm(
+                `ADVARSEL: Denne backup ser ud til at høre til en anden kampagne.\n\nDu er ved at loade data ind i: ${meta.title} (ID: ${campaignId}).\n\nVil du fortsætte og overskrive alt?`
+            );
+            if (!confirmLoad) return;
+        }
+
+        // 2. LOAD DATA
         if (data.players) {
-            syncState(data.players, data.stalemate || 0, data.epilogueMode || false, data.last_roll || { type: '-', value: '-' });
-            alert("File Loaded & Synced!");
+            syncState(
+                data.players, 
+                data.stalemate || 0, 
+                data.epilogueMode || false, 
+                data.last_roll || { type: '-', value: '-' }
+            );
+            alert("Spillet er loadet!");
             setShowRules(false);
         }
-      } catch (err) { alert("File error"); }
+      } catch (err) { 
+          alert("Fejl i filen. Kunne ikke loade."); 
+      }
     };
     reader.readAsText(file);
-    event.target.value = '';
+    event.target.value = ''; 
   };
 
   const resetData = async () => {
       if (!window.confirm("RESET CAMPAIGN? This cannot be undone.")) return;
-      // Fetch default state from DB static_config or just clear specific fields? 
-      // For safety, we just reload page or could implement a hard reset if needed.
       window.location.reload(); 
   };
 
@@ -194,7 +218,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   // --- HELPERS ---
   const toggleEpilogue = () => {
     syncState(players, stalemate, !epilogueMode, lastRollRecord);
-    setShowRules(false); // Close codex when changing modes
+    setShowRules(false); 
   };
 
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
@@ -262,14 +286,14 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                             const lvl = i + 1;
                                             const isUnlocked = useFeature('use_xp') ? getLevel(player.xp) >= lvl : true;
                                             return (
-                                                <div key={i} className={`flex gap-1 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
-                                                    <span className="font-bold whitespace-nowrap mt-0.5">Lvl {lvl}:</span>
-                                                    <span>{txt}</span>
+                                                <div key={i} className={`flex flex-col mb-2 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
+                                                    <span className="font-bold text-[9px] uppercase tracking-wider mb-0.5">Level {lvl}:</span>
+                                                    <span className="italic opacity-90">{txt}</span>
                                                 </div>
                                             )
                                         })}
-                                        <div className="w-full h-px bg-gray-800 my-1"></div>
-                                        <div className="text-yellow-600 italic text-[10px]">{getRoleReward(player.role)}</div>
+                                        <div className="w-full h-px bg-gray-800 my-2"></div>
+                                        <div className="text-yellow-600 text-[10px] font-bold">{getRoleReward(player.role)}</div>
                                     </div>
                                 ) : (
                                     <div className="h-full flex items-center justify-center text-xs text-gray-700 italic">Select Role</div>
@@ -399,7 +423,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </div>
             </div>
 
-            {/* DESKTOP HEADER BUTTONS */}
             <div className="hidden md:flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
                 <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
@@ -427,14 +450,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         </div>
       </div>
 
-      {/* --- CODEX PANE --- */}
+      {/* --- CODEX PANE (THE HYBRID: STAGGING CONTENT OR GENERIC) --- */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-full md:w-1/3 translate-x-0' : 'w-full md:w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex: {meta.title}</h2>
             <button onClick={() => setShowRules(false)} className="text-gray-500 hover:text-white"><X size={20}/></button>
         </div>
         
-        {/* MOBILE CONTROLS IN PANE */}
         <div className="md:hidden grid grid-cols-4 gap-2 p-4 border-b border-gray-800">
             <button onClick={exportData} className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-green-500 text-[10px] font-bold"><Save size={16}/> SAVE</button>
             <label className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-blue-500 text-[10px] font-bold cursor-pointer"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /> LOAD</label>
@@ -565,3 +587,4 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 };
 
 export default UniversalCampaignManager;
+
