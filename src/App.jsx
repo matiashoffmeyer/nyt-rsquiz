@@ -43,7 +43,6 @@ const CampaignManager = () => {
   const [isImporting, setIsImporting] = useState(false);
 
   // --- DATA ENGINE (HYBRID: CLOUD + LOCAL) ---
-  
   useEffect(() => {
     // 1. Try Loading from Cloud
     const fetchCloudData = async () => {
@@ -62,7 +61,7 @@ const CampaignManager = () => {
     };
 
     // 2. Load from LocalStorage (Backup/Fast Load)
-    const saved = localStorage.getItem('staggingData_v13');
+    const saved = localStorage.getItem('staggingData_v15');
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -112,7 +111,7 @@ const CampaignManager = () => {
     };
 
     // 2. Save to LocalStorage (Backup)
-    localStorage.setItem('staggingData_v13', JSON.stringify(gameData));
+    localStorage.setItem('staggingData_v15', JSON.stringify(gameData));
 
     // 3. Send to Cloud (if online)
     if (supabase) {
@@ -137,9 +136,7 @@ const CampaignManager = () => {
   };
 
   const rollDice = (sides) => {
-    // Show Local Animation
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
-    
     let counter = 0;
     const interval = setInterval(() => {
       const randomVal = Math.floor(Math.random() * sides) + 1;
@@ -172,16 +169,16 @@ const CampaignManager = () => {
     const currentPlayer = newPlayers[playerIndex];
     const oldSpouseName = currentPlayer.spouse;
 
-    // Break old
+    // Break old marriage
     if (oldSpouseName) {
         const oldSpouseIndex = newPlayers.findIndex(p => p.name === oldSpouseName);
         if (oldSpouseIndex !== -1) newPlayers[oldSpouseIndex].spouse = "";
     }
 
-    // Set new
+    // Set new marriage
     currentPlayer.spouse = newSpouseName;
 
-    // Link target
+    // Link target player
     if (newSpouseName) {
         const newSpouseIndex = newPlayers.findIndex(p => p.name === newSpouseName);
         if (newSpouseIndex !== -1) {
@@ -230,6 +227,29 @@ const CampaignManager = () => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  };
+
+  const importData = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        if (data.players) {
+            // CRITICAL: This pushes loaded data to the Cloud for everyone!
+            syncState(
+                data.players, 
+                data.stalemate || 0, 
+                data.epilogueMode || false, 
+                data.lastRollRecord || { type: '-', value: '-' }
+            );
+            alert("File Loaded & Synced to Everyone!");
+        }
+      } catch (err) { alert("File error"); }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
   };
 
   // --- DATA HELPERS ---
@@ -444,7 +464,8 @@ const CampaignManager = () => {
             </div>
 
             <div className="flex gap-1">
-                <button onClick={exportData} className="hidden md:block p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
+                <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
+                <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
                 <button onClick={toggleEpilogue} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`} title="Epilogue"><Crown size={16}/></button>
                 <button onClick={resetData} className="p-2 hover:bg-white/10 rounded text-red-500" title="Reset"><RefreshCw size={16}/></button>
                 <button onClick={() => setShowRules(!showRules)} className={`hidden md:block p-2 rounded border border-yellow-700/50 ${showRules ? 'bg-yellow-900/50 text-white' : 'hover:bg-white/10 text-yellow-600'}`} title="Rules"><BookOpen size={16}/></button>
@@ -471,6 +492,7 @@ const CampaignManager = () => {
             <button onClick={() => setShowRules(false)} className="text-gray-500 hover:text-white"><X size={20}/></button>
         </div>
         <div className="flex-grow overflow-y-auto p-2 space-y-2 text-sm text-gray-300 custom-scrollbar pb-20">
+            
             <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                 <button onClick={() => toggleRuleSection('core')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'core' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
                     <span><Info size={12} className="inline mr-2"/> Core Rules</span>
@@ -552,7 +574,7 @@ const CampaignManager = () => {
         </div>
       </div>
 
-      <button onClick={() => setShowRules(true)} className="md:hidden fixed bottom-4 right-4 bg-yellow-600 text-black p-4 rounded-full shadow-2xl z-50 border-2 border-yellow-400 active:scale-95"><BookOpen size={24} /></button>
+      <button onClick={() => setShowRules(!showRules)} className="md:hidden fixed bottom-4 right-4 bg-yellow-600 text-black p-4 rounded-full shadow-2xl z-50 border-2 border-yellow-400 active:scale-95"><BookOpen size={24} /></button>
     </div>
   );
 };
