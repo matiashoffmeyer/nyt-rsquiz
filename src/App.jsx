@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock } from 'lucide-react';
+import { Save, Upload, RefreshCw, Skull, Zap, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, Dice5 } from 'lucide-react';
 
 const CampaignManager = () => {
   // --- STATE ---
@@ -9,7 +9,7 @@ const CampaignManager = () => {
   
   // UI State
   const [showRules, setShowRules] = useState(false);
-  const [activeRuleSection, setActiveRuleSection] = useState(null); // Controls the exclusive accordion
+  const [activeRuleSection, setActiveRuleSection] = useState(null);
   
   // Dice State
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
@@ -20,7 +20,7 @@ const CampaignManager = () => {
 
   // --- INITIAL LOAD & AUTO-SAVE ---
   useEffect(() => {
-    const saved = localStorage.getItem('staggingData_v7');
+    const saved = localStorage.getItem('staggingData_v8');
     if (saved) {
       try {
         const data = JSON.parse(saved);
@@ -37,7 +37,7 @@ const CampaignManager = () => {
 
   useEffect(() => {
     if (!isImporting && players.length > 0) {
-      localStorage.setItem('staggingData_v7', JSON.stringify({ players, stalemate, epilogueMode }));
+      localStorage.setItem('staggingData_v8', JSON.stringify({ players, stalemate, epilogueMode }));
     }
   }, [players, stalemate, epilogueMode, isImporting]);
 
@@ -182,6 +182,46 @@ const CampaignManager = () => {
       }
   };
 
+  // --- TIMELINE DATA ---
+  const timelineData = [
+      {
+          title: "Battle 1: Repentance", type: "battle",
+          desc: "All vs All, you may pay life instead of mana for your spells."
+      },
+      {
+          title: "Post-Battle 1", type: "post",
+          desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster."
+      },
+      {
+          title: "Battle 2: Grand Melee", type: "battle",
+          desc: "Creatures have haste and attack each turn if able."
+      },
+      {
+          title: "Post-Battle 2", type: "post",
+          desc: "Workout Session #114 (all buffs up).\nHousmann draft a booster. #107"
+      },
+      {
+          title: "Battle 3: Hunters Loge", type: "battle",
+          desc: "#59 Pre-battle, stack 3 OG’s facedown, when the top OG is defeated, the next OG is turned face up, it's cycle number (X) is equal to the cycle number of the defeated OG, and it becomes the new OG’s turn. The 3 OGs are treated as a single, combined OG.\n\nAs long as there is an OG in play, players may block for each other.\nUntil the first OG dies, players draw their cards from the library of the player to their left.\nAs long as the second OG is in play, players can’t pay mana for their own spells or abilities, but other players can transfer them mana from their manapools.\nAs long as the third OG is in play, each time the first player takes his turn, players must vote to skip their main phases or attack step until the first player's next turn. The top voted phases are skipped. If the vote is tied, both main phases and attack steps are skipped.\n\nIf the OG wins there is no King in the next battle.\nIf you cause an OG to die, gain a VP. If you die while an OG is in play, lose 5 XP and discard 3 random non-basic land cards."
+      },
+      {
+          title: "Post-Battle 3", type: "post",
+          desc: "Mobile Hammock: Minesweeper draft a land booster.\n#107"
+      },
+      {
+          title: "Battle 4: Spikeball", type: "battle",
+          desc: "All vs. All\nFlip a coin to decide the starting attack direction (left or right).\nStart of game: Shuffle 2 markers into each player's deck, when a marker is drawn, the attack direction changes. (The marker is shuffled back into the deck and the player draws another card).\nThe winner is the first player to eliminate the player in his attack direction (or when said player dies for another reason)."
+      },
+      {
+          title: "Post-Battle 4", type: "post",
+          desc: "Dinner a´la card: #105\nShuffle a booster, divide it into piles equal to the number of players. Reveal 1 pile. Players choose in turn (descending ranking order: 1, 2, 3, 4) to add one to their deck (you may skip your turn), until each player has had a turn. Then the pile is replaced with a new pile and the process is repeated with a new starting player (descending by rank: 2, 1, 3, 4, Then: 3, 1, 2, 4 and so on) until all players have had a turn with the starting pick.\nRemaining cards go in Skraldespanden.\nAny of the chosen cards may be added to your starting hand in the following battle. (Players draw cards for the starting hand, minus the number they chose to put in the starting hand)\nPlayers may, in ranking order, gain an available role or switch role with a non-King player of lower ranking."
+      },
+      {
+          title: "Battle 5: Heidi's Bierbar", type: "battle",
+          desc: "All vs All\nIn each player’s end step, he gains his choice of 2 Drunk- or 2 Poison counters.\nWhen a permanent, spell or ability you control causes a player to lose, you may gain his role.\nLast remaining player wins the campaign, if all the last players are killed at the same time (for example by a player-owned OG), the tie breaker is VP, then randomly."
+      }
+  ];
+
   return (
     <div className="h-screen w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative flex">
       
@@ -220,9 +260,10 @@ const CampaignManager = () => {
                 <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-gray-500"><Zap size={10} /> Campaign Manager</div>
             </div>
 
-            <div className="flex gap-2">
-                {[6, 10, 20].map(sides => (
-                    <button key={sides} onClick={() => rollDice(sides)} className="px-3 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 hover:border-blue-400 text-blue-200 rounded font-bold text-sm shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all active:scale-95">D{sides}</button>
+            {/* FULL DICE SET */}
+            <div className="flex gap-1">
+                {[4, 6, 8, 10, 12, 20].map(sides => (
+                    <button key={sides} onClick={() => rollDice(sides)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 hover:border-blue-400 text-blue-200 rounded font-bold text-xs shadow-[0_0_15px_rgba(59,130,246,0.3)] transition-all active:scale-95">D{sides}</button>
                 ))}
             </div>
 
@@ -236,13 +277,13 @@ const CampaignManager = () => {
         </div>
 
         {/* GLOBAL BAR */}
-        <div className="flex justify-center shrink-0 h-12">
+        <div className="flex justify-center shrink-0 h-10">
             <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-6 gap-6">
                 <div className="text-xs text-red-500 font-bold uppercase flex items-center gap-2"><Skull size={14} /> Stalemate Timer</div>
                 <div className="flex items-center gap-4">
-                    <button onClick={() => setStalemate(Math.max(0, stalemate - 1))} className="text-gray-500 hover:text-white text-2xl font-bold">-</button>
-                    <span className="text-3xl font-mono font-bold text-white w-10 text-center">{stalemate}</span>
-                    <button onClick={() => setStalemate(stalemate + 1)} className="text-gray-500 hover:text-white text-2xl font-bold">+</button>
+                    <button onClick={() => setStalemate(Math.max(0, stalemate - 1))} className="text-gray-500 hover:text-white text-xl font-bold">-</button>
+                    <span className="text-2xl font-mono font-bold text-white w-10 text-center">{stalemate}</span>
+                    <button onClick={() => setStalemate(stalemate + 1)} className="text-gray-500 hover:text-white text-xl font-bold">+</button>
                 </div>
             </div>
         </div>
@@ -261,7 +302,6 @@ const CampaignManager = () => {
                     <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden">
                         {!epilogueMode ? (
                             <>
-                                {/* PREMIUM DROPDOWN */}
                                 <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
                                     <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-2 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none hover:border-gray-500 transition-colors">
                                         <option value="">-- No Role --</option>
@@ -341,14 +381,23 @@ const CampaignManager = () => {
                             </div>
                         )}
 
+                        {/* NEW LIFE/HAND UI */}
                         <div className="grid grid-cols-2 gap-2 mt-auto pt-2 border-t border-gray-800">
-                            <div className="text-center bg-red-900/10 rounded border border-red-900/30">
-                                <label className="text-[8px] text-red-700 font-bold block">LIFE</label>
-                                <input type="number" value={player.lt} onChange={(e) => updatePlayer(index, 'lt', parseInt(e.target.value))} className="bg-transparent text-center font-bold w-full text-xl text-red-500 focus:outline-none" />
+                            <div className="bg-red-900/10 rounded border border-red-900/30 flex flex-col items-center p-1">
+                                <label className="text-[8px] text-red-700 font-bold block mb-1">LIFE</label>
+                                <div className="flex w-full justify-between px-2 items-center">
+                                    <button onClick={() => adjustValue(index, 'lt', -1)} className="text-red-700 hover:text-red-400 text-lg font-bold">-</button>
+                                    <span className="text-xl font-bold text-red-500 font-mono">{player.lt}</span>
+                                    <button onClick={() => adjustValue(index, 'lt', 1)} className="text-red-700 hover:text-red-400 text-lg font-bold">+</button>
+                                </div>
                             </div>
-                            <div className="text-center bg-blue-900/10 rounded border border-blue-900/30">
-                                <label className="text-[8px] text-blue-700 font-bold block">HAND</label>
-                                <input type="number" value={player.hs} onChange={(e) => updatePlayer(index, 'hs', parseInt(e.target.value))} className="bg-transparent text-center font-bold w-full text-xl text-blue-500 focus:outline-none" />
+                            <div className="bg-blue-900/10 rounded border border-blue-900/30 flex flex-col items-center p-1">
+                                <label className="text-[8px] text-blue-700 font-bold block mb-1">HAND</label>
+                                <div className="flex w-full justify-between px-2 items-center">
+                                    <button onClick={() => adjustValue(index, 'hs', -1)} className="text-blue-700 hover:text-blue-400 text-lg font-bold">-</button>
+                                    <span className="text-xl font-bold text-blue-500 font-mono">{player.hs}</span>
+                                    <button onClick={() => adjustValue(index, 'hs', 1)} className="text-blue-700 hover:text-blue-400 text-lg font-bold">+</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -408,141 +457,19 @@ const CampaignManager = () => {
                 )}
             </div>
 
-            {/* BATTLE 1 */}
-            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                <button onClick={() => toggleRuleSection('b1')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'b1' ? 'text-red-300 bg-white/5' : 'text-red-500'}`}>
-                    <span><Sword size={12} className="inline mr-2"/> Battle 1: Repentance</span>
-                    <span>{activeRuleSection === 'b1' ? '−' : '+'}</span>
-                </button>
-                {activeRuleSection === 'b1' && (
-                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
-                        <p>All vs All, you may pay life instead of mana for your spells.</p>
-                    </div>
-                )}
-            </div>
-
-            {/* POST BATTLE 1 */}
-            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                <button onClick={() => toggleRuleSection('pb1')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'pb1' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
-                    <span><Beer size={12} className="inline mr-2"/> Post-Battle 1</span>
-                    <span>{activeRuleSection === 'pb1' ? '−' : '+'}</span>
-                </button>
-                {activeRuleSection === 'pb1' && (
-                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
-                        <p>Bid i det sure løg #101 for each loser.</p>
-                        <p>Quilt draft a Booster.</p>
-                    </div>
-                )}
-            </div>
-
-            {/* BATTLE 2 */}
-            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                <button onClick={() => toggleRuleSection('b2')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'b2' ? 'text-red-300 bg-white/5' : 'text-red-500'}`}>
-                    <span><Sword size={12} className="inline mr-2"/> Battle 2: Grand Melee</span>
-                    <span>{activeRuleSection === 'b2' ? '−' : '+'}</span>
-                </button>
-                {activeRuleSection === 'b2' && (
-                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
-                        <p>Creatures have haste and attack each turn if able.</p>
-                    </div>
-                )}
-            </div>
-
-            {/* POST BATTLE 2 */}
-            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                <button onClick={() => toggleRuleSection('pb2')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'pb2' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
-                    <span><Beer size={12} className="inline mr-2"/> Post-Battle 2</span>
-                    <span>{activeRuleSection === 'pb2' ? '−' : '+'}</span>
-                </button>
-                {activeRuleSection === 'pb2' && (
-                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
-                        <p>Workout Session #114 (all buffs up).</p>
-                        <p>Housmann draft a booster. #107</p>
-                    </div>
-                )}
-            </div>
-
-            {/* BATTLE 3 */}
-            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                <button onClick={() => toggleRuleSection('b3')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'b3' ? 'text-red-300 bg-white/5' : 'text-red-500'}`}>
-                    <span><Sword size={12} className="inline mr-2"/> Battle 3: Hunters Loge</span>
-                    <span>{activeRuleSection === 'b3' ? '−' : '+'}</span>
-                </button>
-                {activeRuleSection === 'b3' && (
-                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 space-y-2">
-                        <p>#59 Pre-battle, stack 3 OG’s facedown, when the top OG is defeated, the next OG is turned face up, it's cycle number (X) is equal to the cycle number of the defeated OG, and it becomes the new OG’s turn. The 3 OGs are treated as a single, combined OG.</p>
-                        <p>As long as there is an OG in play, players may block for each other.</p>
-                        <p>Until the first OG dies, players draw their cards from the library of the player to their left.</p>
-                        <p>As long as the second OG is in play, players can’t pay mana for their own spells or abilities, but other players can transfer them mana from their manapools.</p>
-                        <p>As long as the third OG is in play, each time the first player takes his turn, players must vote to skip their main phases or attack step until the first player's next turn. The top voted phases are skipped. If the vote is tied, both main phases and attack steps are skipped.</p>
-                        <p>If the OG wins there is no King in the next battle.</p>
-                        <p>If you cause an OG to die, gain a VP. If you die while an OG is in play, lose 5 XP and discard 3 random non-basic land cards.</p>
-                    </div>
-                )}
-            </div>
-
-            {/* POST BATTLE 3 */}
-            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                <button onClick={() => toggleRuleSection('pb3')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'pb3' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
-                    <span><Beer size={12} className="inline mr-2"/> Post-Battle 3</span>
-                    <span>{activeRuleSection === 'pb3' ? '−' : '+'}</span>
-                </button>
-                {activeRuleSection === 'pb3' && (
-                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
-                        <p>Mobile Hammock: Minesweeper draft a land booster.</p>
-                        <p>#107</p>
-                    </div>
-                )}
-            </div>
-
-            {/* BATTLE 4 */}
-            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                <button onClick={() => toggleRuleSection('b4')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'b4' ? 'text-red-300 bg-white/5' : 'text-red-500'}`}>
-                    <span><Sword size={12} className="inline mr-2"/> Battle 4: Spikeball</span>
-                    <span>{activeRuleSection === 'b4' ? '−' : '+'}</span>
-                </button>
-                {activeRuleSection === 'b4' && (
-                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
-                        <p>All vs. All</p>
-                        <p>Flip a coin to decide the starting attack direction (left or right).</p>
-                        <p>Start of game: Shuffle 2 markers into each player's deck, when a marker is drawn, the attack direction changes. (The marker is shuffled back into the deck and the player draws another card).</p>
-                        <p>The winner is the first player to eliminate the player in his attack direction (or when said player dies for another reason).</p>
-                    </div>
-                )}
-            </div>
-
-            {/* POST BATTLE 4 */}
-            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                <button onClick={() => toggleRuleSection('pb4')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'pb4' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
-                    <span><Beer size={12} className="inline mr-2"/> Post-Battle 4</span>
-                    <span>{activeRuleSection === 'pb4' ? '−' : '+'}</span>
-                </button>
-                {activeRuleSection === 'pb4' && (
-                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 space-y-2">
-                        <p><strong>Dinner a´la card:</strong> #105</p>
-                        <p>Shuffle a booster, divide it into piles equal to the number of players. Reveal 1 pile. Players choose in turn (descending ranking order: 1, 2, 3, 4) to add one to their deck (you may skip your turn), until each player has had a turn. Then the pile is replaced with a new pile and the process is repeated with a new starting player (descending by rank: 2, 1, 3, 4, Then: 3, 1, 2, 4 and so on) until all players have had a turn with the starting pick.</p>
-                        <p>Remaining cards go in Skraldespanden.</p>
-                        <p>Any of the chosen cards may be added to your starting hand in the following battle. (Players draw cards for the starting hand, minus the number they chose to put in the starting hand).</p>
-                        <p>Players may, in ranking order, gain an available role or switch role with a non-King player of lower ranking.</p>
-                    </div>
-                )}
-            </div>
-
-            {/* BATTLE 5 */}
-            <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                <button onClick={() => toggleRuleSection('b5')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'b5' ? 'text-red-300 bg-white/5' : 'text-red-500'}`}>
-                    <span><Sword size={12} className="inline mr-2"/> Battle 5: Heidi's Bierbar</span>
-                    <span>{activeRuleSection === 'b5' ? '−' : '+'}</span>
-                </button>
-                {activeRuleSection === 'b5' && (
-                    <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400">
-                        <p>All vs All</p>
-                        <p>In each player’s end step, he gains his choice of 2 Drunk- or 2 Poison counters.</p>
-                        <p>When a permanent, spell or ability you control causes a player to lose, you may gain his role.</p>
-                        <p>Last remaining player wins the campaign, if all the last players are killed at the same time (for example by a player-owned OG), the tie breaker is VP, then randomly.</p>
-                    </div>
-                )}
-            </div>
+            {timelineData.map((event, i) => (
+                <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                    <button onClick={() => toggleRuleSection(`event-${i}`)} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === `event-${i}` ? (event.type === 'battle' ? 'text-red-300 bg-white/5' : 'text-blue-300 bg-white/5') : (event.type === 'battle' ? 'text-red-500' : 'text-blue-500')}`}>
+                        <span>{event.type === 'battle' ? <Sword size={12} className="inline mr-2"/> : <Beer size={12} className="inline mr-2"/>} {event.title}</span>
+                        <span>{activeRuleSection === `event-${i}` ? '−' : '+'}</span>
+                    </button>
+                    {activeRuleSection === `event-${i}` && (
+                        <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">
+                            {event.desc}
+                        </div>
+                    )}
+                </div>
+            ))}
 
             {/* EPILOGUE */}
             <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
@@ -559,7 +486,6 @@ const CampaignManager = () => {
                         <p>Sober Up: At the beginning of your upkeep, you may pay 1 (so 2 because you’re Drunk) mana to remove a Drunk counter.</p>
                         <p>All spells have “Rather than cast this card from your hand, you must pay its mana cost and exile it with a time counter on it. At the beginning of your upkeep, remove a time counter. When the last is removed, cast it without paying its mana cost.“ and all creatures enter tapped.</p>
                         <p>Last place gains +1 LT, second last +2 LT and so on. LTs can exceed 20.</p>
-                        
                         <strong className="text-white block mt-2">The Big Day (All vs All)</strong>
                         <p>The winner of the previous battle proposes marriage to another player. That player may refuse. If a player accepts, the 2 become married. The winner continues asking other players until one accepts. The final player asked, can’t refuse.</p>
                         <p>The highest ranked remaining player repeats the proposal process with the remaining unmarried player(s).</p>
