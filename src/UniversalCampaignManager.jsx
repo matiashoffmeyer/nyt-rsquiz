@@ -570,10 +570,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         {/* --- SCROLLABLE CONTENT (Normal Mode) --- */}
                         {/* CSS FIX: 
                             - flex: Vis som standard (mobil lodret)
-                            - landscape:hidden: Skjul hvis mobil ligger ned
-                            - md:landscape:flex: TVING frem på desktop/tablet selvom det er landscape
+                            - landscape:hidden: Skjul ALTID hvis skærmen er vandret...
+                            - lg:landscape:flex: ...MEDMINDRE skærmen er bredere end 1024px (Laptop/Desktop)
                         */}
-                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative flex flex-col landscape:hidden md:landscape:flex">
+                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative flex flex-col landscape:hidden lg:landscape:flex">
                             
                             {/* ROLLE REGLER (Vises kun her i Normal Mode) */}
                             {useFeature('use_roles') && player.role && (
