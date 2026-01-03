@@ -23,6 +23,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [showRules, setShowRules] = useState(false);
   const [activeRuleSection, setActiveRuleSection] = useState(null);
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
+  
+  // Ranking Roll State
+  const [rankingAnimation, setRankingAnimation] = useState({ active: false, displayValues: {} });
 
   // Refs
   const fileInputRef = useRef(null);
@@ -172,6 +175,66 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     }, 50);
   };
 
+  // --- RANKING ROLL LOGIC ---
+  const triggerRankingRoll = () => {
+    if (rankingAnimation.active) return; // Prevent double click
+
+    // 1. Start Animation
+    setRankingAnimation({ active: true, displayValues: {} });
+    let frame = 0;
+    const animInterval = setInterval(() => {
+        const randoms = {};
+        players.forEach((_, i) => randoms[i] = Math.floor(Math.random() * 100) + 1);
+        setRankingAnimation({ active: true, displayValues: randoms });
+        frame++;
+        if (frame > 20) { // Approx 1 second
+            clearInterval(animInterval);
+            finishRankingRoll();
+        }
+    }, 50);
+  };
+
+  const finishRankingRoll = () => {
+    // 2. Logic: Roll unique values for everyone
+    let finalRolls = {};
+    players.forEach((_, i) => finalRolls[i] = Math.floor(Math.random() * 100) + 1);
+
+    // Resolve Ties (Reroll duplicates only)
+    let conflict = true;
+    while(conflict) {
+        conflict = false;
+        const counts = {};
+        Object.values(finalRolls).forEach(v => counts[v] = (counts[v]||0)+1);
+        
+        // Find values that appear more than once
+        const duplicates = Object.keys(counts).filter(k => counts[k] > 1).map(Number);
+        
+        if (duplicates.length > 0) {
+            conflict = true;
+            // Reroll ONLY the players with duplicate values
+            Object.keys(finalRolls).forEach(idx => {
+                if (duplicates.includes(finalRolls[idx])) {
+                    finalRolls[idx] = Math.floor(Math.random() * 100) + 1;
+                }
+            });
+        }
+    }
+
+    // 3. Assign Ranks (Lowest roll = Rank 1)
+    // Sort players by roll value (Ascending)
+    const sortedIndices = Object.keys(finalRolls).sort((a, b) => finalRolls[a] - finalRolls[b]);
+    
+    // Update players with new rank
+    const newPlayers = [...players];
+    sortedIndices.forEach((playerIdx, rankOrder) => {
+        newPlayers[playerIdx].rank = rankOrder + 1; // Rank 1 is lowest roll
+    });
+
+    // 4. Save and Stop Animation
+    setRankingAnimation({ active: false, displayValues: {} });
+    syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
+  };
+
   const updatePlayer = (index, field, value) => {
     const newPlayers = [...players];
     newPlayers[index][field] = value;
@@ -241,7 +304,23 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full select-none">
             <div className={`h-1 w-full ${player.color || 'bg-gray-600'}`}></div>
             <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center shrink-0">
-                <span className="w-full font-black text-lg text-center text-gray-200 truncate" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
+                <button 
+                    onClick={triggerRankingRoll}
+                    className="text-left flex-grow focus:outline-none hover:opacity-80 transition-opacity flex items-center gap-2"
+                >
+                    <span className="font-black text-lg text-gray-200 truncate" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
+                    
+                    {/* RANKING BADGE */}
+                    {(rankingAnimation.active || player.rank) && (
+                        <div className="bg-black border border-yellow-600/50 rounded px-1.5 py-0.5 flex items-center justify-center min-w-[24px] h-[24px] shadow-[0_0_5px_rgba(234,179,8,0.2)]">
+                            <span className="text-sm font-bold text-yellow-500 leading-none">
+                                {rankingAnimation.active 
+                                    ? (rankingAnimation.displayValues[index] || '-') 
+                                    : (player.rank || '-')}
+                            </span>
+                        </div>
+                    )}
+                </button>
                 {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
             </div>
             
