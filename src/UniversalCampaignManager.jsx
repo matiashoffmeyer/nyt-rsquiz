@@ -17,10 +17,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
   const [isConnected, setIsConnected] = useState(false);
 
-  // --- SIMPLE MUTE STATE (Ingen localStorage crash risiko) ---
-  const [isMuted, setIsMuted] = useState(false);
-  const toggleMute = () => setIsMuted(!isMuted);
-
   // UI State
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [showRules, setShowRules] = useState(false);
@@ -43,11 +39,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const minSwipeDistance = 50;
   const audioRefs = useRef({});
 
-  // --- AUDIO ENGINE ---
+  // --- AUDIO ENGINE (GOLDEN VERSION) ---
   const soundUrls = {
       click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
-      // NY LYD: Terninger i bæger
-      dice_shake: 'https://www.soundjay.com/misc/sounds/dice-rattle-1.mp3',
+      dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
       dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
       page: 'https://www.soundjay.com/misc/sounds/page-flip-01a.mp3',
       swish: 'https://www.soundjay.com/nature/sounds/whoosh-02.mp3',
@@ -72,16 +67,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   }, []);
 
   const playSound = (type) => {
-    // MUTE CHECK
-    if (isMuted) return;
-
     try {
         const audio = audioRefs.current[type];
         if (audio) {
             audio.currentTime = 0;
             switch (type) {
                 case 'click': audio.volume = 0.5; break;
-                case 'dice_shake': audio.volume = 0.8; break; // Lidt højere
+                case 'dice_shake': audio.volume = 0.7; break;
                 case 'dice_land': audio.volume = 0.8; break;
                 case 'swish': audio.volume = 0.6; break;
                 case 'clash': audio.volume = 0.7; break;
@@ -92,7 +84,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             }
             const promise = audio.play();
             if (promise !== undefined) {
-                promise.catch(() => {}); 
+                promise.catch(() => {});
             }
         }
     } catch (e) {}
@@ -112,8 +104,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       }
     };
     loadCampaign();
-    
-    // Realtime subscription (Golden Code version)
     const channel = supabase.channel(`campaign_${campaignId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'campaigns', filter: `id=eq.${campaignId}` }, (payload) => {
         if (payload.new && payload.new.active_state) applyActiveState(payload.new.active_state);
@@ -143,7 +133,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       if (!window.confirm("RESET CAMPAIGN STATE?")) return;
 
       if (meta.engine === 'rpg') {
-          // STAGGING SAVE POINT
           const savePoint = [
               { name: 'Christian', vp: 2, xp: 10, role: 'Smith' },
               { name: 'Andreas', vp: 1, xp: 13, role: 'Knight' },
@@ -218,7 +207,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const rollDice = (sides) => {
-    playSound('dice_shake'); // Kun rulle-lyd
+    playSound('dice_shake');
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
     const interval = setInterval(() => {
@@ -503,7 +492,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                             </div>
                         )}
 
-                        {/* --- SCROLLABLE CONTENT (Hidden on Landscape) --- */}
+                        {/* --- RULES SECTION (HIDDEN ON LANDSCAPE MOBILE) --- */}
                         <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden">
                             {useFeature('use_roles') && player.role && (
                                 <div className="mb-3">
@@ -645,18 +634,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 <h1 className="text-sm md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest uppercase truncate max-w-[150px]" style={{ fontFamily: 'Cinzel, serif' }}>
                     {meta.title}
                 </h1>
-                
-                {/* --- NY MUTE & WIFI (FLEX-ROW FOR AT HOLDE DEM PÅ SAMME LINJE) --- */}
-                <div className="flex items-center gap-2 mt-1">
-                    {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
-                    
-                    <button 
-                        onClick={toggleMute} 
-                        className={`text-[8px] uppercase font-bold ml-2 ${isMuted ? 'text-red-500' : 'text-green-500'}`}
-                    >
-                        {isMuted ? "LYD: FRA" : "LYD: TIL"}
-                    </button>
-                </div>
+                {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
             </div>
 
             <div className="flex items-center gap-2">
@@ -673,9 +651,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </div>
 
             <div className="flex items-center gap-1">
-                {/* --- RULLE LYD KUN PÅ D6/D20 (INGEN KLIK) --- */}
-                <button onClick={() => rollDice(6)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D6</button>
-                <button onClick={() => rollDice(20)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
+                <button onClick={() => { playSound('click'); rollDice(6); }} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D6</button>
+                <button onClick={() => { playSound('click'); rollDice(20); }} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
             </div>
 
             <div className="hidden md:flex gap-1">
