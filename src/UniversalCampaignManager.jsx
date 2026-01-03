@@ -17,21 +17,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
   const [isConnected, setIsConnected] = useState(false);
 
-  // --- LOCAL MUTE STATE ---
+  // --- SIMPLE MUTE STATE (Ingen localStorage crash risiko) ---
   const [isMuted, setIsMuted] = useState(false);
-
-  useEffect(() => {
-      try {
-          const stored = localStorage.getItem('local_mute');
-          if (stored === 'true') setIsMuted(true);
-      } catch (e) {}
-  }, []);
-
-  const toggleMute = () => {
-      const newState = !isMuted;
-      setIsMuted(newState);
-      try { localStorage.setItem('local_mute', newState.toString()); } catch(e) {}
-  };
+  const toggleMute = () => setIsMuted(!isMuted);
 
   // UI State
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
@@ -58,8 +46,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   // --- AUDIO ENGINE ---
   const soundUrls = {
       click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
-      // NY LYD: Dice Rattle
-      dice_shake: 'https://www.soundjay.com/misc/sounds/dice-rattle-1.mp3', 
+      // NY LYD: Terninger i bæger
+      dice_shake: 'https://www.soundjay.com/misc/sounds/dice-rattle-1.mp3',
       dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
       page: 'https://www.soundjay.com/misc/sounds/page-flip-01a.mp3',
       swish: 'https://www.soundjay.com/nature/sounds/whoosh-02.mp3',
@@ -77,13 +65,14 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                   audioRefs.current[key] = audio;
               });
           } catch (e) {
-              console.warn("Audio init failed", e);
+              console.warn("Audio initialization failed", e);
           }
       };
       loadAudio();
   }, []);
 
   const playSound = (type) => {
+    // MUTE CHECK
     if (isMuted) return;
 
     try {
@@ -92,7 +81,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             audio.currentTime = 0;
             switch (type) {
                 case 'click': audio.volume = 0.5; break;
-                case 'dice_shake': audio.volume = 0.8; break; // Lidt højere rattle
+                case 'dice_shake': audio.volume = 0.8; break; // Lidt højere
                 case 'dice_land': audio.volume = 0.8; break;
                 case 'swish': audio.volume = 0.6; break;
                 case 'clash': audio.volume = 0.7; break;
@@ -112,8 +101,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   // --- DATA ENGINE ---
   useEffect(() => {
     if (!campaignId) return;
-    
-    // Initial Load
     const loadCampaign = async () => {
       const { data, error } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
       if (error) return;
@@ -125,14 +112,12 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       }
     };
     loadCampaign();
-
-    // Realtime Subscription (Standard Golden Code Logic)
+    
+    // Realtime subscription (Golden Code version)
     const channel = supabase.channel(`campaign_${campaignId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'campaigns', filter: `id=eq.${campaignId}` }, (payload) => {
         if (payload.new && payload.new.active_state) applyActiveState(payload.new.active_state);
-      })
-      .subscribe();
-      
+      }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [campaignId]);
 
@@ -167,7 +152,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
           ];
 
           const newPlayers = players.map(p => {
-              if (!p.name) return p; 
+              if (!p.name) return p;
               const pName = p.name.toLowerCase();
               const save = savePoint.find(s => pName.includes(s.name.toLowerCase()) || (s.name === 'Frederik' && pName.includes('freddy')));
               
@@ -192,7 +177,12 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const exportData = () => {
     playSound('click');
     const data = JSON.stringify({ 
-      campaignId, timestamp: new Date().toISOString(), players, stalemate, epilogueMode, last_roll: lastRollRecord 
+      campaignId, 
+      timestamp: new Date().toISOString(),
+      players, 
+      stalemate, 
+      epilogueMode, 
+      last_roll: lastRollRecord 
     }, null, 2);
     
     const blob = new Blob([data], { type: 'application/json' });
@@ -228,7 +218,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const rollDice = (sides) => {
-    playSound('dice_shake'); // Kun rattle lyd
+    playSound('dice_shake'); // Kun rulle-lyd
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
     const interval = setInterval(() => {
