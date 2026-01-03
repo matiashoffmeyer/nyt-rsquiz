@@ -568,9 +568,14 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         )}
 
                         {/* --- SCROLLABLE CONTENT (Normal Mode) --- */}
-                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative flex flex-col landscape:hidden md:flex">
+                        {/* CSS FIX: 
+                            - flex: Vis som standard (mobil lodret)
+                            - landscape:hidden: Skjul hvis mobil ligger ned
+                            - md:landscape:flex: TVING frem på desktop/tablet selvom det er landscape
+                        */}
+                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative flex flex-col landscape:hidden md:landscape:flex">
                             
-                            {/* ROLLE REGLER (Vises kun hvis rolle valgt) */}
+                            {/* ROLLE REGLER (Vises kun her i Normal Mode) */}
                             {useFeature('use_roles') && player.role && (
                                 <div className="mb-3 shrink-0">
                                     <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
