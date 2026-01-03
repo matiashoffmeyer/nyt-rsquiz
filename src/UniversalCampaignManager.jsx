@@ -29,7 +29,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
 
-  // --- CONTENT DATA (STAGGING ORIGINALS) ---
+  // --- CONTENT DATA ---
   const staggingTimeline = [
       { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
       { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
@@ -55,7 +55,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
   
   const getRoleReward = (role) => {
-    const rewards = { 'Doctor': 'Reward: Creature dies on your turn -> +1 XP', 'Monk': 'Reward: Life total changes -> +1 XP', 'Smith': 'Reward: Artifact enters -> +1 XP', 'Knight': 'Reward: Creatures deal damage -> +1 XP', 'Fool': 'Reward: Target opponent/perm -> +1 XP', 'King': 'Reward: Every 3rd time another gains xp -> +1 XP' };
+    const rewards = { 'Doctor': 'Reward: Creature dies on your turn -> +1 XP', 'Monk': 'Life total changes -> +1 XP', 'Smith': 'Reward: Artifact enters -> +1 XP', 'Knight': 'Reward: Creatures deal damage -> +1 XP', 'Fool': 'Reward: Target opponent/perm -> +1 XP', 'King': 'Reward: Every 3rd time another gains xp -> +1 XP' };
     return rewards[role] || '';
   };
   
@@ -101,9 +101,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
   // --- SAFE SAVE / LOAD ACTIONS ---
   const exportData = () => {
-    // Vi gemmer nu også campaignId i filen
     const data = JSON.stringify({ 
-      campaignId, // <--- Sikkerhedsstempel
+      campaignId, 
       timestamp: new Date().toISOString(),
       players, 
       stalemate, 
@@ -128,36 +127,23 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-
-        // 1. SIKKERHEDSTJEK
         if (data.campaignId && data.campaignId !== campaignId) {
-            const confirmLoad = window.confirm(
-                `ADVARSEL: Denne backup ser ud til at høre til en anden kampagne.\n\nDu er ved at loade data ind i: ${meta.title} (ID: ${campaignId}).\n\nVil du fortsætte og overskrive alt?`
-            );
+            const confirmLoad = window.confirm(`ADVARSEL: Forkert kampagne ID. Vil du overskrive ${meta.title}?`);
             if (!confirmLoad) return;
         }
-
-        // 2. LOAD DATA
         if (data.players) {
-            syncState(
-                data.players, 
-                data.stalemate || 0, 
-                data.epilogueMode || false, 
-                data.last_roll || { type: '-', value: '-' }
-            );
+            syncState(data.players, data.stalemate || 0, data.epilogueMode || false, data.last_roll || { type: '-', value: '-' });
             alert("Spillet er loadet!");
             setShowRules(false);
         }
-      } catch (err) { 
-          alert("Fejl i filen. Kunne ikke loade."); 
-      }
+      } catch (err) { alert("Fejl i filen."); }
     };
     reader.readAsText(file);
     event.target.value = ''; 
   };
 
   const resetData = async () => {
-      if (!window.confirm("RESET CAMPAIGN? This cannot be undone.")) return;
+      if (!window.confirm("RESET CAMPAIGN?")) return;
       window.location.reload(); 
   };
 
@@ -205,17 +191,12 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         const newSpouseIndex = newPlayers.findIndex(p => p.name === newSpouseName);
         if (newSpouseIndex !== -1) {
             const targetExName = newPlayers[newSpouseIndex].spouse;
-            if (targetExName) {
-                const targetExIndex = newPlayers.findIndex(p => p.name === targetExName);
-                if (targetExIndex !== -1) newPlayers[targetExIndex].spouse = "";
-            }
             newPlayers[newSpouseIndex].spouse = currentPlayer.name;
         }
     }
     syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
   };
 
-  // --- HELPERS ---
   const toggleEpilogue = () => {
     syncState(players, stalemate, !epilogueMode, lastRollRecord);
     setShowRules(false); 
@@ -232,7 +213,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full select-none">
             <div className={`h-1 w-full ${player.color || 'bg-gray-600'}`}></div>
             <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center shrink-0">
-                <span className="w-full font-black text-lg text-center text-gray-200" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
+                <span className="w-full font-black text-lg text-center text-gray-200 truncate" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
                 {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
             </div>
             
@@ -241,7 +222,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     <>
                         {useFeature('use_roles') && (
                             <div className="grid grid-cols-[1fr_auto] gap-2 items-center shrink-0">
-                                <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-2 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none hover:border-gray-500 transition-colors">
+                                <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-1 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none hover:border-gray-500 transition-colors">
                                     <option value="">-- No Role --</option>
                                     {['Doctor','Monk','Smith','Knight','Fool','King'].map(r=><option key={r} value={r}>{r}</option>)}
                                 </select>
@@ -259,26 +240,27 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                 {useFeature('use_xp') && (
                                     <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
                                         <span className="text-[8px] text-blue-500 font-bold mb-1">XP</span>
-                                        <div className="flex items-center gap-2">
-                                            <button onClick={() => adjustValue(index, 'xp', -1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
+                                        <div className="flex items-center gap-1 w-full justify-between">
+                                            <button onClick={() => adjustValue(index, 'xp', -1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
                                             <span className="font-mono text-lg font-bold w-6 text-center">{player.xp}</span>
-                                            <button onClick={() => adjustValue(index, 'xp', 1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
+                                            <button onClick={() => adjustValue(index, 'xp', 1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
                                         </div>
                                     </div>
                                 )}
                                 <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
                                     <span className="text-[8px] text-green-500 font-bold mb-1">VP</span>
-                                    <div className="flex items-center gap-2">
-                                        <button onClick={() => adjustValue(index, 'vp', -1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
+                                    <div className="flex items-center gap-1 w-full justify-between">
+                                        <button onClick={() => adjustValue(index, 'vp', -1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
                                         <span className="font-mono text-lg font-bold text-green-400 w-6 text-center">{player.vp || 0}</span>
-                                        <button onClick={() => adjustValue(index, 'vp', 1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
+                                        <button onClick={() => adjustValue(index, 'vp', 1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
                                     </div>
                                 </div>
                             </div>
                         )}
 
                         {useFeature('use_roles') && (
-                            <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative">
+                            // NOTE: landscape:hidden hides this box when phone is horizontal
+                            <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden">
                                 <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
                                 {player.role ? (
                                     <div className="text-[10px] md:text-xs text-gray-400 leading-tight space-y-2">
@@ -286,14 +268,14 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                             const lvl = i + 1;
                                             const isUnlocked = useFeature('use_xp') ? getLevel(player.xp) >= lvl : true;
                                             return (
-                                                <div key={i} className={`flex flex-col mb-2 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
-                                                    <span className="font-bold text-[9px] uppercase tracking-wider mb-0.5">Level {lvl}:</span>
-                                                    <span className="italic opacity-90">{txt}</span>
+                                                <div key={i} className={`flex gap-1 ${isUnlocked ? 'text-green-300' : 'text-gray-600'}`}>
+                                                    <span className="font-bold whitespace-nowrap mt-0.5">Lvl {lvl}:</span>
+                                                    <span>{txt}</span>
                                                 </div>
                                             )
                                         })}
-                                        <div className="w-full h-px bg-gray-800 my-2"></div>
-                                        <div className="text-yellow-600 text-[10px] font-bold">{getRoleReward(player.role)}</div>
+                                        <div className="w-full h-px bg-gray-800 my-1"></div>
+                                        <div className="text-yellow-600 italic text-[10px]">{getRoleReward(player.role)}</div>
                                     </div>
                                 ) : (
                                     <div className="h-full flex items-center justify-center text-xs text-gray-700 italic">Select Role</div>
@@ -312,20 +294,15 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                     <option value="">Single (Unmarried)</option>
                                     {players.filter(p => p.name !== player.name).map((p, i) => <option key={i} value={p.name}>Married to {p.name}</option>)}
                                 </select>
-                                {player.spouse && (
-                                    <div className="mt-2 text-[10px] text-pink-300 italic bg-black/40 p-2 rounded border border-pink-500/20 leading-tight">
-                                        ❤️ <strong>Rules:</strong> Shared Library. Cannot attack each other.<br/>💔 <strong>Divorce:</strong> Give hand to partner to leave.
-                                    </div>
-                                )}
                             </div>
                         )}
                         {useFeature('use_drunk') && (
                             <div className="bg-purple-900/20 p-2 rounded border border-purple-500/30 flex justify-between items-center">
                                 <span className="text-[9px] text-purple-400 font-bold uppercase">Drunk</span>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={() => adjustValue(index, 'drunk', -1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
+                                    <button onClick={() => adjustValue(index, 'drunk', -1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
                                     <span className="text-xl font-bold text-purple-400 w-6 text-center">{player.drunk}</span>
-                                    <button onClick={() => adjustValue(index, 'drunk', 1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
+                                    <button onClick={() => adjustValue(index, 'drunk', 1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
                                 </div>
                             </div>
                         )}
@@ -336,20 +313,20 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     {useFeature('track_life_total') && (
                         <div className="bg-red-900/10 rounded border border-red-900/30 flex flex-col items-center p-1">
                             <span className="text-[8px] text-red-600 font-bold uppercase mb-1">LIFE</span>
-                            <div className="flex w-full justify-between px-2 items-center">
-                                <button onClick={() => adjustValue(index, 'lt', -1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
+                            <div className="flex w-full justify-between px-1 items-center">
+                                <button onClick={() => adjustValue(index, 'lt', -1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
                                 <span className="text-xl font-mono font-bold text-red-500">{player.lt}</span>
-                                <button onClick={() => adjustValue(index, 'lt', 1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
+                                <button onClick={() => adjustValue(index, 'lt', 1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
                             </div>
                         </div>
                     )}
                     {useFeature('track_hand_size') && (
                         <div className="bg-blue-900/10 rounded border border-blue-900/30 flex flex-col items-center p-1">
                             <span className="text-[8px] text-blue-600 font-bold uppercase mb-1">HAND</span>
-                            <div className="flex w-full justify-between px-2 items-center">
-                                <button onClick={() => adjustValue(index, 'hs', -1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
+                            <div className="flex w-full justify-between px-1 items-center">
+                                <button onClick={() => adjustValue(index, 'hs', -1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
                                 <span className="text-xl font-mono font-bold text-blue-500">{player.hs}</span>
-                                <button onClick={() => adjustValue(index, 'hs', 1)} className="w-10 h-10 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
+                                <button onClick={() => adjustValue(index, 'hs', 1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
                             </div>
                         </div>
                     )}
@@ -387,6 +364,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
       <div className={`flex-grow flex flex-col p-2 gap-2 relative z-10 transition-all duration-300 ${showRules ? 'w-full md:w-2/3' : 'w-full'}`}>
         
+        {/* HEADER */}
         <div className="flex justify-between items-center bg-[#111]/90 backdrop-blur border-b border-white/10 p-2 rounded-lg shrink-0 gap-2">
             <div className="flex flex-col shrink-0">
                 <button onClick={onExit} className="flex items-center gap-1 text-[10px] uppercase text-stone-500 hover:text-white mb-1">
@@ -398,6 +376,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
             </div>
 
+            {/* STALEMATE */}
             <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
                 <div className="hidden md:flex text-[10px] text-red-500 font-bold uppercase items-center gap-1"><Skull size={10} /> Stalemate</div>
                 <div className="flex items-center gap-1">
@@ -407,6 +386,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </div>
             </div>
 
+            {/* DICE */}
             <div className="flex items-center gap-2">
                 <div className="hidden md:flex gap-1">
                     {[4, 6, 8, 10, 12, 20].map(sides => (
@@ -423,6 +403,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </div>
             </div>
 
+            {/* DESKTOP MENU BTNS */}
             <div className="hidden md:flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
                 <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
@@ -432,25 +413,39 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </div>
         </div>
 
-        <div className="w-full px-0 mt-0 md:hidden">
+        {/* MOBILE CODEX BUTTON (Hidden on landscape) */}
+        <div className="w-full px-0 mt-0 md:hidden landscape:hidden">
             <button onClick={() => setShowRules(!showRules)} className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group">
                 <BookOpen size={18} className="text-yellow-500 group-hover:text-yellow-300"/>
                 <span className="font-bold uppercase tracking-widest text-sm" style={{ fontFamily: 'Cinzel, serif' }}>Åbn Codex</span>
             </button>
         </div>
 
-        <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0">
+        {/* --- MAIN GAME VIEW --- 
+            Mobile Portrait: SWIPE View (Flex, only 1 card visible)
+            Mobile Landscape: GRID View (Grid 4 cols, all cards visible)
+            Desktop: GRID View (Grid 4 cols)
+        */}
+        <div className="
+            hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0 
+            landscape:grid landscape:grid-cols-4 landscape:gap-2
+        ">
             {players.map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
         </div>
 
-        <div className="md:hidden flex flex-grow items-center justify-center relative overflow-hidden select-none touch-pan-y" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+        <div 
+            className="md:hidden landscape:hidden flex flex-grow items-center justify-center relative overflow-hidden select-none touch-pan-y" 
+            onTouchStart={onTouchStart} 
+            onTouchMove={onTouchMove} 
+            onTouchEnd={onTouchEnd}
+        >
             <div className="w-full h-full p-1 transition-transform duration-200">
                 <PlayerCard player={players[activePlayerIndex]} index={activePlayerIndex} />
             </div>
         </div>
       </div>
 
-      {/* --- CODEX PANE (THE HYBRID: STAGGING CONTENT OR GENERIC) --- */}
+      {/* --- CODEX PANE --- */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-full md:w-1/3 translate-x-0' : 'w-full md:w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex: {meta.title}</h2>
@@ -466,10 +461,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
         <div className="flex-grow overflow-y-auto p-2 space-y-2 text-sm text-gray-300 custom-scrollbar pb-20">
             
-            {/* --- CASE: STAGGING IT UP (RPG ENGINE) --- */}
             {meta.engine === 'rpg' ? (
                 <>
-                    {/* Core Rules Section */}
                     <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                         <button onClick={() => toggleRuleSection('core')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'core' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
                             <span><Info size={12} className="inline mr-2"/> Core Rules</span>
@@ -491,7 +484,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         )}
                     </div>
 
-                    {/* Roles Section */}
                     <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                         <button onClick={() => toggleRuleSection('roles')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'roles' ? 'text-green-300 bg-white/5' : 'text-green-500'}`}>
                             <span><Crown size={12} className="inline mr-2"/> Roles</span>
@@ -512,7 +504,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         )}
                     </div>
 
-                    {/* Timeline Section */}
                     {staggingTimeline.map((event, i) => (
                         <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                             <button onClick={() => toggleRuleSection(`event-${i}`)} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === `event-${i}` ? (event.type === 'battle' ? 'text-red-300 bg-white/5' : 'text-blue-300 bg-white/5') : (event.type === 'battle' ? 'text-red-500' : 'text-blue-500')}`}>
@@ -525,7 +516,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         </div>
                     ))}
 
-                    {/* Epilogue Section */}
                     <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
                         <button onClick={() => toggleRuleSection('epi')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'epi' ? 'text-indigo-300 bg-white/5' : 'text-indigo-500'}`}>
                             <span><Clock size={12} className="inline mr-2"/> Epilogue</span>
@@ -553,7 +543,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     </div>
                 </>
             ) : (
-                // --- CASE: ALL OTHER CAMPAIGNS (GENERIC DB LOADER) ---
                 <>
                     {config?.rules_text && config.rules_text.map((rule, i) => (
                         <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
@@ -587,4 +576,3 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 };
 
 export default UniversalCampaignManager;
-
