@@ -91,11 +91,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         if (audio) {
             audio.currentTime = 0;
             switch (type) {
-                case 'click': audio.volume = 0.5; break;
+                case 'click': audio.volume = 0.6; break;
                 case 'dice_shake': audio.volume = 1.0; break; // Skruet helt op
-                case 'dice_land': audio.volume = 0.8; break;
+                case 'dice_land': audio.volume = 0.0; break;
                 case 'swish': audio.volume = 0.6; break;
-                case 'clash': audio.volume = 0.7; break;
+                case 'clash': audio.volume = 0.5; break;
                 case 'page': audio.volume = 0.6; break;
                 case 'high': audio.volume = 0.8; break;
                 case 'low': audio.volume = 0.8; break;
