@@ -17,9 +17,20 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
   const [isConnected, setIsConnected] = useState(false);
 
-  // --- LOCAL UI STATE (MUTE) ---
-  // Henter mute-status direkte fra browserens hukommelse ved start
-  const [isMuted, setIsMuted] = useState(() => localStorage.getItem('local_mute') === 'true');
+  // --- LOCAL MUTE STATE ---
+  // Vi starter som 'false' for ikke at crashe. useEffect opdaterer den straks.
+  const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+      const localSetting = localStorage.getItem('local_mute');
+      if (localSetting === 'true') setIsMuted(true);
+  }, []);
+
+  const toggleMute = () => {
+      const newState = !isMuted;
+      setIsMuted(newState);
+      localStorage.setItem('local_mute', newState.toString());
+  };
 
   // UI State
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
@@ -72,7 +83,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   }, []);
 
   const playSound = (type) => {
-    // --- MUTE CHECK ---
+    // --- HER ER MUTE KNAPPEN ---
     if (isMuted) return;
 
     try {
@@ -410,9 +421,23 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
-  // --- CONTENT HELPERS ---
-  const staggingContent = staggingTimeline; 
-  
+  const getReminders = () => {
+      if (meta.engine === 'rpg') {
+          return [
+              { l: "Start", v: "HS 6, LT 15" },
+              { l: "Mulligan", v: "New hand -> put 1 bottom. (+1 per mulligan)" },
+              { l: "Draw-out", v: "Sac non-land permanent or Lose 2 life" },
+              { l: "Stalemate", v: "Dice to 10. Tiebreaker: Life > Perms > Cards" }
+          ];
+      }
+      if (config?.rules_text && Array.isArray(config.rules_text)) {
+          return config.rules_text
+            .filter(r => r && r.title && ["Setup", "Ranking", "Mulligans"].includes(r.title))
+            .map(r => ({ l: r.title, v: r.desc ? r.desc.split('\n')[0] : '' }));
+      }
+      return [];
+  };
+
   // --- PLAYER CARD ---
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
@@ -603,7 +628,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         <style>{`@keyframes nebula { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } .nebula-bg { background: linear-gradient(-45deg, #1a0b0b, #2e1010, #0f172a, #000000); background-size: 400% 400%; animation: nebula 15s ease infinite; }`}</style>
         <div className="w-full h-full nebula-bg"></div>
       </div>
-
+      
       {diceOverlay.active && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
             <div className={`font-black text-[20rem] text-amber-500 animate-pulse`}>{diceOverlay.value}</div>
@@ -611,7 +636,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       )}
 
       <div className={`flex-grow flex flex-col p-2 gap-2 relative z-10 transition-all duration-300 ${showRules ? 'w-full md:w-2/3' : 'w-full'}`}>
-
+        
         {/* HEADER */}
         <div className="flex justify-between items-center bg-[#111]/90 backdrop-blur border-b border-white/10 p-2 rounded-lg shrink-0 gap-2">
             <div className="flex flex-col shrink-0">
@@ -621,34 +646,20 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 <h1 className="text-sm md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest uppercase truncate max-w-[150px]" style={{ fontFamily: 'Cinzel, serif' }}>
                     {meta.title}
                 </h1>
-                
-                {/* --- NY MUTE & WIFI --- */}
-                <div className="flex items-center gap-2">
+                <div className="flex gap-1 items-center">
                     {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
-                    
-                    <button 
-                        onClick={() => {
-                            const newState = !isMuted;
-                            setIsMuted(newState);
-                            localStorage.setItem('local_mute', newState);
-                        }} 
-                        className="text-[8px] uppercase font-bold text-stone-500 hover:text-stone-300"
-                    >
-                        {isMuted ? "Lyd: Fra" : "Lyd: Til"}
+                    <button onClick={toggleMute} className={`text-[8px] uppercase font-bold ml-2 ${isMuted ? 'text-red-500' : 'text-green-500'}`}>
+                        {isMuted ? "LYD: FRA" : "LYD: TIL"}
                     </button>
                 </div>
             </div>
 
-            <div className="flex items-center gap-2">
-                <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
+            <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
+                <div className="hidden md:flex text-[10px] text-red-500 font-bold uppercase items-center gap-1"><Skull size={10} /> Stalemate</div>
+                <div className="flex items-center gap-1">
                     <button onClick={() => { playSound('click'); setStalemate(Math.max(0, stalemate - 1)); syncState(players, Math.max(0, stalemate - 1), epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Minus size={14}/></button>
                     <span className="text-xl font-mono font-bold text-white w-6 text-center">{stalemate}</span>
                     <button onClick={() => { playSound('click'); setStalemate(stalemate + 1); syncState(players, stalemate + 1, epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Plus size={14}/></button>
-                </div>
-
-                <div className="bg-black border border-yellow-600/50 rounded px-2 py-1 flex flex-col items-center justify-center min-w-[50px] shadow-[0_0_10px_rgba(234,179,8,0.2)] flex-shrink-0">
-                    <span className="text-[8px] text-gray-500 uppercase">D{lastRollRecord.type}</span>
-                    <span className="text-lg font-bold text-yellow-500 leading-none">{lastRollRecord.value}</span>
                 </div>
             </div>
 
@@ -667,15 +678,15 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         </div>
 
         <div className="w-full px-0 mt-0 md:hidden landscape:hidden">
-            <button onClick={() => { playSound('page'); setShowRules(!showRules); }} className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group">
-                <BookOpen size={18} className="text-yellow-500 group-hover:text-yellow-300"/>
+            <button onClick={() => { playSound('page'); setShowRules(!showRules); }} className="w-full bg-[#3d2b0f] hover:bg-[#523812] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
+                <BookOpen size={18} className="text-yellow-500"/>
                 <span className="font-bold uppercase tracking-widest text-sm" style={{ fontFamily: 'Cinzel, serif' }}>Åbn Codex</span>
             </button>
         </div>
 
         {/* --- MAIN GAME VIEW --- */}
         <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0 landscape:grid landscape:grid-cols-4 landscape:gap-2">
-            {(players || []).map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
+            {players.map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
         </div>
 
         <div className="md:hidden landscape:hidden flex flex-grow items-center justify-center relative overflow-hidden touch-pan-y" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
@@ -691,7 +702,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex: {meta.title}</h2>
             <button onClick={() => { playSound('click'); setShowRules(false); }} className="text-gray-500 hover:text-white"><X size={20}/></button>
         </div>
-
+        
         <div className="md:hidden grid grid-cols-4 gap-2 p-4 border-b border-gray-800">
             <button onClick={exportData} className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-green-500 text-[10px] font-bold"><Save size={16}/> SAVE</button>
             <label className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-blue-500 text-[10px] font-bold cursor-pointer"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /> LOAD</label>
