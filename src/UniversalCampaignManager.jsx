@@ -18,10 +18,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [isConnected, setIsConnected] = useState(false);
 
   // --- LOCAL UI STATE (MUTE) ---
-  const [isMuted, setIsMuted] = useState(() => {
-      // Henter indstilling fra lokal browser hukommelse
-      return localStorage.getItem('local_mute') === 'true';
-  });
+  // Henter mute-status direkte fra browserens hukommelse ved start
+  const [isMuted, setIsMuted] = useState(() => localStorage.getItem('local_mute') === 'true');
 
   // UI State
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
@@ -73,14 +71,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       loadAudio();
   }, []);
 
-  const toggleMute = () => {
-      const newState = !isMuted;
-      setIsMuted(newState);
-      localStorage.setItem('local_mute', newState); // Gemmer lokalt
-  };
-
   const playSound = (type) => {
-    // MUTE CHECK - stopper lyden her hvis slået til
+    // --- MUTE CHECK ---
     if (isMuted) return;
 
     try {
@@ -629,9 +621,19 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 <h1 className="text-sm md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest uppercase truncate max-w-[150px]" style={{ fontFamily: 'Cinzel, serif' }}>
                     {meta.title}
                 </h1>
+                
+                {/* --- NY MUTE & WIFI --- */}
                 <div className="flex items-center gap-2">
-                    {isConnected ? <Wifi size={10} className="text-green-500"/> : <WifiOff size={10} className="text-gray-500"/>}
-                    <button onClick={toggleMute} className="text-[10px] uppercase font-bold text-stone-500 hover:text-stone-300">
+                    {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
+                    
+                    <button 
+                        onClick={() => {
+                            const newState = !isMuted;
+                            setIsMuted(newState);
+                            localStorage.setItem('local_mute', newState);
+                        }} 
+                        className="text-[8px] uppercase font-bold text-stone-500 hover:text-stone-300"
+                    >
                         {isMuted ? "Lyd: Fra" : "Lyd: Til"}
                     </button>
                 </div>
@@ -801,4 +803,3 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 };
 
 export default UniversalCampaignManager;
-
