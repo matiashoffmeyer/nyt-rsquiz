@@ -29,7 +29,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
 
-  // --- CONTENT DATA ---
+  // --- CONTENT DATA (STAGGING ORIGINALS) ---
   const staggingTimeline = [
       { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
       { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
@@ -55,7 +55,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
   
   const getRoleReward = (role) => {
-    const rewards = { 'Doctor': 'Reward: Creature dies on your turn -> +1 XP', 'Monk': 'Life total changes -> +1 XP', 'Smith': 'Reward: Artifact enters -> +1 XP', 'Knight': 'Reward: Creatures deal damage -> +1 XP', 'Fool': 'Reward: Target opponent/perm -> +1 XP', 'King': 'Reward: Every 3rd time another gains xp -> +1 XP' };
+    const rewards = { 'Doctor': 'Reward: Creature dies on your turn -> +1 XP', 'Monk': 'Life total changes -> +1 XP', 'Smith': 'Artifact enters -> +1 XP', 'Knight': 'Reward: Creatures deal damage -> +1 XP', 'Fool': 'Target opponent/perm -> +1 XP', 'King': 'Reward: Every 3rd time another gains xp -> +1 XP' };
     return rewards[role] || '';
   };
   
@@ -206,9 +206,29 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const toggleRuleSection = (id) => setActiveRuleSection(activeRuleSection === id ? null : id);
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
+  // --- CONTENT HELPERS FOR REMINDERS ---
+  const getReminders = () => {
+      if (meta.engine === 'rpg') {
+          return [
+              { l: "Start", v: "HS 6, LT 15" },
+              { l: "Mulligan", v: "New hand -> put 1 bottom. (+1 per mulligan)" },
+              { l: "Draw-out", v: "Sac non-land permanent or Lose 2 life" },
+              { l: "Stalemate", v: "Dice to 10. Tiebreaker: Life > Perms > Cards" }
+          ];
+      }
+      if (config?.rules_text) {
+          return config.rules_text
+            .filter(r => ["Setup", "Ranking", "Mulligans"].includes(r.title))
+            .map(r => ({ l: r.title, v: r.desc.split('\n')[0] }));
+      }
+      return [];
+  };
+
   // --- PLAYER CARD ---
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
+    const reminders = getReminders();
+
     return (
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full select-none">
             <div className={`h-1 w-full ${player.color || 'bg-gray-600'}`}></div>
@@ -258,11 +278,12 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                             </div>
                         )}
 
-                        {useFeature('use_roles') && (
-                            // NOTE: landscape:hidden hides this box when phone is horizontal
-                            <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden">
-                                <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
-                                {player.role ? (
+                        {/* --- TEXT BOX AREA (ROLES + REMINDERS) --- */}
+                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden">
+                            {/* 1. ROLE INFO (If exists) */}
+                            {useFeature('use_roles') && player.role && (
+                                <div className="mb-3">
+                                    <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
                                     <div className="text-[10px] md:text-xs text-gray-400 leading-tight space-y-2">
                                         {getRoleAbilities(player.role).map((txt, i) => {
                                             const lvl = i + 1;
@@ -277,11 +298,26 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                         <div className="w-full h-px bg-gray-800 my-1"></div>
                                         <div className="text-yellow-600 italic text-[10px]">{getRoleReward(player.role)}</div>
                                     </div>
-                                ) : (
-                                    <div className="h-full flex items-center justify-center text-xs text-gray-700 italic">Select Role</div>
-                                )}
+                                    <div className="w-full h-px bg-stone-800 my-3"></div>
+                                </div>
+                            )}
+
+                            {/* 2. CAMPAIGN REMINDERS (Always visible) */}
+                            <div className="h-full flex flex-col gap-2">
+                                <div className="text-stone-600 font-bold uppercase text-[9px] tracking-widest border-b border-stone-800 pb-1">
+                                    Campaign Rules
+                                </div>
+                                <div className="space-y-2 pb-2">
+                                    {reminders.map((rem, i) => (
+                                        <div key={i} className="text-[10px] text-gray-400 leading-tight">
+                                            <span className="text-stone-500 font-bold mr-1">{rem.l}:</span>
+                                            <span className="italic opacity-80">{rem.v}</span>
+                                        </div>
+                                    ))}
+                                    {reminders.length === 0 && <div className="text-gray-600 italic text-[10px]">No specific rules loaded.</div>}
+                                </div>
                             </div>
-                        )}
+                        </div>
                     </>
                 ) : (
                     <div className="flex-grow flex flex-col gap-4 justify-center">
@@ -421,11 +457,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </button>
         </div>
 
-        {/* --- MAIN GAME VIEW --- 
-            Mobile Portrait: SWIPE View (Flex, only 1 card visible)
-            Mobile Landscape: GRID View (Grid 4 cols, all cards visible)
-            Desktop: GRID View (Grid 4 cols)
-        */}
+        {/* --- MAIN GAME VIEW --- */}
         <div className="
             hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0 
             landscape:grid landscape:grid-cols-4 landscape:gap-2
@@ -576,3 +608,4 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 };
 
 export default UniversalCampaignManager;
+
