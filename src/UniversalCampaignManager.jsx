@@ -567,10 +567,12 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                             </div>
                         )}
 
-                        {/* --- SCROLLABLE CONTENT (Hidden ONLY on Landscape Mobile) --- */}
-                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden md:landscape:block">
+                        {/* --- SCROLLABLE CONTENT (Normal Mode) --- */}
+                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative flex flex-col landscape:hidden md:flex">
+                            
+                            {/* ROLLE REGLER (Vises kun hvis rolle valgt) */}
                             {useFeature('use_roles') && player.role && (
-                                <div className="mb-3">
+                                <div className="mb-3 shrink-0">
                                     <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
                                     <div className="text-[10px] md:text-xs text-gray-400 leading-tight space-y-2">
                                         {getRoleAbilities(player.role).map((txt, i) => {
@@ -590,21 +592,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                 </div>
                             )}
 
-                            {/* --- MARRIAGE RULES INJECTED HERE --- */}
-                            {useFeature('use_marriage') && player.spouse && (
-                                <div className="mb-3">
-                                    <div className="absolute top-1 right-8 text-indigo-500 opacity-50"><Users size={12}/></div>
-                                    <div className="text-[10px] md:text-xs text-gray-400 leading-tight space-y-2">
-                                        <div className="flex gap-1 text-indigo-300">
-                                            <span className="font-bold whitespace-nowrap mt-0.5">MARRIAGE:</span>
-                                            <span>Shuffle decks together. Share a library. Cannot attack spouse.</span>
-                                        </div>
-                                        <div className="w-full h-px bg-gray-800 my-1"></div>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="h-full flex flex-col gap-2">
+                            {/* GENERELLE REGLER */}
+                            <div className="h-full flex flex-col gap-2 shrink-0">
                                 <div className="text-stone-600 font-bold uppercase text-[9px] tracking-widest border-b border-stone-800 pb-1">
                                     Campaign Rules
                                 </div>
