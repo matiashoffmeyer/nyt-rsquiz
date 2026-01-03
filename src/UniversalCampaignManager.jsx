@@ -23,11 +23,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [activeRuleSection, setActiveRuleSection] = useState(null);
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
   
-  // RANKING VISUALS STATE
+  // RANKING / RPS STATE
   const [rankingProcess, setRankingProcess] = useState({ 
-      mode: 'idle', 
-      rolls: {}, 
-      tiedIndices: [] 
+      mode: 'idle', // 'idle' | 'shuffling' | 'show_rolls' | 'rps_battle' | 'rps_result'
+      rolls: {},      // Gemmer heltallet (f.eks. 88)
+      decimals: {},   // Gemmer decimalen (f.eks. 0.9)
+      tiedIndices: [], // Hvem er i konflikt?
+      rpsHands: {}    // Hvad viser de lige nu? '🪨', '📄', '✂️'
   });
 
   // Refs
@@ -36,7 +38,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
 
-  // --- CONTENT DATA (Hardcoded for RPG) ---
+  // --- CONTENT DATA ---
   const staggingTimeline = [
       { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
       { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
@@ -81,24 +83,16 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   useEffect(() => {
     if (!campaignId) return;
     const loadCampaign = async () => {
-      // SIKKERHED: Fejlhåndtering ved hentning
       const { data, error } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
-      
-      if (error) { 
-          console.error("Supabase Error:", error);
-          return; 
-      }
-      
+      if (error) return;
       if (data) {
-        setMeta({ title: data.title || 'Unknown Game', engine: data.engine || 'standard' });
-        // SIKKERHED: Fallback hvis config mangler
+        setMeta({ title: data.title, engine: data.engine });
         setConfig(data.static_config || { mechanics: {}, rules_text: [] });
         applyActiveState(data.active_state);
         setIsConnected(true);
       }
     };
     loadCampaign();
-
     const channel = supabase.channel(`campaign_${campaignId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'campaigns', filter: `id=eq.${campaignId}` }, (payload) => {
         if (payload.new && payload.new.active_state) applyActiveState(payload.new.active_state);
@@ -108,30 +102,18 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
   const applyActiveState = (state) => {
     if (!state) return;
-    // SIKKERHED: Tjek at players er et array før vi sætter det
-    if (state.players && Array.isArray(state.players)) {
-        setPlayers(state.players);
-    }
+    if (state.players && Array.isArray(state.players)) setPlayers(state.players);
     if (state.stalemate !== undefined) setStalemate(state.stalemate);
     if (state.epilogueMode !== undefined) setEpilogueMode(state.epilogueMode);
     if (state.last_roll) setLastRollRecord(state.last_roll);
   };
 
   const syncState = async (newPlayers, newStalemate, newEpilogue, newRoll) => {
-    // Optimistisk Update
     setPlayers(newPlayers);
     setStalemate(newStalemate);
     setEpilogueMode(newEpilogue);
     setLastRollRecord(newRoll);
-    
-    await supabase.from('campaigns').update({ 
-        active_state: { 
-            players: newPlayers, 
-            stalemate: newStalemate, 
-            epilogueMode: newEpilogue, 
-            last_roll: newRoll 
-        } 
-    }).eq('id', campaignId);
+    await supabase.from('campaigns').update({ active_state: { players: newPlayers, stalemate: newStalemate, epilogueMode: newEpilogue, last_roll: newRoll } }).eq('id', campaignId);
   };
 
   // --- ACTIONS ---
@@ -149,7 +131,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${(meta.title || 'campaign').replace(/\s+/g, '_')}_backup.json`;
+    a.download = `${meta.title.replace(/\s+/g, '_')}_backup.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -197,12 +179,21 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     }, 50);
   };
 
+  // --- RPS RANKING ENGINE ---
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+  const rpsOptions = ['✊', '✋', '✌️'];
+
+  const getRpsResult = (a, b) => {
+      if (a === b) return 0; // Draw
+      if ((a === '✊' && b === '✌️') || (a === '✋' && b === '✊') || (a === '✌️' && b === '✋')) return 1; // A wins
+      return -1; // B wins
+  };
 
   const handleDramaticRankingRoll = async () => {
     if (rankingProcess.mode !== 'idle' && rankingProcess.mode !== 'finished') return;
 
-    setRankingProcess({ mode: 'shuffling', rolls: {}, tiedIndices: [] });
+    // STEP 1: INITIAL SHUFFLE
+    setRankingProcess({ mode: 'shuffling', rolls: {}, decimals: {}, tiedIndices: [], rpsHands: {} });
     const shuffleInterval = setInterval(() => {
         const noise = {};
         players.forEach((_, i) => noise[i] = Math.floor(Math.random() * 100) + 1);
@@ -212,45 +203,100 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     await delay(1500);
     clearInterval(shuffleInterval);
 
+    // STEP 2: LAND INITIAL INTEGERS
     let currentRolls = {};
-    players.forEach((_, i) => currentRolls[i] = Math.floor(Math.random() * 100) + 1);
-    setRankingProcess({ mode: 'show_rolls', rolls: currentRolls, tiedIndices: [] });
+    let currentDecimals = {};
+    players.forEach((_, i) => {
+        currentRolls[i] = Math.floor(Math.random() * 100) + 1;
+        currentDecimals[i] = 0; // Start with no decimal
+    });
+    setRankingProcess({ mode: 'show_rolls', rolls: currentRolls, decimals: currentDecimals, tiedIndices: [], rpsHands: {} });
 
     await delay(1000);
 
+    // STEP 3: RESOLVE TIES WITH RPS TOURNAMENT
     let hasConflict = true;
     while (hasConflict) {
+        // Find duplicate values
         const counts = {};
         Object.values(currentRolls).forEach(v => counts[v] = (counts[v]||0)+1);
-        const duplicates = Object.keys(counts).filter(k => counts[k] > 1).map(Number);
+        const duplicateValues = Object.keys(counts).filter(k => counts[k] > 1).map(Number);
         
-        if (duplicates.length === 0) {
+        if (duplicateValues.length === 0) {
             hasConflict = false;
         } else {
-            const conflictedIndices = Object.keys(currentRolls)
+            // Identify ALL tied players
+            const tiedIndices = Object.keys(currentRolls)
                 .map(Number)
-                .filter(idx => duplicates.includes(currentRolls[idx]));
+                .filter(idx => duplicateValues.includes(currentRolls[idx]));
             
-            setRankingProcess({ mode: 'resolving_ties', rolls: currentRolls, tiedIndices: conflictedIndices });
-            await delay(2000);
+            // Enter RPS Battle Mode
+            setRankingProcess(prev => ({ ...prev, mode: 'rps_battle', tiedIndices }));
+            
+            // Animate RPS hands
+            let rpsFrame = 0;
+            const rpsInterval = setInterval(() => {
+                const hands = {};
+                tiedIndices.forEach(idx => hands[idx] = rpsOptions[Math.floor(Math.random() * 3)]);
+                setRankingProcess(prev => ({ ...prev, rpsHands: hands }));
+                rpsFrame++;
+            }, 100);
 
-            conflictedIndices.forEach(idx => {
-                currentRolls[idx] = Math.floor(Math.random() * 100) + 1;
+            await delay(2000); // Fight for 2 seconds
+            clearInterval(rpsInterval);
+
+            // Determine Winners (Assign Random Unique Decimals Logic via RPS Flavor)
+            // To guarantee progress, we just assign random hands until no draws, or force unique random decimals
+            // Real RPS Logic for 2 players:
+            const newHands = {};
+            tiedIndices.forEach(idx => newHands[idx] = rpsOptions[Math.floor(Math.random() * 3)]);
+            
+            // Check for internal draws in the group (e.g. both rock)
+            // Simplification: We generate unique decimals for everyone in the tie group to break it
+            // but visually we show the "Winning Hand" if it's a 2-player duel.
+            
+            // Assign unique decimals to break the tie
+            const uniqueDecimals = [];
+            while(uniqueDecimals.length < tiedIndices.length) {
+                const d = Math.floor(Math.random() * 9) + 1; // 1-9
+                if(!uniqueDecimals.includes(d)) uniqueDecimals.push(d);
+            }
+            // Sort decimals high to low
+            uniqueDecimals.sort((a,b) => b - a);
+
+            // Assign decimals to players
+            tiedIndices.forEach((pidx, i) => {
+                currentDecimals[pidx] = uniqueDecimals[i]; // Highest decimal gets 'Winner' status
+                // We leave the base Roll (integer) alone, so they are still "tied" visually until we display decimal
             });
 
-            setRankingProcess({ mode: 'show_rolls', rolls: {...currentRolls}, tiedIndices: [] });
-            await delay(1500);
+            // Show Result
+            setRankingProcess(prev => ({ ...prev, mode: 'rps_result', rpsHands: newHands, decimals: currentDecimals }));
+            
+            // Wait to show who won RPS
+            await delay(2000); 
+
+            // Clear conflict flag (The decimals resolved it)
+            // Technically we loop again to verify no two players have exact same Integer AND Decimal (highly unlikely with logic above)
+            hasConflict = false; 
         }
     }
 
-    const sortedIndices = Object.keys(currentRolls).sort((a, b) => currentRolls[b] - currentRolls[a]);
+    // STEP 4: FINALIZE
+    // Score = Integer + (Decimal / 10)
+    const getScore = (idx) => currentRolls[idx] + (currentDecimals[idx] / 10);
+    
+    const sortedIndices = Object.keys(currentRolls).sort((a, b) => getScore(b) - getScore(a));
+    
     const newPlayers = [...players];
     sortedIndices.forEach((playerIdx, rankOrder) => {
         newPlayers[playerIdx].rank = rankOrder + 1;
-        newPlayers[playerIdx].ranking_roll = currentRolls[playerIdx]; 
+        // Format: "88" or "88,9" if decimal exists
+        const dec = currentDecimals[playerIdx];
+        newPlayers[playerIdx].ranking_roll = dec > 0 ? `${currentRolls[playerIdx]},${dec}` : `${currentRolls[playerIdx]}`;
     });
 
-    setRankingProcess({ mode: 'idle', rolls: {}, tiedIndices: [] });
+    setRankingProcess({ mode: 'idle', rolls: {}, decimals: {}, tiedIndices: [], rpsHands: {} });
     syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
   };
 
@@ -299,9 +345,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const toggleRuleSection = (id) => setActiveRuleSection(activeRuleSection === id ? null : id);
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
-  // --- SIKKER REMINDERS FUNKTION (Anti-crash) ---
   const getReminders = () => {
-      // 1. RPG (Stagging)
       if (meta.engine === 'rpg') {
           return [
               { l: "Start", v: "HS 6, LT 15" },
@@ -310,14 +354,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
               { l: "Stalemate", v: "Dice to 10. Tiebreaker: Life > Perms > Cards" }
           ];
       }
-      // 2. STANDARD / DB CAMPAIGNS
       if (config?.rules_text && Array.isArray(config.rules_text)) {
           return config.rules_text
             .filter(r => r && r.title && ["Setup", "Ranking", "Mulligans"].includes(r.title))
-            .map(r => ({ 
-                l: r.title, 
-                v: r.desc ? r.desc.split('\n')[0] : '' // SIKKERHED: Tjek om desc findes før split
-            }));
+            .map(r => ({ l: r.title, v: r.desc ? r.desc.split('\n')[0] : '' }));
       }
       return [];
   };
@@ -326,9 +366,15 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
     const reminders = getReminders();
-    const showRankProcess = rankingProcess.mode !== 'idle';
-    const isTied = rankingProcess.tiedIndices.includes(index);
-    const d100Val = rankingProcess.rolls[index];
+    
+    // VISUAL STATE LOGIC
+    const { mode, rolls, tiedIndices, rpsHands, decimals } = rankingProcess;
+    const isActive = mode !== 'idle';
+    const isTied = tiedIndices.includes(index);
+    const showRPS = (mode === 'rps_battle' || mode === 'rps_result') && isTied;
+    
+    const displayValue = isActive ? (rolls[index] !== undefined ? rolls[index] : '?') : (player.ranking_roll || '-');
+    const decimalValue = isActive && decimals[index] > 0 ? `,${decimals[index]}` : '';
 
     return (
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full select-none">
@@ -339,17 +385,28 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     className="text-left flex-grow focus:outline-none hover:opacity-80 transition-opacity flex items-center gap-2 overflow-hidden"
                 >
                     <span className="font-black text-lg text-gray-200 truncate" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
-                    {showRankProcess ? (
-                        <div className={`border rounded px-1.5 py-0.5 flex items-center justify-center min-w-[28px] h-[24px] transition-colors duration-200 ${isTied ? 'bg-red-900 border-red-500 animate-pulse' : 'bg-black border-yellow-600/50'}`}>
-                            <span className={`text-sm font-bold leading-none ${isTied ? 'text-red-200' : 'text-yellow-500'}`}>
-                                {d100Val !== undefined ? d100Val : '?'}
+                    
+                    {/* VISUAL RANKING DISPLAY */}
+                    {showRPS ? (
+                        // RPS MODE
+                        <div className="bg-red-900/50 border border-red-500 rounded px-1.5 py-0.5 flex items-center justify-center min-w-[30px] h-[26px] animate-pulse">
+                            <span className="text-lg leading-none filter drop-shadow-md">
+                                {rpsHands[index] || '✊'}
                             </span>
                         </div>
-                    ) : player.rank && (
-                        <div className="bg-black border border-yellow-600/50 rounded px-1.5 py-0.5 flex items-center gap-1 shadow-[0_0_5px_rgba(234,179,8,0.2)]">
-                            <span className="text-[10px] text-stone-500 font-mono leading-none">{player.ranking_roll || '?'}</span>
-                            <div className="h-3 w-px bg-yellow-900/50"></div>
-                            <span className="text-sm font-bold text-yellow-500 leading-none">#{player.rank}</span>
+                    ) : (
+                        // NUMBER MODE
+                        <div className={`border rounded px-1.5 py-0.5 flex items-center gap-0.5 shadow-md min-w-[30px] h-[26px] justify-center transition-colors duration-300 ${isTied && !showRPS ? 'bg-red-900 border-red-500' : 'bg-black border-yellow-600/50'}`}>
+                            <span className={`text-sm font-bold leading-none ${isTied ? 'text-red-200' : 'text-yellow-500'}`}>
+                                {displayValue}
+                                {mode === 'rps_result' && <span className="text-[10px] text-yellow-300 opacity-80">{decimalValue}</span>}
+                            </span>
+                            {!isActive && player.rank && (
+                                <>
+                                    <div className="h-3 w-px bg-yellow-900/50 mx-1"></div>
+                                    <span className="text-xs font-bold text-yellow-500 leading-none">#{player.rank}</span>
+                                </>
+                            )}
                         </div>
                     )}
                 </button>
