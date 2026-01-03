@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Save, Upload, RefreshCw, Skull, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, Users, Wifi, WifiOff, Minus, Plus, LogOut } from 'lucide-react';
+import { Save, Upload, RefreshCw, Skull, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, Users, Wifi, WifiOff, Minus, Plus, LogOut, AlertCircle } from 'lucide-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -24,8 +24,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [activeRuleSection, setActiveRuleSection] = useState(null);
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
   
-  // Ranking Roll State
-  const [rankingAnimation, setRankingAnimation] = useState({ active: false, displayValues: {} });
+  // RANKING VISUALS STATE
+  // Mode: 'idle' | 'shuffling' | 'show_rolls' | 'resolving_ties' | 'finished'
+  const [rankingProcess, setRankingProcess] = useState({ 
+      mode: 'idle', 
+      rolls: {}, // Gemmer d100 værdien: { 0: 45, 1: 88 }
+      tiedIndices: [] // Hvem skal rulle om? [0, 3]
+  });
 
   // Refs
   const fileInputRef = useRef(null);
@@ -33,7 +38,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
 
-  // --- CONTENT DATA (STAGGING ORIGINALS) ---
+  // --- CONTENT DATA ---
   const staggingTimeline = [
       { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
       { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
@@ -158,7 +163,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       window.location.reload(); 
   };
 
-  // --- GAME ACTIONS ---
+  // --- STANDARD DICE ---
   const rollDice = (sides) => {
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
@@ -175,64 +180,81 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     }, 50);
   };
 
-  // --- RANKING ROLL LOGIC ---
-  const triggerRankingRoll = () => {
-    if (rankingAnimation.active) return; // Prevent double click
+  // --- DRAMATIC RANKING ROLL ENGINE ---
+  const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    // 1. Start Animation
-    setRankingAnimation({ active: true, displayValues: {} });
-    let frame = 0;
-    const animInterval = setInterval(() => {
-        const randoms = {};
-        players.forEach((_, i) => randoms[i] = Math.floor(Math.random() * 100) + 1);
-        setRankingAnimation({ active: true, displayValues: randoms });
-        frame++;
-        if (frame > 20) { // Approx 1 second
-            clearInterval(animInterval);
-            finishRankingRoll();
-        }
+  const handleDramaticRankingRoll = async () => {
+    if (rankingProcess.mode !== 'idle' && rankingProcess.mode !== 'finished') return;
+
+    // STEP 1: INITIAL SHUFFLE
+    setRankingProcess({ mode: 'shuffling', rolls: {}, tiedIndices: [] });
+    
+    // Create random noise effect
+    const shuffleInterval = setInterval(() => {
+        const noise = {};
+        players.forEach((_, i) => noise[i] = Math.floor(Math.random() * 100) + 1);
+        setRankingProcess(prev => ({ ...prev, rolls: noise }));
     }, 50);
-  };
 
-  const finishRankingRoll = () => {
-    // 2. Logic: Roll unique values for everyone
-    let finalRolls = {};
-    players.forEach((_, i) => finalRolls[i] = Math.floor(Math.random() * 100) + 1);
+    await delay(1500); // Shuffle for 1.5 sec
+    clearInterval(shuffleInterval);
 
-    // Resolve Ties (Reroll duplicates only)
-    let conflict = true;
-    while(conflict) {
-        conflict = false;
+    // STEP 2: LAND FIRST ROLLS
+    let currentRolls = {};
+    players.forEach((_, i) => currentRolls[i] = Math.floor(Math.random() * 100) + 1);
+    setRankingProcess({ mode: 'show_rolls', rolls: currentRolls, tiedIndices: [] });
+
+    await delay(1000); // Let players see initial numbers
+
+    // STEP 3: RESOLVE TIES LOOP
+    let hasConflict = true;
+    while (hasConflict) {
+        // Find ties
         const counts = {};
-        Object.values(finalRolls).forEach(v => counts[v] = (counts[v]||0)+1);
-        
-        // Find values that appear more than once
+        Object.values(currentRolls).forEach(v => counts[v] = (counts[v]||0)+1);
         const duplicates = Object.keys(counts).filter(k => counts[k] > 1).map(Number);
         
-        if (duplicates.length > 0) {
-            conflict = true;
-            // Reroll ONLY the players with duplicate values
-            Object.keys(finalRolls).forEach(idx => {
-                if (duplicates.includes(finalRolls[idx])) {
-                    finalRolls[idx] = Math.floor(Math.random() * 100) + 1;
-                }
+        if (duplicates.length === 0) {
+            hasConflict = false;
+        } else {
+            // MARK TIES VISUALLY
+            const conflictedIndices = Object.keys(currentRolls)
+                .map(Number)
+                .filter(idx => duplicates.includes(currentRolls[idx]));
+            
+            setRankingProcess({ 
+                mode: 'resolving_ties', 
+                rolls: currentRolls, 
+                tiedIndices: conflictedIndices 
             });
+
+            await delay(2000); // Pause so everyone sees who is tied (RED TEXT)
+
+            // REROLL ONLY TIED PLAYERS
+            conflictedIndices.forEach(idx => {
+                currentRolls[idx] = Math.floor(Math.random() * 100) + 1;
+            });
+
+            // UPDATE DISPLAY
+            setRankingProcess({ 
+                mode: 'show_rolls', 
+                rolls: {...currentRolls}, // Spread to force render
+                tiedIndices: [] // Remove red warning
+            });
+            
+            await delay(1500); // Show new numbers
         }
     }
 
-    // 3. Assign Ranks (Lowest roll = Rank 1)
-    // Sort players by roll value (Ascending)
-    const sortedIndices = Object.keys(finalRolls).sort((a, b) => finalRolls[a] - finalRolls[b]);
-    
-    // Update players with new rank
+    // STEP 4: FINALIZE
+    const sortedIndices = Object.keys(currentRolls).sort((a, b) => currentRolls[a] - currentRolls[b]);
     const newPlayers = [...players];
     sortedIndices.forEach((playerIdx, rankOrder) => {
-        newPlayers[playerIdx].rank = rankOrder + 1; // Rank 1 is lowest roll
+        newPlayers[playerIdx].rank = rankOrder + 1;
     });
 
-    // 4. Save and Stop Animation
-    setRankingAnimation({ active: false, displayValues: {} });
-    syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
+    setRankingProcess({ mode: 'idle', rolls: {}, tiedIndices: [] }); // Reset visual state
+    syncState(newPlayers, stalemate, epilogueMode, lastRollRecord); // Save ranks to DB
   };
 
   const updatePlayer = (index, field, value) => {
@@ -277,7 +299,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const toggleRuleSection = (id) => setActiveRuleSection(activeRuleSection === id ? null : id);
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
-  // --- CONTENT HELPERS FOR REMINDERS ---
+  // --- CONTENT HELPERS ---
   const getReminders = () => {
       if (meta.engine === 'rpg') {
           return [
@@ -299,27 +321,38 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
     const reminders = getReminders();
+    
+    // LOGIC FOR RANKING VISUALS
+    const showRankProcess = rankingProcess.mode !== 'idle';
+    const isTied = rankingProcess.tiedIndices.includes(index);
+    const d100Val = rankingProcess.rolls[index];
 
     return (
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full select-none">
             <div className={`h-1 w-full ${player.color || 'bg-gray-600'}`}></div>
             <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center shrink-0">
                 <button 
-                    onClick={triggerRankingRoll}
-                    className="text-left flex-grow focus:outline-none hover:opacity-80 transition-opacity flex items-center gap-2"
+                    onClick={handleDramaticRankingRoll}
+                    className="text-left flex-grow focus:outline-none hover:opacity-80 transition-opacity flex items-center gap-2 overflow-hidden"
                 >
                     <span className="font-black text-lg text-gray-200 truncate" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
                     
-                    {/* RANKING BADGE */}
-                    {(rankingAnimation.active || player.rank) && (
-                        <div className="bg-black border border-yellow-600/50 rounded px-1.5 py-0.5 flex items-center justify-center min-w-[24px] h-[24px] shadow-[0_0_5px_rgba(234,179,8,0.2)]">
-                            <span className="text-sm font-bold text-yellow-500 leading-none">
-                                {rankingAnimation.active 
-                                    ? (rankingAnimation.displayValues[index] || '-') 
-                                    : (player.rank || '-')}
+                    {/* VISUAL RANKING DISPLAY */}
+                    {showRankProcess ? (
+                        // SHOWING RAW D100 DURING ROLL
+                        <div className={`border rounded px-1.5 py-0.5 flex items-center justify-center min-w-[28px] h-[24px] transition-colors duration-200 ${isTied ? 'bg-red-900 border-red-500 animate-pulse' : 'bg-black border-yellow-600/50'}`}>
+                            <span className={`text-sm font-bold leading-none ${isTied ? 'text-red-200' : 'text-yellow-500'}`}>
+                                {d100Val !== undefined ? d100Val : '?'}
                             </span>
                         </div>
-                    )}
+                    ) : player.rank ? (
+                        // SHOWING FINAL RANK
+                        <div className="bg-black border border-yellow-600/50 rounded px-1.5 py-0.5 flex items-center justify-center min-w-[24px] h-[24px] shadow-[0_0_5px_rgba(234,179,8,0.2)]">
+                            <span className="text-sm font-bold text-yellow-500 leading-none">
+                                {player.rank}
+                            </span>
+                        </div>
+                    ) : null}
                 </button>
                 {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
             </div>
@@ -367,7 +400,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
                         {/* --- TEXT BOX AREA (ROLES + REMINDERS) --- */}
                         <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden">
-                            {/* 1. ROLE INFO (If exists) */}
                             {useFeature('use_roles') && player.role && (
                                 <div className="mb-3">
                                     <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
@@ -389,7 +421,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                 </div>
                             )}
 
-                            {/* 2. CAMPAIGN REMINDERS (Always visible) */}
                             <div className="h-full flex flex-col gap-2">
                                 <div className="text-stone-600 font-bold uppercase text-[9px] tracking-widest border-b border-stone-800 pb-1">
                                     Campaign Rules
