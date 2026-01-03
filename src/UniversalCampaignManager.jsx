@@ -37,9 +37,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchStart = useRef(null);
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
-  const audioRefs = useRef({});
+  
+  // Audio Refs (Safe storage)
+  const audioStore = useRef({});
 
-  // --- AUDIO ENGINE ---
+  // --- SAFE AUDIO ENGINE ---
   const soundUrls = {
       click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
       dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
@@ -51,31 +53,82 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       low: 'https://www.soundjay.com/misc/sounds/fail-trombone-02.mp3'
   };
 
+  // Safe Preloader
   useEffect(() => {
-      Object.keys(soundUrls).forEach(key => {
-          const audio = new Audio(soundUrls[key]);
-          audio.preload = 'auto'; 
-          audioRefs.current[key] = audio;
-      });
+      try {
+          Object.keys(soundUrls).forEach(key => {
+              const audio = new Audio(soundUrls[key]);
+              // Vi loader ikke aggressivt med .load() for at undgå memory crash
+              audioStore.current[key] = audio;
+          });
+      } catch (e) {
+          console.warn("Audio setup failed:", e);
+      }
   }, []);
 
   const playSound = (type) => {
-    const audio = audioRefs.current[type];
-    if (audio) {
-        audio.currentTime = 0;
-        switch (type) {
-            case 'click': audio.volume = 0.5; break;
-            case 'dice_shake': audio.volume = 0.7; break;
-            case 'dice_land': audio.volume = 0.8; break;
-            case 'swish': audio.volume = 0.6; break;
-            case 'clash': audio.volume = 0.7; break;
-            case 'page': audio.volume = 0.6; break;
-            case 'high': audio.volume = 0.8; break;
-            case 'low': audio.volume = 0.8; break;
-            default: audio.volume = 0.5;
+    try {
+        const audio = audioStore.current[type];
+        if (audio) {
+            audio.currentTime = 0;
+            switch (type) {
+                case 'click': audio.volume = 0.4; break;
+                case 'dice_shake': audio.volume = 0.6; break;
+                case 'dice_land': audio.volume = 0.8; break;
+                case 'swish': audio.volume = 0.5; break;
+                case 'clash': audio.volume = 0.6; break;
+                case 'page': audio.volume = 0.5; break;
+                case 'high': audio.volume = 0.8; break;
+                case 'low': audio.volume = 0.8; break;
+                default: audio.volume = 0.5;
+            }
+            const p = audio.play();
+            if (p !== undefined) p.catch(() => {}); // Catch autoplay blocks
         }
-        audio.play().catch(() => {}); 
+    } catch (e) {
+        // Ignorer lydfejl for at undgå crash
     }
+  };
+
+  // --- CONTENT DATA ---
+  const staggingTimeline = [
+      { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
+      { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
+      { title: "Battle 2: Grand Melee", type: "battle", desc: "Creatures have haste and attack each turn if able." },
+      { title: "Post-Battle 2", type: "post", desc: "Workout Session #114 (all buffs up).\nHousmann draft a booster. #107" },
+      { title: "Battle 3: Hunters Loge", type: "battle", desc: "#59 Pre-battle, stack 3 OG’s facedown, when the top OG is defeated, the next OG is turned face up, it's cycle number (X) is equal to the cycle number of the defeated OG, and it becomes the new OG’s turn. The 3 OGs are treated as a single, combined OG.\n\nAs long as there is an OG in play, players may block for each other.\nUntil the first OG dies, players draw their cards from the library of the player to their left.\nAs long as the second OG is in play, players can’t pay mana for their own spells or abilities, but other players can transfer them mana from their manapools.\nAs long as the third OG is in play, each time the first player takes his turn, players must vote to skip their main phases or attack step until the first player's next turn. The top voted phases are skipped. If the vote is tied, both main phases and attack steps are skipped.\n\nIf the OG wins there is no King in the next battle.\nIf you cause an OG to die, gain a VP. If you die while an OG is in play, lose 5 XP and discard 3 random non-basic land cards." },
+      { title: "Post-Battle 3", type: "post", desc: "Mobile Hammock: Minesweeper draft a land booster.\n#107" },
+      { title: "Battle 4: Spikeball", type: "battle", desc: "All vs. All\nFlip a coin to decide the starting attack direction (left or right).\nStart of game: Shuffle 2 markers into each player's deck, when a marker is drawn, the attack direction changes. (The marker is shuffled back into the deck and the player draws another card).\nThe winner is the first player to eliminate the player in his attack direction (or when said player dies for another reason)." },
+      { title: "Post-Battle 4", type: "post", desc: "Dinner a´la card: #105\nShuffle a booster, divide it into piles equal to the number of players. Reveal 1 pile. Players choose in turn (descending ranking order: 1, 2, 3, 4) to add one to their deck (you may skip your turn), until each player has had a turn. Then the pile is replaced with a new pile and the process is repeated with a new starting player (descending by rank: 2, 1, 3, 4, Then: 3, 1, 2, 4 and so on) until all players have had a turn with the starting pick.\nRemaining cards go in Skraldespanden.\nAny of the chosen cards may be added to your starting hand in the following battle. (Players draw cards for the starting hand, minus the number they chose to put in the starting hand)\nPlayers may, in ranking order, gain an available role or switch role with a non-King player of lower ranking." },
+      { title: "Battle 5: Heidi's Bierbar", type: "battle", desc: "All vs All\nIn each player’s end step, he gains his choice of 2 Drunk- or 2 Poison counters.\nWhen a permanent, spell or ability you control causes a player to lose, you may gain his role.\nLast remaining player wins the campaign, if all the last players are killed at the same time (for example by a player-owned OG), the tie breaker is VP, then randomly." }
+  ];
+
+  const getRoleAbilities = (role) => {
+    const data = {
+        'Doctor': ["Whenever a creature enters the battlefield under your control, you may remove a counter from target permanent.", "Whenever you gain a Drunk counter, you may put a Metaxa counter on target player.", "Creatures you control have Infect. At the beginning of your end step, Proliferate."],
+        'Monk': ["Discard a card or Pay (2): Counter target spell unless its controller pays (1).", "If an ability of an OG source you control is activated, copy it. You may choose new targets for the copy.", "Tap 3 untapped creatures you control: Create a token that is a copy of a random OG card."],
+        'Smith': ["Artifact spells you cast cost (1) less to cast for each Level you have.", "Equipped creatures you control have Vigilance, Trample, and Reach.", "Metalcraft — At the beginning of combat, if you control 3+ artifacts, you may create a token that's a copy of target artifact."],
+        'Knight': ["(1), Discard a card: Create a 1/2 white Horse creature token with Haste.", "Equipped creatures you control have Mentor (When attacking, put a +1/+1 counter on target attacking creature with lesser power).", "Battalion — Whenever you attack with 3+ creatures, you may have target creature you control fight target creature you don't control."],
+        'Fool': ["Spells you cast during an opponent's turn cost (1) less to cast.", "Creature cards in your hand have Ninjutsu [X], where X is their CMC.", "Creature cards in your hand have Ninjutsu [X-1], where X is their CMC."],
+        'King': ["Creatures you control get +1/+1 for each Level you possess.", "You may play an additional land on each of your turns. Lands you control have 'Tap: Add one mana of any color'.", "At the beginning of your upkeep, draw an additional card."]
+    };
+    return data[role] || [];
+  };
+  
+  const getRoleReward = (role) => {
+    const rewards = { 
+        'Doctor': 'When one or more creatures die during your turn, gain 1 xp.', 
+        'Monk': 'Whenever your life total changes, gain 1 xp.', 
+        'Smith': 'When an artifact enters play under your control, gain 1 xp.', 
+        'Knight': 'Whenever one or more creatures under your control deal damage, gain 1 XP.', 
+        'Fool': 'Whenever you target an opponent or a permanent under his control with a spell or ability, gain 1 xp (max once pr turn)', 
+        'King': 'Every third time another player gains xp you gain 1 xp.' 
+    };
+    return rewards[role] ? `Reward: ${rewards[role]}` : '';
+  };
+  
+  const getRoleIcon = (role) => {
+      switch(role) { case 'Doctor': return <Heart size={12} />; case 'Monk': return <Scroll size={12} />; case 'Smith': return <Hammer size={12} />; case 'Knight': return <Shield size={12} />; case 'Fool': return <Ghost size={12} />; case 'King': return <Crown size={12} />; default: return null; }
   };
 
   // --- DATA ENGINE ---
@@ -83,9 +136,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     if (!campaignId) return;
     const loadCampaign = async () => {
       const { data, error } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
-      if (error) return;
+      if (error) { console.error(error); return; }
       if (data) {
-        setMeta({ title: data.title, engine: data.engine });
+        setMeta({ title: data.title || 'Unknown', engine: data.engine || 'standard' });
         setConfig(data.static_config || { mechanics: {}, rules_text: [] });
         applyActiveState(data.active_state);
         setIsConnected(true);
@@ -131,7 +184,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${meta.title.replace(/\s+/g, '_')}_backup.json`;
+    a.download = `${(meta.title || 'campaign').replace(/\s+/g, '_')}_backup.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -286,9 +339,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     const getScore = (idx) => currentRolls[idx] + currentDecimals[idx];
     const sortedIndices = Object.keys(currentRolls).sort((a, b) => getScore(b) - getScore(a));
     
-    // Check for Nat 1 among ANY player
+    // Check for Nat 1 among ANY player (FAIL)
     const hasNatOne = Object.values(currentRolls).includes(1);
-    // Check for Nat 100 among ANY player (Heavenly Sound only on 100)
+    // Check for Nat 100 among ANY player (HEAVEN)
     const hasNatHundred = Object.values(currentRolls).includes(100);
 
     if (hasNatOne) {
@@ -363,9 +416,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
-  // --- CONTENT HELPERS ---
-  const staggingContent = staggingTimeline; 
-  
   const getReminders = () => {
       if (meta.engine === 'rpg') {
           return [
@@ -594,7 +644,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
             </div>
 
-            {/* STALEMATE & LAST ROLL */}
             <div className="flex items-center gap-2">
                 <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
                     <button onClick={() => { playSound('click'); setStalemate(Math.max(0, stalemate - 1)); syncState(players, Math.max(0, stalemate - 1), epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Minus size={14}/></button>
@@ -608,13 +657,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </div>
             </div>
 
-            {/* DICE BUTTONS */}
             <div className="flex items-center gap-1">
                 <button onClick={() => { playSound('click'); rollDice(6); }} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D6</button>
                 <button onClick={() => { playSound('click'); rollDice(20); }} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
             </div>
 
-            {/* DESKTOP MENU */}
             <div className="hidden md:flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
                 <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
@@ -624,7 +671,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </div>
         </div>
 
-        {/* MOBILE CODEX BUTTON */}
         <div className="w-full px-0 mt-0 md:hidden landscape:hidden">
             <button onClick={() => { playSound('page'); setShowRules(!showRules); }} className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group">
                 <BookOpen size={18} className="text-yellow-500 group-hover:text-yellow-300"/>
@@ -632,9 +678,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </button>
         </div>
 
-        {/* --- MAIN GAME VIEW --- */}
         <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0 landscape:grid landscape:grid-cols-4 landscape:gap-2">
-            {players.map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
+            {(players || []).map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
         </div>
 
         <div className="md:hidden landscape:hidden flex flex-grow items-center justify-center relative overflow-hidden touch-pan-y" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
@@ -644,7 +689,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         </div>
       </div>
 
-      {/* --- CODEX PANE --- */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-full md:w-1/3 translate-x-0' : 'w-full md:w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex: {meta.title}</h2>
