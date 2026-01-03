@@ -25,7 +25,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   
   // RANKING VISUALS STATE
   const [rankingProcess, setRankingProcess] = useState({ 
-      mode: 'idle', 
+      mode: 'idle', // 'idle' | 'shuffling' | 'show_rolls' | 'resolving_ties'
       rolls: {}, 
       tiedIndices: [] 
   });
@@ -36,7 +36,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
 
-  // --- CONTENT DATA ---
+  // --- CONTENT DATA (STAGGING ORIGINALS) ---
   const staggingTimeline = [
       { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
       { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
@@ -245,7 +245,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     const newPlayers = [...players];
     sortedIndices.forEach((playerIdx, rankOrder) => {
         newPlayers[playerIdx].rank = rankOrder + 1;
-        newPlayers[playerIdx].ranking_roll = currentRolls[playerIdx]; // Gemmer rullet
+        newPlayers[playerIdx].ranking_roll = currentRolls[playerIdx]; 
     });
 
     setRankingProcess({ mode: 'idle', rolls: {}, tiedIndices: [] });
