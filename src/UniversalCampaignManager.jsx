@@ -17,14 +17,14 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
   const [isConnected, setIsConnected] = useState(false);
 
-  // --- LOCAL MUTE LOGIC (NY) ---
-  const [isMuted, setIsMuted] = useState(false);
-
-  // Indlæs mute-status sikkert når komponenten mounter
-  useEffect(() => {
-      const localSetting = localStorage.getItem('local_mute');
-      if (localSetting === 'true') setIsMuted(true);
-  }, []);
+  // --- LOCAL MUTE STATE (NY) ---
+  const [isMuted, setIsMuted] = useState(() => {
+      try {
+          return localStorage.getItem('local_mute') === 'true';
+      } catch (e) {
+          return false;
+      }
+  });
 
   const toggleMute = () => {
       const newState = !isMuted;
@@ -652,11 +652,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
                     
                     <button 
-                        onClick={() => {
-                            const newState = !isMuted;
-                            setIsMuted(newState);
-                            localStorage.setItem('local_mute', newState);
-                        }} 
+                        onClick={toggleMute} 
                         className="text-[8px] uppercase font-bold text-stone-500 hover:text-stone-300"
                     >
                         {isMuted ? "LYD: FRA" : "LYD: TIL"}
