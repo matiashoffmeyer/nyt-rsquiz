@@ -11,16 +11,16 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [players, setPlayers] = useState([]);
   const [config, setConfig] = useState(null); 
   const [meta, setMeta] = useState({ title: '', engine: '' });
-
+  
   const [stalemate, setStalemate] = useState(0);
   const [epilogueMode, setEpilogueMode] = useState(false);
   const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
   const [isConnected, setIsConnected] = useState(false);
 
-  // --- LOCAL MUTE STATE ---
-  // Vi starter som 'false' for ikke at crashe. useEffect opdaterer den straks.
+  // --- LOCAL MUTE LOGIC (NY) ---
   const [isMuted, setIsMuted] = useState(false);
 
+  // Indlæs mute-status sikkert når komponenten mounter
   useEffect(() => {
       const localSetting = localStorage.getItem('local_mute');
       if (localSetting === 'true') setIsMuted(true);
@@ -29,7 +29,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const toggleMute = () => {
       const newState = !isMuted;
       setIsMuted(newState);
-      localStorage.setItem('local_mute', newState.toString());
+      localStorage.setItem('local_mute', newState);
   };
 
   // UI State
@@ -37,7 +37,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [showRules, setShowRules] = useState(false);
   const [activeRuleSection, setActiveRuleSection] = useState(null);
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
-
+  
   // RANKING VISUALS STATE
   const [rankingProcess, setRankingProcess] = useState({ 
       mode: 'idle', 
@@ -83,7 +83,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   }, []);
 
   const playSound = (type) => {
-    // --- HER ER MUTE KNAPPEN ---
+    // --- MUTE CHECK (NY) ---
     if (isMuted) return;
 
     try {
@@ -166,7 +166,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
               if (!p.name) return p; // Sikkerhed
               const pName = p.name.toLowerCase();
               const save = savePoint.find(s => pName.includes(s.name.toLowerCase()) || (s.name === 'Frederik' && pName.includes('freddy')));
-
+              
               if (save) {
                   return { 
                       ...p, lt: 20, hs: 7, vp: save.vp, xp: save.xp, role: save.role, 
@@ -195,7 +195,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       epilogueMode, 
       last_roll: lastRollRecord 
     }, null, 2);
-
+    
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -239,7 +239,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         clearInterval(interval);
         const trueFinal = Math.floor(Math.random() * sides) + 1; 
         playSound('dice_land');
-
+        
         if (trueFinal === sides) setTimeout(() => playSound('high'), 200);
         else if (trueFinal === 1) setTimeout(() => playSound('low'), 200);
 
@@ -321,10 +321,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
             const battleHands = {};
             combatants.forEach(idx => battleHands[idx] = rpsOptions[Math.floor(Math.random() * 3)]);
-
+            
             setRankingProcess(prev => ({ ...prev, mode: 'rps_result', rpsHands: battleHands }));
             playSound('clash');
-
+            
             ties.forEach(group => {
                 group.forEach(playerIdx => {
                     const myHand = battleHands[playerIdx];
@@ -347,7 +347,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     // 4. FINALIZE
     const getScore = (idx) => currentRolls[idx] + currentDecimals[idx];
     const sortedIndices = Object.keys(currentRolls).sort((a, b) => getScore(b) - getScore(a));
-
+    
     // Sounds Logic (Fail on 1, Heaven on 100)
     const hasNatOne = Object.values(currentRolls).includes(1);
     const hasNatHundred = Object.values(currentRolls).includes(100);
@@ -413,12 +413,12 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
-
+  
   const toggleRuleSection = (id) => {
       playSound('page');
       setActiveRuleSection(activeRuleSection === id ? null : id);
   };
-
+  
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
   const getReminders = () => {
@@ -442,7 +442,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
     const reminders = getReminders();
-
+    
     const { mode, rolls, tiedIndices, rpsHands, decimals } = rankingProcess;
     const isActive = mode !== 'idle';
     const isTied = tiedIndices.includes(index);
@@ -477,7 +477,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </button>
                 {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
             </div>
-
+            
             <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden min-h-0">
                 {!epilogueMode ? (
                     <>
@@ -646,20 +646,34 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 <h1 className="text-sm md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest uppercase truncate max-w-[150px]" style={{ fontFamily: 'Cinzel, serif' }}>
                     {meta.title}
                 </h1>
-                <div className="flex gap-1 items-center">
+                
+                {/* --- NY MUTE & WIFI --- */}
+                <div className="flex items-center gap-2">
                     {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
-                    <button onClick={toggleMute} className={`text-[8px] uppercase font-bold ml-2 ${isMuted ? 'text-red-500' : 'text-green-500'}`}>
+                    
+                    <button 
+                        onClick={() => {
+                            const newState = !isMuted;
+                            setIsMuted(newState);
+                            localStorage.setItem('local_mute', newState);
+                        }} 
+                        className="text-[8px] uppercase font-bold text-stone-500 hover:text-stone-300"
+                    >
                         {isMuted ? "LYD: FRA" : "LYD: TIL"}
                     </button>
                 </div>
             </div>
 
-            <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
-                <div className="hidden md:flex text-[10px] text-red-500 font-bold uppercase items-center gap-1"><Skull size={10} /> Stalemate</div>
-                <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
+                <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
                     <button onClick={() => { playSound('click'); setStalemate(Math.max(0, stalemate - 1)); syncState(players, Math.max(0, stalemate - 1), epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Minus size={14}/></button>
                     <span className="text-xl font-mono font-bold text-white w-6 text-center">{stalemate}</span>
                     <button onClick={() => { playSound('click'); setStalemate(stalemate + 1); syncState(players, stalemate + 1, epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Plus size={14}/></button>
+                </div>
+
+                <div className="bg-black border border-yellow-600/50 rounded px-2 py-1 flex flex-col items-center justify-center min-w-[50px] shadow-[0_0_10px_rgba(234,179,8,0.2)] flex-shrink-0">
+                    <span className="text-[8px] text-gray-500 uppercase">D{lastRollRecord.type}</span>
+                    <span className="text-lg font-bold text-yellow-500 leading-none">{lastRollRecord.value}</span>
                 </div>
             </div>
 
@@ -678,15 +692,15 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         </div>
 
         <div className="w-full px-0 mt-0 md:hidden landscape:hidden">
-            <button onClick={() => { playSound('page'); setShowRules(!showRules); }} className="w-full bg-[#3d2b0f] hover:bg-[#523812] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
-                <BookOpen size={18} className="text-yellow-500"/>
+            <button onClick={() => { playSound('page'); setShowRules(!showRules); }} className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group">
+                <BookOpen size={18} className="text-yellow-500 group-hover:text-yellow-300"/>
                 <span className="font-bold uppercase tracking-widest text-sm" style={{ fontFamily: 'Cinzel, serif' }}>Åbn Codex</span>
             </button>
         </div>
 
         {/* --- MAIN GAME VIEW --- */}
         <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0 landscape:grid landscape:grid-cols-4 landscape:gap-2">
-            {players.map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
+            {(players || []).map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
         </div>
 
         <div className="md:hidden landscape:hidden flex flex-grow items-center justify-center relative overflow-hidden touch-pan-y" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
