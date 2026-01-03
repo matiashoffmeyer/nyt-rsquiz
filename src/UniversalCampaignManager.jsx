@@ -17,21 +17,21 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
   const [isConnected, setIsConnected] = useState(false);
 
-  // --- LOCAL MUTE STATE (NY) ---
+  // --- LOCAL MUTE STATE ---
+  // Vi starter som false for at undgå crash, og læser localStorage i useEffect
   const [isMuted, setIsMuted] = useState(false);
 
-  // Sikker indlæsning af mute-indstilling
   useEffect(() => {
       try {
-          const stored = localStorage.getItem('local_mute');
-          if (stored === 'true') setIsMuted(true);
+          const localSetting = localStorage.getItem('app_mute');
+          if (localSetting === 'true') setIsMuted(true);
       } catch (e) {}
   }, []);
 
   const toggleMute = () => {
       const newState = !isMuted;
       setIsMuted(newState);
-      try { localStorage.setItem('local_mute', newState.toString()); } catch(e) {}
+      try { localStorage.setItem('app_mute', newState.toString()); } catch (e) {}
   };
 
   // UI State
@@ -69,6 +69,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   useEffect(() => {
+      // Safe loading of audio
       const loadAudio = () => {
           try {
               Object.keys(soundUrls).forEach(key => {
@@ -84,7 +85,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   }, []);
 
   const playSound = (type) => {
-    // MUTE CHECK
+    // 1. MUTE CHECK: Stopper funktionen her hvis muted
     if (isMuted) return;
 
     try {
@@ -104,17 +105,19 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             }
             const promise = audio.play();
             if (promise !== undefined) {
-                promise.catch(() => {});
+                promise.catch(() => {}); // Catch autoplay blocks silently
             }
         }
-    } catch (e) {}
+    } catch (e) {
+        // Silent fail - ingen white screen
+    }
   };
 
-  // --- DATA ENGINE ---
+  // --- DATA ENGINE & REALTIME ---
   useEffect(() => {
     if (!campaignId) return;
 
-    // 1. Initial Load
+    // 1. Hent data første gang
     const loadCampaign = async () => {
       const { data, error } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
       if (error) return;
@@ -126,7 +129,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     };
     loadCampaign();
 
-    // 2. Realtime Subscription (FIXED)
+    // 2. Lyt efter ændringer (Realtime)
     const channel = supabase.channel(`campaign_${campaignId}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'campaigns', filter: `id=eq.${campaignId}` }, (payload) => {
         if (payload.new && payload.new.active_state) {
@@ -134,7 +137,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         }
       })
       .subscribe((status) => {
-          // Opdaterer kun status til Connected hvis vi faktisk er subscribed
           if (status === 'SUBSCRIBED') setIsConnected(true);
           else setIsConnected(false);
       });
@@ -151,13 +153,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const syncState = async (newPlayers, newStalemate, newEpilogue, newRoll) => {
-    // Optimistisk update (vis ændringen med det samme)
+    // Opdater lokalt med det samme (Instant feel)
     setPlayers(newPlayers);
     setStalemate(newStalemate);
     setEpilogueMode(newEpilogue);
     setLastRollRecord(newRoll);
 
-    // Send til database
+    // Send til DB
     await supabase.from('campaigns').update({ 
         active_state: { 
             players: newPlayers, 
@@ -183,7 +185,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
           ];
 
           const newPlayers = players.map(p => {
-              if (!p.name) return p;
+              if (!p.name) return p; 
               const pName = p.name.toLowerCase();
               const save = savePoint.find(s => pName.includes(s.name.toLowerCase()) || (s.name === 'Frederik' && pName.includes('freddy')));
               
@@ -249,8 +251,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const rollDice = (sides) => {
-    // Kun dice_shake, ingen click her
-    playSound('dice_shake');
+    playSound('dice_shake'); // Kun rulle-lyd, ingen klik
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
     const interval = setInterval(() => {
@@ -285,6 +286,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const handleDramaticRankingRoll = async () => {
     if (rankingProcess.mode !== 'idle' && rankingProcess.mode !== 'finished') return;
 
+    // 1. SHUFFLE
     playSound('dice_shake');
     setRankingProcess({ mode: 'shuffling', rolls: {}, decimals: {}, tiedIndices: [], rpsHands: {} });
     const shuffleInterval = setInterval(() => {
@@ -296,6 +298,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     await delay(1500);
     clearInterval(shuffleInterval);
 
+    // 2. LAND
     playSound('dice_land');
     let currentRolls = {};
     let currentDecimals = {};
@@ -307,6 +310,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
     await delay(1500);
 
+    // 3. TIES
     let hasConflict = true;
     while (hasConflict) {
         const groups = {};
@@ -664,15 +668,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 <h1 className="text-sm md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest uppercase truncate max-w-[150px]" style={{ fontFamily: 'Cinzel, serif' }}>
                     {meta.title}
                 </h1>
-                
-                {/* --- NY MUTE & WIFI (FLEX-ROW FOR AT HOLDE DEM PÅ SAMME LINJE) --- */}
                 <div className="flex items-center gap-2 mt-1">
                     {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
-                    
-                    <button 
-                        onClick={toggleMute} 
-                        className={`text-[8px] uppercase font-bold text-stone-500 hover:text-stone-300 ml-2`}
-                    >
+                    <button onClick={toggleMute} className={`text-[8px] uppercase font-bold text-stone-500 hover:text-stone-300 ml-2`}>
                         {isMuted ? "LYD: FRA" : "LYD: TIL"}
                     </button>
                 </div>
@@ -692,7 +690,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </div>
 
             <div className="flex items-center gap-1">
-                {/* --- FJERNEDE playSound('click') FRA TERNINGERNE HER --- */}
+                {/* --- RULLE LYD KUN PÅ D6/D20 (INGEN KLIK) --- */}
                 <button onClick={() => rollDice(6)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D6</button>
                 <button onClick={() => rollDice(20)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
             </div>
