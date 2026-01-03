@@ -58,8 +58,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   // --- AUDIO ENGINE ---
   const soundUrls = {
       click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
-      // RETTELSE: Rasle lyd i stedet for genbrug
-      dice_shake: 'https://www.soundjay.com/misc/sounds/dice-rattle-1.mp3',
+      // SAMME LYD SOM RANKING (Keepeye GitHub) - Den virker.
+      dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
       dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
       page: 'https://www.soundjay.com/misc/sounds/page-flip-01a.mp3',
       swish: 'https://www.soundjay.com/nature/sounds/whoosh-02.mp3',
@@ -77,7 +77,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                   audioRefs.current[key] = audio;
               });
           } catch (e) {
-              console.warn("Audio initialization failed", e);
+              console.warn("Audio init failed", e);
           }
       };
       loadAudio();
@@ -92,7 +92,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             audio.currentTime = 0;
             switch (type) {
                 case 'click': audio.volume = 0.5; break;
-                case 'dice_shake': audio.volume = 0.8; break;
+                case 'dice_shake': audio.volume = 1.0; break; // Skruet helt op
                 case 'dice_land': audio.volume = 0.8; break;
                 case 'swish': audio.volume = 0.6; break;
                 case 'clash': audio.volume = 0.7; break;
@@ -112,6 +112,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   // --- DATA ENGINE ---
   useEffect(() => {
     if (!campaignId) return;
+    
     const loadCampaign = async () => {
       const { data, error } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
       if (error) return;
@@ -123,11 +124,25 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       }
     };
     loadCampaign();
-    const channel = supabase.channel(`campaign_${campaignId}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'campaigns', filter: `id=eq.${campaignId}` }, (payload) => {
-        if (payload.new && payload.new.active_state) applyActiveState(payload.new.active_state);
-      }).subscribe();
-    return () => { supabase.removeChannel(channel); };
+
+    const channel = supabase.channel(`campaign_update_${campaignId}`)
+      .on(
+        'postgres_changes', 
+        { event: 'UPDATE', schema: 'public', table: 'campaigns', filter: `id=eq.${campaignId}` }, 
+        (payload) => {
+            if (payload.new && payload.new.active_state) {
+                applyActiveState(payload.new.active_state);
+            }
+        }
+      )
+      .subscribe((status) => {
+          if (status === 'SUBSCRIBED') setIsConnected(true);
+          else setIsConnected(false);
+      });
+
+    return () => { 
+        supabase.removeChannel(channel); 
+    };
   }, [campaignId]);
 
   const applyActiveState = (state) => {
@@ -160,7 +175,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
           ];
 
           const newPlayers = players.map(p => {
-              if (!p.name) return p;
+              if (!p.name) return p; 
               const pName = p.name.toLowerCase();
               const save = savePoint.find(s => pName.includes(s.name.toLowerCase()) || (s.name === 'Frederik' && pName.includes('freddy')));
               
@@ -226,7 +241,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const rollDice = (sides) => {
-    playSound('dice_shake');
+    playSound('dice_shake'); // Samme lyd som ranking
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
     const interval = setInterval(() => {
@@ -413,7 +428,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
-  // --- CONTENT HELPERS ---
+  // --- CONTENT HELPERS (VIGTIGT: DE ER HER) ---
   const staggingTimeline = [
       { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
       { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
