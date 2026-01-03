@@ -58,8 +58,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   // --- AUDIO ENGINE ---
   const soundUrls = {
       click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
-      // SAMME LYD SOM RANKING (Keepeye GitHub) - Den virker.
-      dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
+      // Ny Rasle-lyd her:
+      dice_shake: 'https://www.soundjay.com/misc/sounds/dice-rattle-1.mp3',
       dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
       page: 'https://www.soundjay.com/misc/sounds/page-flip-01a.mp3',
       swish: 'https://www.soundjay.com/nature/sounds/whoosh-02.mp3',
@@ -570,7 +570,21 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         {/* --- HER STARTER DEN NYE SNIPPET --- */}
                         {/* Den erstatter den gamle <div className="flex-1 min-h-0 bg-black/40 ..."> */}
                         
-                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative flex flex-col landscape:hidden lg:flex">
+                        {/* --- SCROLLABLE CONTENT --- */}
+                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative flex flex-col landscape:hidden md:flex">
+                            
+                            {/* MARRIAGE RULES (Ny indsættelse) */}
+                            {useFeature('use_marriage') && player.spouse && (
+                                <div className="mb-3">
+                                    <div className="text-[10px] md:text-xs text-indigo-400 leading-tight space-y-1">
+                                        <strong className="flex items-center gap-1"><Users size={10}/> MARRIAGE:</strong>
+                                        <p className="italic opacity-90">Shuffle decks together. Share library. Cannot attack spouse.</p>
+                                    </div>
+                                    <div className="w-full h-px bg-stone-800 my-3"></div>
+                                </div>
+                            )}
+
+                            {/* ROLES RULES */}
                             {useFeature('use_roles') && player.role && (
                                 <div className="mb-3">
                                     <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
@@ -590,6 +604,24 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                     </div>
                                     <div className="w-full h-px bg-stone-800 my-3"></div>
                                 </div>
+                            )}
+
+                            {/* CAMPAIGN RULES */}
+                            <div className="h-full flex flex-col gap-2">
+                                <div className="text-stone-600 font-bold uppercase text-[9px] tracking-widest border-b border-stone-800 pb-1">
+                                    Campaign Rules
+                                </div>
+                                <div className="space-y-2 pb-2">
+                                    {reminders.map((rem, i) => (
+                                        <div key={i} className="text-[10px] text-gray-400 leading-tight">
+                                            <span className="text-stone-500 font-bold mr-1">{rem.l}:</span>
+                                            <span className="italic opacity-80">{rem.v}</span>
+                                        </div>
+                                    ))}
+                                    {reminders.length === 0 && <div className="text-gray-600 italic text-[10px]">No specific rules loaded.</div>}
+                                </div>
+                            </div>
+                        </div>
                             )}
 
                             <div className="h-full flex flex-col gap-2">
@@ -756,8 +788,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </div>
             </div>
 
-            <div className="flex items-center gap-1">
-                {/* --- RULLE LYD KUN PÅ D6/D20 (INGEN KLIK) --- */}
+           <div className="flex items-center gap-1">
+                {/* Kun rollDice kaldes - ingen ekstra kliklyd */}
                 <button onClick={() => rollDice(6)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D6</button>
                 <button onClick={() => rollDice(20)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
             </div>
