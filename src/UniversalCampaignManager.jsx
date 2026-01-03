@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Save, Upload, RefreshCw, Skull, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, Users, Wifi, WifiOff, Minus, Plus, LogOut, Volume2, VolumeX } from 'lucide-react';
+import { Save, Upload, RefreshCw, Skull, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, Users, Wifi, WifiOff, Minus, Plus, LogOut } from 'lucide-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -17,8 +17,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
   const [isConnected, setIsConnected] = useState(false);
 
-  // LOCAL UI STATE
-  const [isMuted, setIsMuted] = useState(() => localStorage.getItem('app_muted') === 'true');
+  // UI State
+  const [isMuted, setIsMuted] = useState(() => {
+      try { return localStorage.getItem('app_muted') === 'true'; } catch(e) { return false; }
+  });
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [showRules, setShowRules] = useState(false);
   const [activeRuleSection, setActiveRuleSection] = useState(null);
@@ -38,9 +40,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchStart = useRef(null);
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
-  const audioRefs = useRef({}); // FIXED NAME
+  const audioRefs = useRef({});
 
-  // --- AUDIO ENGINE ---
+  // --- AUDIO ENGINE (SAFETY FIRST) ---
   const soundUrls = {
       click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
       dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
@@ -53,48 +55,46 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   useEffect(() => {
-      try {
-          Object.keys(soundUrls).forEach(key => {
-              const audio = new Audio(soundUrls[key]);
-              audio.preload = 'auto'; 
-              audioRefs.current[key] = audio; // FIXED: Uses audioRefs correctly now
-          });
-      } catch (e) {
-          console.warn("Audio init warning", e);
-      }
+      const initAudio = () => {
+          try {
+              if (typeof Audio === "undefined") return;
+              Object.keys(soundUrls).forEach(key => {
+                  const a = new Audio(soundUrls[key]);
+                  a.preload = 'auto';
+                  audioRefs.current[key] = a;
+              });
+          } catch (e) {
+              console.warn("Audio not supported or blocked", e);
+          }
+      };
+      initAudio();
   }, []);
 
   const toggleMute = () => {
       const newState = !isMuted;
       setIsMuted(newState);
-      localStorage.setItem('app_muted', newState);
+      try { localStorage.setItem('app_muted', newState); } catch(e) {}
       if (!newState) playSound('click', true);
   };
 
   const playSound = (type, force = false) => {
     if (isMuted && !force) return;
-
     try {
-        const audio = audioRefs.current[type]; // FIXED: Uses audioRefs correctly
+        const audio = audioRefs.current[type];
         if (audio) {
             audio.currentTime = 0;
             switch (type) {
                 case 'click': audio.volume = 0.5; break;
                 case 'dice_shake': audio.volume = 0.7; break;
                 case 'dice_land': audio.volume = 0.8; break;
-                case 'swish': audio.volume = 0.6; break;
-                case 'clash': audio.volume = 0.7; break;
-                case 'page': audio.volume = 0.6; break;
                 case 'high': audio.volume = 0.8; break;
                 case 'low': audio.volume = 0.8; break;
                 default: audio.volume = 0.5;
             }
-            const promise = audio.play();
-            if (promise !== undefined) promise.catch(() => {});
+            const p = audio.play();
+            if (p !== undefined) p.catch(() => {});
         }
-    } catch (e) {
-        // Silent fail
-    }
+    } catch (e) {}
   };
 
   // --- DATA ENGINE ---
@@ -153,10 +153,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
               const save = savePoint.find(s => pName.includes(s.name.toLowerCase()) || (s.name === 'Frederik' && pName.includes('freddy')));
               
               if (save) {
-                  return { 
-                      ...p, lt: 20, hs: 7, vp: save.vp, xp: save.xp, role: save.role, 
-                      spouse: '', drunk: 0, rank: null, ranking_roll: null 
-                  };
+                  return { ...p, lt: 20, hs: 7, vp: save.vp, xp: save.xp, role: save.role, spouse: '', drunk: 0, rank: null, ranking_roll: null };
               }
               return { ...p, lt: 20, hs: 7, vp: 0, xp: 0, role: '', spouse: '', drunk: 0, rank: null, ranking_roll: null };
           });
@@ -169,18 +166,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       }
   };
 
-  // --- ACTIONS ---
   const exportData = () => {
     playSound('click');
     const data = JSON.stringify({ 
-      campaignId, 
-      timestamp: new Date().toISOString(),
-      players, 
-      stalemate, 
-      epilogueMode, 
-      last_roll: lastRollRecord 
+      campaignId, timestamp: new Date().toISOString(), players, stalemate, epilogueMode, last_roll: lastRollRecord 
     }, null, 2);
-    
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -249,7 +239,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const handleDramaticRankingRoll = async () => {
     if (rankingProcess.mode !== 'idle' && rankingProcess.mode !== 'finished') return;
 
-    // 1. SHUFFLE
     playSound('dice_shake');
     setRankingProcess({ mode: 'shuffling', rolls: {}, decimals: {}, tiedIndices: [], rpsHands: {} });
     const shuffleInterval = setInterval(() => {
@@ -261,7 +250,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     await delay(1500);
     clearInterval(shuffleInterval);
 
-    // 2. LAND
     playSound('dice_land');
     let currentRolls = {};
     let currentDecimals = {};
@@ -273,12 +261,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
     await delay(1500);
 
-    // 3. TIES
     let hasConflict = true;
     while (hasConflict) {
         const groups = {};
         Object.keys(currentRolls).forEach(idx => {
-            const score = currentRolls[idx] + currentDecimals[idx];
+            const score = currentRolls[idx] + (currentDecimals[idx] || 0); // Safety check
             const key = score.toFixed(1); 
             if (!groups[key]) groups[key] = [];
             groups[key].push(Number(idx));
@@ -319,7 +306,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         if (beats(myHand, battleHands[oppIdx])) didWin = true;
                     });
                     if (didWin) {
-                        currentDecimals[playerIdx] = parseFloat((currentDecimals[playerIdx] + 0.1).toFixed(1));
+                        const current = currentDecimals[playerIdx] || 0;
+                        currentDecimals[playerIdx] = parseFloat((current + 0.1).toFixed(1));
                     }
                 });
             });
@@ -329,11 +317,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         }
     }
 
-    // 4. FINALIZE
-    const getScore = (idx) => currentRolls[idx] + currentDecimals[idx];
+    const getScore = (idx) => currentRolls[idx] + (currentDecimals[idx] || 0);
     const sortedIndices = Object.keys(currentRolls).sort((a, b) => getScore(b) - getScore(a));
     
-    // Sounds Logic (Fail on 1, Heaven on 100)
     const hasNatOne = Object.values(currentRolls).includes(1);
     const hasNatHundred = Object.values(currentRolls).includes(100);
 
@@ -398,32 +384,24 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
-  
-  const toggleRuleSection = (id) => {
-      playSound('page');
-      setActiveRuleSection(activeRuleSection === id ? null : id);
-  };
-  
+  const toggleRuleSection = (id) => { playSound('page'); setActiveRuleSection(activeRuleSection === id ? null : id); };
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
   const getReminders = () => {
       if (meta.engine === 'rpg') {
           return [
               { l: "Start", v: "HS 6, LT 15" },
-              { l: "Mulligan", v: "New hand -> put 1 bottom. (+1 per mulligan)" },
-              { l: "Draw-out", v: "Sac non-land permanent or Lose 2 life" },
-              { l: "Stalemate", v: "Dice to 10. Tiebreaker: Life > Perms > Cards" }
+              { l: "Mulligan", v: "New hand -> put 1 bottom" },
+              { l: "Draw-out", v: "Sac perm or Lose 2 life" },
+              { l: "Stalemate", v: "Dice to 10" }
           ];
       }
       if (config?.rules_text && Array.isArray(config.rules_text)) {
-          return config.rules_text
-            .filter(r => r && r.title && ["Setup", "Ranking", "Mulligans"].includes(r.title))
-            .map(r => ({ l: r.title, v: r.desc ? r.desc.split('\n')[0] : '' }));
+          return config.rules_text.filter(r => r && r.title && ["Setup","Ranking"].includes(r.title)).map(r => ({ l: r.title, v: r.desc ? r.desc.split('\n')[0] : '' }));
       }
       return [];
   };
 
-  // --- PLAYER CARD ---
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
     const reminders = getReminders();
@@ -528,7 +506,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
                             <div className="h-full flex flex-col gap-2">
                                 <div className="text-stone-600 font-bold uppercase text-[9px] tracking-widest border-b border-stone-800 pb-1">
-                                    Campaign Rules
+                                    Rules
                                 </div>
                                 <div className="space-y-2 pb-2">
                                     {reminders.map((rem, i) => (
@@ -537,7 +515,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                             <span className="italic opacity-80">{rem.v}</span>
                                         </div>
                                     ))}
-                                    {reminders.length === 0 && <div className="text-gray-600 italic text-[10px]">No specific rules loaded.</div>}
                                 </div>
                             </div>
                         </div>
@@ -595,7 +572,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     );
   };
 
-  // --- SWIPE LOGIC ---
   const onTouchStart = (e) => { touchEnd.current = null; touchStart.current = e.targetTouches[0].clientX; };
   const onTouchMove = (e) => { touchEnd.current = e.targetTouches[0].clientX; };
   const onTouchEnd = () => {
@@ -633,13 +609,12 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </h1>
                 <div className="flex gap-1 items-center">
                     {isConnected ? <Wifi size={10} className="text-green-500"/> : <WifiOff size={10} className="text-gray-500"/>}
-                    <button onClick={toggleMute} className="text-stone-500 hover:text-white ml-2">
-                        {isMuted ? <VolumeX size={14}/> : <Volume2 size={14}/>}
+                    <button onClick={toggleMute} className={`text-[10px] uppercase font-bold ml-2 ${isMuted ? 'text-red-500' : 'text-green-500'}`}>
+                        {isMuted ? 'MUTE' : 'SOUND'}
                     </button>
                 </div>
             </div>
 
-            {/* STALEMATE & LAST ROLL */}
             <div className="flex items-center gap-2">
                 <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
                     <button onClick={() => { playSound('click'); setStalemate(Math.max(0, stalemate - 1)); syncState(players, Math.max(0, stalemate - 1), epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Minus size={14}/></button>
@@ -653,13 +628,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </div>
             </div>
 
-            {/* DICE BUTTONS */}
             <div className="flex items-center gap-1">
                 <button onClick={() => { playSound('click'); rollDice(6); }} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D6</button>
                 <button onClick={() => { playSound('click'); rollDice(20); }} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
             </div>
 
-            {/* DESKTOP MENU */}
             <div className="hidden md:flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
                 <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
@@ -669,7 +642,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </div>
         </div>
 
-        {/* MOBILE CODEX BUTTON */}
         <div className="w-full px-0 mt-0 md:hidden landscape:hidden">
             <button onClick={() => { playSound('page'); setShowRules(!showRules); }} className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group">
                 <BookOpen size={18} className="text-yellow-500 group-hover:text-yellow-300"/>
@@ -677,7 +649,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </button>
         </div>
 
-        {/* --- MAIN GAME VIEW --- */}
         <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0 landscape:grid landscape:grid-cols-4 landscape:gap-2">
             {(players || []).map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
         </div>
@@ -689,7 +660,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         </div>
       </div>
 
-      {/* --- CODEX PANE --- */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-full md:w-1/3 translate-x-0' : 'w-full md:w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex: {meta.title}</h2>
