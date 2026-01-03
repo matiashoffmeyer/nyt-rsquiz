@@ -567,8 +567,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                             </div>
                         )}
 
-                        {/* --- SCROLLABLE CONTENT (Hidden ONLY on Landscape Mobile) --- */}
-                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden md:landscape:block">
+                        {/* --- HER STARTER DEN NYE SNIPPET --- */}
+                        {/* Den erstatter den gamle <div className="flex-1 min-h-0 bg-black/40 ..."> */}
+                        
+                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative flex flex-col landscape:hidden lg:flex">
                             {useFeature('use_roles') && player.role && (
                                 <div className="mb-3">
                                     <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
@@ -589,6 +591,24 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                     <div className="w-full h-px bg-stone-800 my-3"></div>
                                 </div>
                             )}
+
+                            <div className="h-full flex flex-col gap-2">
+                                <div className="text-stone-600 font-bold uppercase text-[9px] tracking-widest border-b border-stone-800 pb-1">
+                                    Campaign Rules
+                                </div>
+                                <div className="space-y-2 pb-2">
+                                    {reminders.map((rem, i) => (
+                                        <div key={i} className="text-[10px] text-gray-400 leading-tight">
+                                            <span className="text-stone-500 font-bold mr-1">{rem.l}:</span>
+                                            <span className="italic opacity-80">{rem.v}</span>
+                                        </div>
+                                    ))}
+                                    {reminders.length === 0 && <div className="text-gray-600 italic text-[10px]">No specific rules loaded.</div>}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* --- HER SLUTTER DEN NYE SNIPPET --- */}
 
                             {/* --- MARRIAGE RULES INJECTED HERE --- */}
                             {useFeature('use_marriage') && player.spouse && (
