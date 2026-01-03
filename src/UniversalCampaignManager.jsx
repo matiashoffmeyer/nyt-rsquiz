@@ -23,13 +23,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [activeRuleSection, setActiveRuleSection] = useState(null);
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
   
-  // RANKING / RPS STATE
+  // RANKING VISUALS STATE
   const [rankingProcess, setRankingProcess] = useState({ 
-      mode: 'idle', // 'idle' | 'shuffling' | 'show_rolls' | 'rps_animate' | 'rps_result'
-      rolls: {},      // Heltal (1-100)
-      decimals: {},   // Decimaler (0.0, 0.1, 0.2...)
-      tiedIndices: [], // Hvem kæmper lige nu?
-      rpsHands: {}    // Nuværende hånd
+      mode: 'idle', 
+      rolls: {}, 
+      decimals: {}, 
+      tiedIndices: [], 
+      rpsHands: {} 
   });
 
   // Refs
@@ -37,6 +37,47 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchStart = useRef(null);
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
+
+  // --- ONLINE AUDIO ENGINE ---
+  // Vi bruger stabile, åbne kilder (SoundJay, GitHub Raw etc.)
+  const soundUrls = {
+      click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
+      dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3', // Dice rolling sound
+      dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
+      page: 'https://www.soundjay.com/misc/sounds/page-flip-01a.mp3',
+      swish: 'https://www.soundjay.com/nature/sounds/whoosh-02.mp3', // RPS move
+      clash: 'https://www.soundjay.com/misc/sounds/sword-clash-1.mp3', // RPS win
+      high: 'https://www.soundjay.com/misc/sounds/magic-chime-01.mp3', // Success
+      low: 'https://www.soundjay.com/misc/sounds/fail-trombone-02.mp3' // Fail
+  };
+
+  const playSound = (type) => {
+    try {
+        const url = soundUrls[type];
+        if (!url) return;
+
+        const audio = new Audio(url);
+        
+        // Juster volume baseret på lydtype
+        switch (type) {
+            case 'click': audio.volume = 0.2; break;
+            case 'dice_shake': audio.volume = 0.5; break;
+            case 'dice_land': audio.volume = 0.6; break;
+            case 'swish': audio.volume = 0.3; break;
+            case 'clash': audio.volume = 0.5; break;
+            case 'high': audio.volume = 0.4; break;
+            case 'low': audio.volume = 0.4; break;
+            default: audio.volume = 0.5;
+        }
+
+        audio.play().catch(e => {
+            // Browser policy blokerer nogle gange autoplay hvis man ikke har interageret først
+            // Vi logger det bare stille, så appen ikke crasher
+        });
+    } catch (err) {
+        // Fallback: Ingen lyd, men ingen crash
+    }
+  };
 
   // --- CONTENT DATA ---
   const staggingTimeline = [
@@ -118,6 +159,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
   // --- ACTIONS ---
   const exportData = () => {
+    playSound('click');
     const data = JSON.stringify({ 
       campaignId, 
       timestamp: new Date().toISOString(),
@@ -138,6 +180,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const importData = (event) => {
+    playSound('click');
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -159,11 +202,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const resetData = async () => {
+      playSound('click');
       if (!window.confirm("RESET CAMPAIGN?")) return;
       window.location.reload(); 
   };
 
   const rollDice = (sides) => {
+    playSound('dice_shake');
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
     const interval = setInterval(() => {
@@ -172,6 +217,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       if (counter > 20) { 
         clearInterval(interval);
         const trueFinal = Math.floor(Math.random() * sides) + 1; 
+        playSound('dice_land');
         setDiceOverlay(prev => ({ ...prev, finished: true, value: trueFinal }));
         syncState(players, stalemate, epilogueMode, { type: sides, value: trueFinal });
         setTimeout(() => setDiceOverlay(prev => ({ ...prev, active: false })), 2000);
@@ -181,9 +227,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
   // --- RPS RANKING ENGINE ---
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-  const rpsOptions = ['🪨', '📄', '✂️']; // Rock, Paper, Scissors
+  const rpsOptions = ['🪨', '📄', '✂️']; 
 
-  // Helper: Checks if Hand A beats Hand B
   const beats = (a, b) => {
       if (a === '🪨' && b === '✂️') return true;
       if (a === '📄' && b === '🪨') return true;
@@ -195,6 +240,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     if (rankingProcess.mode !== 'idle' && rankingProcess.mode !== 'finished') return;
 
     // 1. INITIAL SHUFFLE
+    playSound('dice_shake');
     setRankingProcess({ mode: 'shuffling', rolls: {}, decimals: {}, tiedIndices: [], rpsHands: {} });
     const shuffleInterval = setInterval(() => {
         const noise = {};
@@ -206,6 +252,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     clearInterval(shuffleInterval);
 
     // 2. LAND INITIAL INTEGERS
+    playSound('dice_land');
     let currentRolls = {};
     let currentDecimals = {};
     players.forEach((_, i) => {
@@ -219,36 +266,34 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     // 3. RESOLVE TIES WITH BATTLE ROYALE
     let hasConflict = true;
     while (hasConflict) {
-        // Group players by SCORE (Integer + Decimal)
         const groups = {};
         Object.keys(currentRolls).forEach(idx => {
             const score = currentRolls[idx] + currentDecimals[idx];
-            // Use fixed string key to group floats accurately
             const key = score.toFixed(1); 
             if (!groups[key]) groups[key] = [];
             groups[key].push(Number(idx));
         });
 
-        // Find groups with > 1 player
         const ties = Object.values(groups).filter(g => g.length > 1);
 
         if (ties.length === 0) {
             hasConflict = false;
         } else {
-            // Process ALL tie groups simultaneously (Chaos!)
-            // Flat list of everyone fighting
+            // CONFLICT DETECTED
             const combatants = ties.flat();
-            
             setRankingProcess(prev => ({ ...prev, mode: 'rps_animate', tiedIndices: combatants }));
 
-            // Slow Animation (1.5s)
+            // Slow RPS Animation (2.0s)
             let frames = 0;
             const anim = setInterval(() => {
                 const hands = {};
-                combatants.forEach(idx => hands[idx] = rpsOptions[frames % 3]); // Cycle 1,2,3
+                combatants.forEach(idx => hands[idx] = rpsOptions[frames % 3]);
                 setRankingProcess(prev => ({ ...prev, rpsHands: hands }));
+                
+                // Play sound every 3rd frame so it's not spammy
+                if (frames % 4 === 0) playSound('swish');
                 frames++;
-            }, 200); // Slow frame rate
+            }, 200); 
 
             await delay(2000);
             clearInterval(anim);
@@ -258,15 +303,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             combatants.forEach(idx => battleHands[idx] = rpsOptions[Math.floor(Math.random() * 3)]);
             
             setRankingProcess(prev => ({ ...prev, mode: 'rps_result', rpsHands: battleHands }));
+            playSound('clash'); // SOUND EFFECT
             
-            // CALCULATE WINNERS PER GROUP
             ties.forEach(group => {
-                // Check each player in this group against the others in the group
                 group.forEach(playerIdx => {
                     const myHand = battleHands[playerIdx];
                     let didWin = false;
                     
-                    // Does my hand beat ANYONE else in this group?
                     const opponents = group.filter(p => p !== playerIdx);
                     opponents.forEach(oppIdx => {
                         if (beats(myHand, battleHands[oppIdx])) {
@@ -274,17 +317,15 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         }
                     });
 
-                    // If I beat someone, I get +0.1
                     if (didWin) {
                         currentDecimals[playerIdx] = parseFloat((currentDecimals[playerIdx] + 0.1).toFixed(1));
                     }
                 });
             });
 
-            // Update decimals visually
+            // Update visuals
             setRankingProcess(prev => ({ ...prev, decimals: {...currentDecimals} }));
-            
-            await delay(2500); // Let them see the hands and result
+            await delay(2500); 
         }
     }
 
@@ -292,6 +333,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     const getScore = (idx) => currentRolls[idx] + currentDecimals[idx];
     const sortedIndices = Object.keys(currentRolls).sort((a, b) => getScore(b) - getScore(a));
     
+    // High roll sound if winner > 90
+    if (getScore(sortedIndices[0]) >= 90) playSound('high');
+    else if (getScore(sortedIndices[0]) <= 20) playSound('low');
+
     const newPlayers = [...players];
     sortedIndices.forEach((playerIdx, rankOrder) => {
         newPlayers[playerIdx].rank = rankOrder + 1;
@@ -311,6 +356,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const adjustValue = (index, field, amount) => {
+    playSound('click');
     const newPlayers = [...players];
     let newVal = (newPlayers[index][field] || 0) + amount;
     if (field === 'xp' && config?.mechanics?.use_xp) newVal = Math.max(0, Math.min(20, newVal));
@@ -341,12 +387,18 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const toggleEpilogue = () => {
+    playSound('click');
     syncState(players, stalemate, !epilogueMode, lastRollRecord);
     setShowRules(false); 
   };
 
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
-  const toggleRuleSection = (id) => setActiveRuleSection(activeRuleSection === id ? null : id);
+  
+  const toggleRuleSection = (id) => {
+      playSound('page');
+      setActiveRuleSection(activeRuleSection === id ? null : id);
+  };
+  
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
   const getReminders = () => {
@@ -591,9 +643,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
                 <div className="hidden md:flex text-[10px] text-red-500 font-bold uppercase items-center gap-1"><Skull size={10} /> Stalemate</div>
                 <div className="flex items-center gap-1">
-                    <button onClick={() => { setStalemate(Math.max(0, stalemate - 1)); syncState(players, Math.max(0, stalemate - 1), epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Minus size={14}/></button>
+                    <button onClick={() => { playSound('click'); setStalemate(Math.max(0, stalemate - 1)); syncState(players, Math.max(0, stalemate - 1), epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Minus size={14}/></button>
                     <span className="text-xl font-mono font-bold text-white w-6 text-center">{stalemate}</span>
-                    <button onClick={() => { setStalemate(stalemate + 1); syncState(players, stalemate + 1, epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Plus size={14}/></button>
+                    <button onClick={() => { playSound('click'); setStalemate(stalemate + 1); syncState(players, stalemate + 1, epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Plus size={14}/></button>
                 </div>
             </div>
 
@@ -611,7 +663,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </div>
         </div>
 
-        {/* MOBILE CODEX BUTTON (Hidden on landscape) */}
         <div className="w-full px-0 mt-0 md:hidden landscape:hidden">
             <button onClick={() => setShowRules(!showRules)} className="w-full bg-[#3d2b0f] hover:bg-[#523812] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
                 <BookOpen size={18} className="text-yellow-500"/>
