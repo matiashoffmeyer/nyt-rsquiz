@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Save, Upload, RefreshCw, Skull, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, Users, Wifi, WifiOff, Minus, Plus, LogOut } from 'lucide-react';
@@ -55,8 +56,15 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
   
   const getRoleReward = (role) => {
-    const rewards = { 'Doctor': 'Reward: Creature dies on your turn -> +1 XP', 'Monk': 'Life total changes -> +1 XP', 'Smith': 'Artifact enters -> +1 XP', 'Knight': 'Reward: Creatures deal damage -> +1 XP', 'Fool': 'Target opponent/perm -> +1 XP', 'King': 'Reward: Every 3rd time another gains xp -> +1 XP' };
-    return rewards[role] || '';
+    const rewards = { 
+        'Doctor': 'When one or more creatures die during your turn, gain 1 xp.', 
+        'Monk': 'Whenever your life total changes, gain 1 xp.', 
+        'Smith': 'When an artifact enters play under your control, gain 1 xp.', 
+        'Knight': 'Whenever one or more creatures under your control deal damage, gain 1 XP.', 
+        'Fool': 'Whenever you target an opponent or a permanent under his control with a spell or ability, gain 1 xp (max once pr turn)', 
+        'King': 'Every third time another player gains xp you gain 1 xp.' 
+    };
+    return rewards[role] ? `Reward: ${rewards[role]}` : '';
   };
   
   const getRoleIcon = (role) => {
@@ -608,4 +616,3 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 };
 
 export default UniversalCampaignManager;
-
