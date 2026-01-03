@@ -742,9 +742,21 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </div>
 
             <div className="flex items-center gap-1">
-                {/* --- RULLE LYD KUN PÅ D6/D20 (INGEN KLIK) --- */}
+                {/* D4 - Kun Desktop/Landscape */}
+                <button onClick={() => rollDice(4)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold hidden md:block landscape:block">D4</button>
+                
+                {/* D6 - Altid synlig */}
                 <button onClick={() => rollDice(6)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D6</button>
+                
+                {/* D8 & D10 - Kun Desktop/Landscape */}
+                <button onClick={() => rollDice(8)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold hidden md:block landscape:block">D8</button>
+                <button onClick={() => rollDice(10)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold hidden md:block landscape:block">D10</button>
+                
+                {/* D20 - Altid synlig */}
                 <button onClick={() => rollDice(20)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
+                
+                {/* D100 - Kun Desktop/Landscape */}
+                <button onClick={() => rollDice(100)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold hidden md:block landscape:block">D100</button>
             </div>
 
             <div className="hidden md:flex gap-1">
