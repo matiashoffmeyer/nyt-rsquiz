@@ -11,21 +11,24 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [players, setPlayers] = useState([]);
   const [config, setConfig] = useState(null); 
   const [meta, setMeta] = useState({ title: '', engine: '' });
-  
+
   const [stalemate, setStalemate] = useState(0);
   const [epilogueMode, setEpilogueMode] = useState(false);
   const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
   const [isConnected, setIsConnected] = useState(false);
 
-  // UI State
+  // --- LOCAL UI STATE (MUTE) ---
   const [isMuted, setIsMuted] = useState(() => {
-      try { return localStorage.getItem('app_muted') === 'true'; } catch(e) { return false; }
+      // Henter indstilling fra lokal browser hukommelse
+      return localStorage.getItem('local_mute') === 'true';
   });
+
+  // UI State
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [showRules, setShowRules] = useState(false);
   const [activeRuleSection, setActiveRuleSection] = useState(null);
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
-  
+
   // RANKING VISUALS STATE
   const [rankingProcess, setRankingProcess] = useState({ 
       mode: 'idle', 
@@ -42,7 +45,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const minSwipeDistance = 50;
   const audioRefs = useRef({});
 
-  // --- AUDIO ENGINE (SAFETY FIRST) ---
+  // --- AUDIO ENGINE ---
   const soundUrls = {
       click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
       dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
@@ -55,30 +58,31 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   useEffect(() => {
-      const initAudio = () => {
+      // Safe loading of audio
+      const loadAudio = () => {
           try {
-              if (typeof Audio === "undefined") return;
               Object.keys(soundUrls).forEach(key => {
-                  const a = new Audio(soundUrls[key]);
-                  a.preload = 'auto';
-                  audioRefs.current[key] = a;
+                  const audio = new Audio(soundUrls[key]);
+                  audio.preload = 'auto'; 
+                  audioRefs.current[key] = audio;
               });
           } catch (e) {
-              console.warn("Audio not supported or blocked", e);
+              console.warn("Audio initialization failed", e);
           }
       };
-      initAudio();
+      loadAudio();
   }, []);
 
   const toggleMute = () => {
       const newState = !isMuted;
       setIsMuted(newState);
-      try { localStorage.setItem('app_muted', newState); } catch(e) {}
-      if (!newState) playSound('click', true);
+      localStorage.setItem('local_mute', newState); // Gemmer lokalt
   };
 
-  const playSound = (type, force = false) => {
-    if (isMuted && !force) return;
+  const playSound = (type) => {
+    // MUTE CHECK - stopper lyden her hvis slået til
+    if (isMuted) return;
+
     try {
         const audio = audioRefs.current[type];
         if (audio) {
@@ -87,14 +91,21 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 case 'click': audio.volume = 0.5; break;
                 case 'dice_shake': audio.volume = 0.7; break;
                 case 'dice_land': audio.volume = 0.8; break;
+                case 'swish': audio.volume = 0.6; break;
+                case 'clash': audio.volume = 0.7; break;
+                case 'page': audio.volume = 0.6; break;
                 case 'high': audio.volume = 0.8; break;
                 case 'low': audio.volume = 0.8; break;
                 default: audio.volume = 0.5;
             }
-            const p = audio.play();
-            if (p !== undefined) p.catch(() => {});
+            const promise = audio.play();
+            if (promise !== undefined) {
+                promise.catch(() => {}); // Catch autoplay blocks silently
+            }
         }
-    } catch (e) {}
+    } catch (e) {
+        // Silent fail
+    }
   };
 
   // --- DATA ENGINE ---
@@ -140,6 +151,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       if (!window.confirm("RESET CAMPAIGN STATE?")) return;
 
       if (meta.engine === 'rpg') {
+          // STAGGING SAVE POINT
           const savePoint = [
               { name: 'Christian', vp: 2, xp: 10, role: 'Smith' },
               { name: 'Andreas', vp: 1, xp: 13, role: 'Knight' },
@@ -148,12 +160,15 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
           ];
 
           const newPlayers = players.map(p => {
-              if (!p.name) return p;
+              if (!p.name) return p; // Sikkerhed
               const pName = p.name.toLowerCase();
               const save = savePoint.find(s => pName.includes(s.name.toLowerCase()) || (s.name === 'Frederik' && pName.includes('freddy')));
-              
+
               if (save) {
-                  return { ...p, lt: 20, hs: 7, vp: save.vp, xp: save.xp, role: save.role, spouse: '', drunk: 0, rank: null, ranking_roll: null };
+                  return { 
+                      ...p, lt: 20, hs: 7, vp: save.vp, xp: save.xp, role: save.role, 
+                      spouse: '', drunk: 0, rank: null, ranking_roll: null 
+                  };
               }
               return { ...p, lt: 20, hs: 7, vp: 0, xp: 0, role: '', spouse: '', drunk: 0, rank: null, ranking_roll: null };
           });
@@ -166,11 +181,18 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       }
   };
 
+  // --- ACTIONS ---
   const exportData = () => {
     playSound('click');
     const data = JSON.stringify({ 
-      campaignId, timestamp: new Date().toISOString(), players, stalemate, epilogueMode, last_roll: lastRollRecord 
+      campaignId, 
+      timestamp: new Date().toISOString(),
+      players, 
+      stalemate, 
+      epilogueMode, 
+      last_roll: lastRollRecord 
     }, null, 2);
+
     const blob = new Blob([data], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -214,7 +236,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         clearInterval(interval);
         const trueFinal = Math.floor(Math.random() * sides) + 1; 
         playSound('dice_land');
-        
+
         if (trueFinal === sides) setTimeout(() => playSound('high'), 200);
         else if (trueFinal === 1) setTimeout(() => playSound('low'), 200);
 
@@ -239,6 +261,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const handleDramaticRankingRoll = async () => {
     if (rankingProcess.mode !== 'idle' && rankingProcess.mode !== 'finished') return;
 
+    // 1. SHUFFLE
     playSound('dice_shake');
     setRankingProcess({ mode: 'shuffling', rolls: {}, decimals: {}, tiedIndices: [], rpsHands: {} });
     const shuffleInterval = setInterval(() => {
@@ -250,6 +273,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     await delay(1500);
     clearInterval(shuffleInterval);
 
+    // 2. LAND
     playSound('dice_land');
     let currentRolls = {};
     let currentDecimals = {};
@@ -261,11 +285,12 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
     await delay(1500);
 
+    // 3. TIES
     let hasConflict = true;
     while (hasConflict) {
         const groups = {};
         Object.keys(currentRolls).forEach(idx => {
-            const score = currentRolls[idx] + (currentDecimals[idx] || 0); // Safety check
+            const score = currentRolls[idx] + currentDecimals[idx];
             const key = score.toFixed(1); 
             if (!groups[key]) groups[key] = [];
             groups[key].push(Number(idx));
@@ -293,10 +318,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
             const battleHands = {};
             combatants.forEach(idx => battleHands[idx] = rpsOptions[Math.floor(Math.random() * 3)]);
-            
+
             setRankingProcess(prev => ({ ...prev, mode: 'rps_result', rpsHands: battleHands }));
             playSound('clash');
-            
+
             ties.forEach(group => {
                 group.forEach(playerIdx => {
                     const myHand = battleHands[playerIdx];
@@ -306,8 +331,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         if (beats(myHand, battleHands[oppIdx])) didWin = true;
                     });
                     if (didWin) {
-                        const current = currentDecimals[playerIdx] || 0;
-                        currentDecimals[playerIdx] = parseFloat((current + 0.1).toFixed(1));
+                        currentDecimals[playerIdx] = parseFloat((currentDecimals[playerIdx] + 0.1).toFixed(1));
                     }
                 });
             });
@@ -317,9 +341,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         }
     }
 
-    const getScore = (idx) => currentRolls[idx] + (currentDecimals[idx] || 0);
+    // 4. FINALIZE
+    const getScore = (idx) => currentRolls[idx] + currentDecimals[idx];
     const sortedIndices = Object.keys(currentRolls).sort((a, b) => getScore(b) - getScore(a));
-    
+
+    // Sounds Logic (Fail on 1, Heaven on 100)
     const hasNatOne = Object.values(currentRolls).includes(1);
     const hasNatHundred = Object.values(currentRolls).includes(100);
 
@@ -384,28 +410,22 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const getLevel = (xp) => xp < 10 ? 1 : xp < 20 ? 2 : 3;
-  const toggleRuleSection = (id) => { playSound('page'); setActiveRuleSection(activeRuleSection === id ? null : id); };
-  const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
-  const getReminders = () => {
-      if (meta.engine === 'rpg') {
-          return [
-              { l: "Start", v: "HS 6, LT 15" },
-              { l: "Mulligan", v: "New hand -> put 1 bottom" },
-              { l: "Draw-out", v: "Sac perm or Lose 2 life" },
-              { l: "Stalemate", v: "Dice to 10" }
-          ];
-      }
-      if (config?.rules_text && Array.isArray(config.rules_text)) {
-          return config.rules_text.filter(r => r && r.title && ["Setup","Ranking"].includes(r.title)).map(r => ({ l: r.title, v: r.desc ? r.desc.split('\n')[0] : '' }));
-      }
-      return [];
+  const toggleRuleSection = (id) => {
+      playSound('page');
+      setActiveRuleSection(activeRuleSection === id ? null : id);
   };
 
+  const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
+
+  // --- CONTENT HELPERS ---
+  const staggingContent = staggingTimeline; 
+  
+  // --- PLAYER CARD ---
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
     const reminders = getReminders();
-    
+
     const { mode, rolls, tiedIndices, rpsHands, decimals } = rankingProcess;
     const isActive = mode !== 'idle';
     const isTied = tiedIndices.includes(index);
@@ -440,7 +460,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </button>
                 {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
             </div>
-            
+
             <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden min-h-0">
                 {!epilogueMode ? (
                     <>
@@ -506,7 +526,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
                             <div className="h-full flex flex-col gap-2">
                                 <div className="text-stone-600 font-bold uppercase text-[9px] tracking-widest border-b border-stone-800 pb-1">
-                                    Rules
+                                    Campaign Rules
                                 </div>
                                 <div className="space-y-2 pb-2">
                                     {reminders.map((rem, i) => (
@@ -515,6 +535,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                             <span className="italic opacity-80">{rem.v}</span>
                                         </div>
                                     ))}
+                                    {reminders.length === 0 && <div className="text-gray-600 italic text-[10px]">No specific rules loaded.</div>}
                                 </div>
                             </div>
                         </div>
@@ -572,6 +593,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     );
   };
 
+  // --- SWIPE LOGIC ---
   const onTouchStart = (e) => { touchEnd.current = null; touchStart.current = e.targetTouches[0].clientX; };
   const onTouchMove = (e) => { touchEnd.current = e.targetTouches[0].clientX; };
   const onTouchEnd = () => {
@@ -589,7 +611,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         <style>{`@keyframes nebula { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } .nebula-bg { background: linear-gradient(-45deg, #1a0b0b, #2e1010, #0f172a, #000000); background-size: 400% 400%; animation: nebula 15s ease infinite; }`}</style>
         <div className="w-full h-full nebula-bg"></div>
       </div>
-      
+
       {diceOverlay.active && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
             <div className={`font-black text-[20rem] text-amber-500 animate-pulse`}>{diceOverlay.value}</div>
@@ -597,7 +619,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       )}
 
       <div className={`flex-grow flex flex-col p-2 gap-2 relative z-10 transition-all duration-300 ${showRules ? 'w-full md:w-2/3' : 'w-full'}`}>
-        
+
         {/* HEADER */}
         <div className="flex justify-between items-center bg-[#111]/90 backdrop-blur border-b border-white/10 p-2 rounded-lg shrink-0 gap-2">
             <div className="flex flex-col shrink-0">
@@ -607,10 +629,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 <h1 className="text-sm md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest uppercase truncate max-w-[150px]" style={{ fontFamily: 'Cinzel, serif' }}>
                     {meta.title}
                 </h1>
-                <div className="flex gap-1 items-center">
+                <div className="flex items-center gap-2">
                     {isConnected ? <Wifi size={10} className="text-green-500"/> : <WifiOff size={10} className="text-gray-500"/>}
-                    <button onClick={toggleMute} className={`text-[10px] uppercase font-bold ml-2 ${isMuted ? 'text-red-500' : 'text-green-500'}`}>
-                        {isMuted ? 'MUTE' : 'SOUND'}
+                    <button onClick={toggleMute} className="text-[10px] uppercase font-bold text-stone-500 hover:text-stone-300">
+                        {isMuted ? "Lyd: Fra" : "Lyd: Til"}
                     </button>
                 </div>
             </div>
@@ -649,6 +671,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </button>
         </div>
 
+        {/* --- MAIN GAME VIEW --- */}
         <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0 landscape:grid landscape:grid-cols-4 landscape:gap-2">
             {(players || []).map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
         </div>
@@ -660,12 +683,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         </div>
       </div>
 
+      {/* --- CODEX PANE --- */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-full md:w-1/3 translate-x-0' : 'w-full md:w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex: {meta.title}</h2>
             <button onClick={() => { playSound('click'); setShowRules(false); }} className="text-gray-500 hover:text-white"><X size={20}/></button>
         </div>
-        
+
         <div className="md:hidden grid grid-cols-4 gap-2 p-4 border-b border-gray-800">
             <button onClick={exportData} className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-green-500 text-[10px] font-bold"><Save size={16}/> SAVE</button>
             <label className="flex flex-col items-center gap-1 p-2 bg-gray-800 rounded text-blue-500 text-[10px] font-bold cursor-pointer"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /> LOAD</label>
