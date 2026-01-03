@@ -1,3 +1,31 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  /* Chrome, Safari, Edge */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;               /* Tynd bredde til vertikal scroll */
+    height: 6px;              /* Tynd højde til horisontal scroll */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;  /* Gennemsigtig baggrund så den blender ind */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #333;   /* Mørkegrå "tommelfinger" */
+    border-radius: 20px;      /* Runde kanter */
+    border: 1px solid #000;   /* Lille sort kant for kontrast */
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #ca8a04; /* Diskret guld-farve (yellow-600) når man holder musen over */
+  }
+
+  /* Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;          /* Gør den tynd */
+    scrollbar-color: #333 transparent; /* Thumb farve / Track farve */
+  }
+}
