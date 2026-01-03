@@ -16,7 +16,24 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [epilogueMode, setEpilogueMode] = useState(false);
   const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
   const [isConnected, setIsConnected] = useState(false);
+// --- LOCAL MUTE STATE ---
+  // Vi bruger en simpel boolsk state, men initialiserer den fra localStorage
+  // udenfor render-cyklussen for at undgå hydration-fejl/white screen.
+  const [isMuted, setIsMuted] = useState(() => {
+      try {
+          return localStorage.getItem('local_mute') === 'true';
+      } catch (e) {
+          return false;
+      }
+  });
 
+  const toggleMute = () => {
+      const newState = !isMuted;
+      setIsMuted(newState);
+      try {
+          localStorage.setItem('local_mute', newState.toString());
+      } catch (e) {}
+  };
   // UI State
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [showRules, setShowRules] = useState(false);
@@ -68,6 +85,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   }, []);
 
   const playSound = (type) => {
+    if (isMuted) return;
     try {
         const audio = audioRefs.current[type];
         if (audio) {
@@ -670,6 +688,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     {meta.title}
                 </h1>
                 {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
+                {/* --- NY MUTE KNAP --- */}
+                    <button 
+                        onClick={toggleMute} 
+                        className={`text-[8px] uppercase font-bold ml-2 ${isMuted ? 'text-red-500' : 'text-green-500'}`}
+                    >
+                        {isMuted ? "LYD: FRA" : "LYD: TIL"}
+                    </button>
             </div>
 
             <div className="flex items-center gap-2">
