@@ -58,7 +58,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   // --- AUDIO ENGINE ---
   const soundUrls = {
       click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
-      // SAMME LYD SOM RANKING (Keepeye GitHub) - Den virker.
+      // RETTELSE: Tilbage til den virkende GitHub URL for rulle-lyd
       dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
       dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
       page: 'https://www.soundjay.com/misc/sounds/page-flip-01a.mp3',
@@ -92,7 +92,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             audio.currentTime = 0;
             switch (type) {
                 case 'click': audio.volume = 0.5; break;
-                case 'dice_shake': audio.volume = 1.0; break; // Skruet helt op
+                case 'dice_shake': audio.volume = 1.0; break; 
                 case 'dice_land': audio.volume = 0.8; break;
                 case 'swish': audio.volume = 0.6; break;
                 case 'clash': audio.volume = 0.7; break;
@@ -175,7 +175,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
           ];
 
           const newPlayers = players.map(p => {
-              if (!p.name) return p; 
+              if (!p.name) return p;
               const pName = p.name.toLowerCase();
               const save = savePoint.find(s => pName.includes(s.name.toLowerCase()) || (s.name === 'Frederik' && pName.includes('freddy')));
               
@@ -241,7 +241,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const rollDice = (sides) => {
-    playSound('dice_shake'); // Samme lyd som ranking
+    playSound('dice_shake'); // Bruger GitHub lyden
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
     const interval = setInterval(() => {
@@ -428,7 +428,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
-  // --- CONTENT HELPERS (VIGTIGT: DE ER HER) ---
+  // --- CONTENT HELPERS ---
   const staggingTimeline = [
       { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
       { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
@@ -567,8 +567,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                             </div>
                         )}
 
-                        {/* --- SCROLLABLE CONTENT (Hidden ONLY on Landscape Mobile) --- */}
-                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden md:landscape:block">
+                        {/* --- RETTELSE: landscape:hidden md:flex --- */}
+                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden md:flex flex-col">
                             {useFeature('use_roles') && player.role && (
                                 <div className="mb-3">
                                     <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
@@ -590,17 +590,14 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                 </div>
                             )}
 
-                            {/* --- MARRIAGE RULES INJECTED HERE --- */}
+                            {/* --- RETTELSE: MARRIAGE RULES VISIBLE --- */}
                             {useFeature('use_marriage') && player.spouse && (
                                 <div className="mb-3">
-                                    <div className="absolute top-1 right-8 text-indigo-500 opacity-50"><Users size={12}/></div>
-                                    <div className="text-[10px] md:text-xs text-gray-400 leading-tight space-y-2">
-                                        <div className="flex gap-1 text-indigo-300">
-                                            <span className="font-bold whitespace-nowrap mt-0.5">MARRIAGE:</span>
-                                            <span>Shuffle decks together. Share a library. Cannot attack spouse.</span>
-                                        </div>
-                                        <div className="w-full h-px bg-gray-800 my-1"></div>
+                                    <div className="text-[10px] md:text-xs text-indigo-400 leading-tight space-y-1">
+                                        <strong className="flex items-center gap-1"><Users size={10}/> MARRIAGE:</strong>
+                                        <p className="italic">Shuffle decks together. Share library. Cannot attack spouse.</p>
                                     </div>
+                                    <div className="w-full h-px bg-stone-800 my-3"></div>
                                 </div>
                             )}
 
