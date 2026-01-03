@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { Save, Upload, RefreshCw, Skull, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, Users, Wifi, WifiOff, Minus, Plus, LogOut } from 'lucide-react';
@@ -37,29 +38,25 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchStart = useRef(null);
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
-  
-  // Audio Refs
   const audioRefs = useRef({});
 
-  // --- OPTIMIZED AUDIO ENGINE ---
-  // Vi bruger korte, lette filer for instant playback
+  // --- AUDIO ENGINE (LOUD & INSTANT) ---
   const soundUrls = {
-      click: 'https://cdn.freesound.org/previews/256/256116_3263906-lq.mp3', // Kort klik
-      dice_shake: 'https://cdn.freesound.org/previews/220/220744_4103328-lq.mp3', // Ryste lyd
-      dice_land: 'https://cdn.freesound.org/previews/369/369974_6836894-lq.mp3', // Terning lander
-      page: 'https://cdn.freesound.org/previews/159/159670_2391079-lq.mp3', // Side skift
-      swish: 'https://cdn.freesound.org/previews/608/608644_6340333-lq.mp3', // Hurtig luft lyd (RPS)
-      clash: 'https://cdn.freesound.org/previews/536/536108_11562447-lq.mp3', // Metal clash (RPS Win)
-      high: 'https://cdn.freesound.org/previews/171/171671_2437358-lq.mp3', // Divine sound (High Roll)
-      low: 'https://cdn.freesound.org/previews/415/415209_5121236-lq.mp3' // Fail sound (Low Roll)
+      click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
+      dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
+      dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
+      page: 'https://www.soundjay.com/misc/sounds/page-flip-01a.mp3',
+      swish: 'https://www.soundjay.com/nature/sounds/whoosh-02.mp3',
+      clash: 'https://www.soundjay.com/misc/sounds/sword-clash-1.mp3',
+      high: 'https://www.soundjay.com/misc/sounds/magic-chime-01.mp3',
+      low: 'https://www.soundjay.com/misc/sounds/fail-trombone-02.mp3'
   };
 
-  // Preload sounds on mount
   useEffect(() => {
+      // Preload all sounds with high priority
       Object.keys(soundUrls).forEach(key => {
           const audio = new Audio(soundUrls[key]);
-          audio.preload = 'auto'; // Hent hele filen
-          audio.load(); // Tving load
+          audio.preload = 'auto'; 
           audioRefs.current[key] = audio;
       });
   }, []);
@@ -67,24 +64,22 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const playSound = (type) => {
     const audio = audioRefs.current[type];
     if (audio) {
-        audio.currentTime = 0;
+        audio.currentTime = 0; // Instant replay
         
-        // Volume Mix
+        // BOOSTED VOLUMES
         switch (type) {
-            case 'click': audio.volume = 0.2; break;
-            case 'dice_shake': audio.volume = 0.5; break;
+            case 'click': audio.volume = 0.5; break; // Louder click
+            case 'dice_shake': audio.volume = 0.7; break;
             case 'dice_land': audio.volume = 0.8; break;
-            case 'high': audio.volume = 0.6; break;
-            case 'low': audio.volume = 0.6; break;
-            case 'clash': audio.volume = 0.4; break;
+            case 'swish': audio.volume = 0.6; break; // Louder RPS
+            case 'clash': audio.volume = 0.7; break;
+            case 'page': audio.volume = 0.6; break;
+            case 'high': audio.volume = 0.8; break;
+            case 'low': audio.volume = 0.8; break;
             default: audio.volume = 0.5;
         }
         
-        // Promise håndtering for at undgå console errors
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-            playPromise.catch(() => { /* Auto-play blocked - kræver user interaction først */ });
-        }
+        audio.play().catch(() => {}); 
     }
   };
 
@@ -217,9 +212,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const rollDice = (sides) => {
-    // 1. Play Shake Sound immediately
     playSound('dice_shake');
-    
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
     const interval = setInterval(() => {
@@ -228,16 +221,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       if (counter > 20) { 
         clearInterval(interval);
         const trueFinal = Math.floor(Math.random() * sides) + 1; 
-        
-        // 2. Play Land Sound immediately
         playSound('dice_land');
         
-        // 3. Play Result Sound (Crit/Fail)
-        if (trueFinal === sides) {
-            setTimeout(() => playSound('high'), 300); // Lille pause for effekt
-        } else if (trueFinal === 1) {
-            setTimeout(() => playSound('low'), 300);
-        }
+        // Crit/Fail Sounds
+        if (trueFinal === sides) setTimeout(() => playSound('high'), 200);
+        else if (trueFinal === 1) setTimeout(() => playSound('low'), 200);
 
         setDiceOverlay(prev => ({ ...prev, finished: true, value: trueFinal }));
         syncState(players, stalemate, epilogueMode, { type: sides, value: trueFinal });
@@ -300,6 +288,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         if (ties.length === 0) {
             hasConflict = false;
         } else {
+            // CONFLICT
             const combatants = ties.flat();
             setRankingProcess(prev => ({ ...prev, mode: 'rps_animate', tiedIndices: combatants }));
 
@@ -308,9 +297,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 const hands = {};
                 combatants.forEach(idx => hands[idx] = rpsOptions[frames % 3]);
                 setRankingProcess(prev => ({ ...prev, rpsHands: hands }));
-                if (frames % 4 === 0) playSound('swish');
+                // Play swish sound every 2nd frame
+                if (frames % 2 === 0) playSound('swish');
                 frames++;
-            }, 200); 
+            }, 150); 
 
             await delay(2000);
             clearInterval(anim);
@@ -319,7 +309,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             combatants.forEach(idx => battleHands[idx] = rpsOptions[Math.floor(Math.random() * 3)]);
             
             setRankingProcess(prev => ({ ...prev, mode: 'rps_result', rpsHands: battleHands }));
-            playSound('clash'); 
+            playSound('clash');
             
             ties.forEach(group => {
                 group.forEach(playerIdx => {
@@ -344,10 +334,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     const getScore = (idx) => currentRolls[idx] + currentDecimals[idx];
     const sortedIndices = Object.keys(currentRolls).sort((a, b) => getScore(b) - getScore(a));
     
-    // Check Winner for High/Low sound
-    const winnerScore = getScore(sortedIndices[0]);
-    if (winnerScore >= 90) playSound('high');
-    else if (winnerScore <= 20) playSound('low');
+    if (getScore(sortedIndices[0]) >= 90) setTimeout(() => playSound('high'), 500);
+    else if (getScore(sortedIndices[0]) <= 20) setTimeout(() => playSound('low'), 500);
 
     const newPlayers = [...players];
     sortedIndices.forEach((playerIdx, rankOrder) => {
@@ -369,7 +357,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const adjustValue = (index, field, amount) => {
-    playSound('click');
     const newPlayers = [...players];
     let newVal = (newPlayers[index][field] || 0) + amount;
     if (field === 'xp' && config?.mechanics?.use_xp) newVal = Math.max(0, Math.min(20, newVal));
@@ -448,7 +435,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full select-none">
             <div className={`h-1 w-full ${player.color || 'bg-gray-600'}`}></div>
             <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center shrink-0">
-                <button onClick={handleDramaticRankingRoll} className="text-left flex-grow focus:outline-none hover:opacity-80 transition-opacity flex items-center gap-2 overflow-hidden">
+                <button onClick={() => { playSound('click'); handleDramaticRankingRoll(); }} className="text-left flex-grow focus:outline-none hover:opacity-80 transition-opacity flex items-center gap-2 overflow-hidden">
                     <span className="font-black text-lg text-gray-200 truncate" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
                     {showRPS ? (
                         <div className="bg-red-900/50 border border-red-500 rounded px-1.5 py-0.5 flex items-center justify-center min-w-[34px] h-[28px] animate-pulse">
@@ -496,18 +483,18 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                     <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
                                         <span className="text-[8px] text-blue-500 font-bold mb-1">XP</span>
                                         <div className="flex items-center gap-1 w-full justify-between">
-                                            <button onClick={() => adjustValue(index, 'xp', -1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
+                                            <button onClick={() => { playSound('click'); adjustValue(index, 'xp', -1); }} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
                                             <span className="font-mono text-lg font-bold w-6 text-center">{player.xp}</span>
-                                            <button onClick={() => adjustValue(index, 'xp', 1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
+                                            <button onClick={() => { playSound('click'); adjustValue(index, 'xp', 1); }} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
                                         </div>
                                     </div>
                                 )}
                                 <div className="bg-black/30 rounded p-1 border border-gray-800 flex flex-col items-center">
                                     <span className="text-[8px] text-green-500 font-bold mb-1">VP</span>
                                     <div className="flex items-center gap-1 w-full justify-between">
-                                        <button onClick={() => adjustValue(index, 'vp', -1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
+                                        <button onClick={() => { playSound('click'); adjustValue(index, 'vp', -1); }} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
                                         <span className="font-mono text-lg font-bold text-green-400 w-6 text-center">{player.vp || 0}</span>
-                                        <button onClick={() => adjustValue(index, 'vp', 1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
+                                        <button onClick={() => { playSound('click'); adjustValue(index, 'vp', 1); }} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
                                     </div>
                                 </div>
                             </div>
@@ -568,9 +555,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                             <div className="bg-purple-900/20 p-2 rounded border border-purple-500/30 flex justify-between items-center">
                                 <span className="text-[9px] text-purple-400 font-bold uppercase">Drunk</span>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={() => adjustValue(index, 'drunk', -1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
+                                    <button onClick={() => { playSound('click'); adjustValue(index, 'drunk', -1); }} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={16} /></button>
                                     <span className="text-xl font-bold text-purple-400 w-6 text-center">{player.drunk}</span>
-                                    <button onClick={() => adjustValue(index, 'drunk', 1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
+                                    <button onClick={() => { playSound('click'); adjustValue(index, 'drunk', 1); }} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={16} /></button>
                                 </div>
                             </div>
                         )}
@@ -582,9 +569,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         <div className="bg-red-900/10 rounded border border-red-900/30 flex flex-col items-center p-1">
                             <span className="text-[8px] text-red-600 font-bold uppercase mb-1">LIFE</span>
                             <div className="flex w-full justify-between px-1 items-center">
-                                <button onClick={() => adjustValue(index, 'lt', -1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
+                                <button onClick={() => { playSound('click'); adjustValue(index, 'lt', -1); }} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
                                 <span className="text-xl font-mono font-bold text-red-500">{player.lt}</span>
-                                <button onClick={() => adjustValue(index, 'lt', 1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
+                                <button onClick={() => { playSound('click'); adjustValue(index, 'lt', 1); }} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
                             </div>
                         </div>
                     )}
@@ -592,9 +579,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         <div className="bg-blue-900/10 rounded border border-blue-900/30 flex flex-col items-center p-1">
                             <span className="text-[8px] text-blue-600 font-bold uppercase mb-1">HAND</span>
                             <div className="flex w-full justify-between px-1 items-center">
-                                <button onClick={() => adjustValue(index, 'hs', -1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
+                                <button onClick={() => { playSound('click'); adjustValue(index, 'hs', -1); }} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Minus size={14} /></button>
                                 <span className="text-xl font-mono font-bold text-blue-500">{player.hs}</span>
-                                <button onClick={() => adjustValue(index, 'hs', 1)} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
+                                <button onClick={() => { playSound('click'); adjustValue(index, 'hs', 1); }} className="w-8 h-8 flex items-center justify-center rounded bg-gray-800 hover:bg-gray-700 text-gray-400 active:bg-gray-600 border border-gray-700"><Plus size={14} /></button>
                             </div>
                         </div>
                     )}
@@ -618,7 +605,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
   return (
     <div className="h-dvh w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative flex">
-      {/* Background */}
       <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
         <style>{`@keyframes nebula { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } .nebula-bg { background: linear-gradient(-45deg, #1a0b0b, #2e1010, #0f172a, #000000); background-size: 400% 400%; animation: nebula 15s ease infinite; }`}</style>
         <div className="w-full h-full nebula-bg"></div>
@@ -644,7 +630,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
             </div>
 
-            {/* STALEMATE & LAST ROLL (Visible on mobile landscape now) */}
+            {/* STALEMATE & LAST ROLL */}
             <div className="flex items-center gap-2">
                 <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
                     <button onClick={() => { playSound('click'); setStalemate(Math.max(0, stalemate - 1)); syncState(players, Math.max(0, stalemate - 1), epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Minus size={14}/></button>
@@ -652,7 +638,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     <button onClick={() => { playSound('click'); setStalemate(stalemate + 1); syncState(players, stalemate + 1, epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Plus size={14}/></button>
                 </div>
 
-                {/* LAST ROLL DISPLAY - Now always visible in a flexible container */}
                 <div className="bg-black border border-yellow-600/50 rounded px-2 py-1 flex flex-col items-center justify-center min-w-[50px] shadow-[0_0_10px_rgba(234,179,8,0.2)] flex-shrink-0">
                     <span className="text-[8px] text-gray-500 uppercase">D{lastRollRecord.type}</span>
                     <span className="text-lg font-bold text-yellow-500 leading-none">{lastRollRecord.value}</span>
@@ -665,19 +650,19 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 <button onClick={() => { playSound('click'); rollDice(20); }} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
             </div>
 
-            {/* DESKTOP MENU BTNS */}
+            {/* DESKTOP MENU */}
             <div className="hidden md:flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
                 <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
-                <button onClick={() => setShowRules(!showRules)} className="p-2 bg-yellow-600 text-black rounded font-bold hover:bg-yellow-500"><BookOpen size={16}/></button>
+                <button onClick={() => { playSound('page'); setShowRules(!showRules); }} className="p-2 bg-yellow-600 text-black rounded font-bold hover:bg-yellow-500"><BookOpen size={16}/></button>
                 <button onClick={toggleEpilogue} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400' : 'text-gray-500'}`}><Crown size={16}/></button>
                 <button onClick={resetData} className="p-2 hover:bg-white/10 rounded text-red-500"><RefreshCw size={16}/></button>
             </div>
         </div>
 
-        {/* MOBILE CODEX BUTTON (Hidden on landscape) */}
+        {/* MOBILE CODEX BUTTON */}
         <div className="w-full px-0 mt-0 md:hidden landscape:hidden">
-            <button onClick={() => setShowRules(!showRules)} className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group">
+            <button onClick={() => { playSound('page'); setShowRules(!showRules); }} className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group">
                 <BookOpen size={18} className="text-yellow-500 group-hover:text-yellow-300"/>
                 <span className="font-bold uppercase tracking-widest text-sm" style={{ fontFamily: 'Cinzel, serif' }}>Åbn Codex</span>
             </button>
@@ -699,7 +684,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-full md:w-1/3 translate-x-0' : 'w-full md:w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex: {meta.title}</h2>
-            <button onClick={() => setShowRules(false)} className="text-gray-500 hover:text-white"><X size={20}/></button>
+            <button onClick={() => { playSound('click'); setShowRules(false); }} className="text-gray-500 hover:text-white"><X size={20}/></button>
         </div>
         
         <div className="md:hidden grid grid-cols-4 gap-2 p-4 border-b border-gray-800">
@@ -813,4 +798,3 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 };
 
 export default UniversalCampaignManager;
-
