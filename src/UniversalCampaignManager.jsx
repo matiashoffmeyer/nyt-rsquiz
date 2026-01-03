@@ -38,26 +38,28 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
   
-  // Audio Refs (For Instant Playback)
+  // Audio Refs
   const audioRefs = useRef({});
 
-  // --- ONLINE AUDIO ENGINE (PRELOADED) ---
+  // --- OPTIMIZED AUDIO ENGINE ---
+  // Vi bruger korte, lette filer for instant playback
   const soundUrls = {
-      click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
-      dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
-      dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
-      page: 'https://www.soundjay.com/misc/sounds/page-flip-01a.mp3',
-      swish: 'https://www.soundjay.com/nature/sounds/whoosh-02.mp3',
-      clash: 'https://www.soundjay.com/misc/sounds/sword-clash-1.mp3',
-      high: 'https://www.soundjay.com/misc/sounds/magic-chime-01.mp3',
-      low: 'https://www.soundjay.com/misc/sounds/fail-trombone-02.mp3'
+      click: 'https://cdn.freesound.org/previews/256/256116_3263906-lq.mp3', // Kort klik
+      dice_shake: 'https://cdn.freesound.org/previews/220/220744_4103328-lq.mp3', // Ryste lyd
+      dice_land: 'https://cdn.freesound.org/previews/369/369974_6836894-lq.mp3', // Terning lander
+      page: 'https://cdn.freesound.org/previews/159/159670_2391079-lq.mp3', // Side skift
+      swish: 'https://cdn.freesound.org/previews/608/608644_6340333-lq.mp3', // Hurtig luft lyd (RPS)
+      clash: 'https://cdn.freesound.org/previews/536/536108_11562447-lq.mp3', // Metal clash (RPS Win)
+      high: 'https://cdn.freesound.org/previews/171/171671_2437358-lq.mp3', // Divine sound (High Roll)
+      low: 'https://cdn.freesound.org/previews/415/415209_5121236-lq.mp3' // Fail sound (Low Roll)
   };
 
   // Preload sounds on mount
   useEffect(() => {
       Object.keys(soundUrls).forEach(key => {
           const audio = new Audio(soundUrls[key]);
-          audio.preload = 'auto'; // Tvinger browseren til at hente filen med det samme
+          audio.preload = 'auto'; // Hent hele filen
+          audio.load(); // Tving load
           audioRefs.current[key] = audio;
       });
   }, []);
@@ -65,21 +67,24 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const playSound = (type) => {
     const audio = audioRefs.current[type];
     if (audio) {
-        audio.currentTime = 0; // Reset for at kunne spamme lyden
+        audio.currentTime = 0;
         
-        // Volumen justering
+        // Volume Mix
         switch (type) {
-            case 'click': audio.volume = 0.3; break;
+            case 'click': audio.volume = 0.2; break;
             case 'dice_shake': audio.volume = 0.5; break;
-            case 'dice_land': audio.volume = 0.6; break;
-            case 'swish': audio.volume = 0.3; break;
-            case 'clash': audio.volume = 0.5; break;
-            case 'high': audio.volume = 0.4; break;
-            case 'low': audio.volume = 0.4; break;
+            case 'dice_land': audio.volume = 0.8; break;
+            case 'high': audio.volume = 0.6; break;
+            case 'low': audio.volume = 0.6; break;
+            case 'clash': audio.volume = 0.4; break;
             default: audio.volume = 0.5;
         }
         
-        audio.play().catch(() => {}); // Ignorer fejl (f.eks. før brugerinteraktion)
+        // Promise håndtering for at undgå console errors
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(() => { /* Auto-play blocked - kræver user interaction først */ });
+        }
     }
   };
 
@@ -212,7 +217,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const rollDice = (sides) => {
+    // 1. Play Shake Sound immediately
     playSound('dice_shake');
+    
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
     const interval = setInterval(() => {
@@ -221,7 +228,17 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       if (counter > 20) { 
         clearInterval(interval);
         const trueFinal = Math.floor(Math.random() * sides) + 1; 
+        
+        // 2. Play Land Sound immediately
         playSound('dice_land');
+        
+        // 3. Play Result Sound (Crit/Fail)
+        if (trueFinal === sides) {
+            setTimeout(() => playSound('high'), 300); // Lille pause for effekt
+        } else if (trueFinal === 1) {
+            setTimeout(() => playSound('low'), 300);
+        }
+
         setDiceOverlay(prev => ({ ...prev, finished: true, value: trueFinal }));
         syncState(players, stalemate, epilogueMode, { type: sides, value: trueFinal });
         setTimeout(() => setDiceOverlay(prev => ({ ...prev, active: false })), 2000);
@@ -327,8 +344,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     const getScore = (idx) => currentRolls[idx] + currentDecimals[idx];
     const sortedIndices = Object.keys(currentRolls).sort((a, b) => getScore(b) - getScore(a));
     
-    if (getScore(sortedIndices[0]) >= 90) playSound('high');
-    else if (getScore(sortedIndices[0]) <= 20) playSound('low');
+    // Check Winner for High/Low sound
+    const winnerScore = getScore(sortedIndices[0]);
+    if (winnerScore >= 90) playSound('high');
+    else if (winnerScore <= 20) playSound('low');
 
     const newPlayers = [...players];
     sortedIndices.forEach((playerIdx, rankOrder) => {
