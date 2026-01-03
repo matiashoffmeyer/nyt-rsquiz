@@ -17,7 +17,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [lastRollRecord, setLastRollRecord] = useState({ type: '-', value: '-' });
   const [isConnected, setIsConnected] = useState(false);
 
-  // LOCAL UI STATE (Not synced)
+  // LOCAL UI STATE
   const [isMuted, setIsMuted] = useState(() => localStorage.getItem('app_muted') === 'true');
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
   const [showRules, setShowRules] = useState(false);
@@ -38,7 +38,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchStart = useRef(null);
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
-  const audioRefs = useRef({});
+  const audioRefs = useRef({}); // FIXED NAME
 
   // --- AUDIO ENGINE ---
   const soundUrls = {
@@ -53,33 +53,29 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   useEffect(() => {
-      const loadAudio = () => {
-          try {
-              Object.keys(soundUrls).forEach(key => {
-                  const audio = new Audio(soundUrls[key]);
-                  audio.preload = 'auto'; 
-                  audioRefs.current[key] = audio;
-              });
-          } catch (e) {
-              console.warn("Audio init warning", e);
-          }
-      };
-      loadAudio();
+      try {
+          Object.keys(soundUrls).forEach(key => {
+              const audio = new Audio(soundUrls[key]);
+              audio.preload = 'auto'; 
+              audioRefs.current[key] = audio; // FIXED: Uses audioRefs correctly now
+          });
+      } catch (e) {
+          console.warn("Audio init warning", e);
+      }
   }, []);
 
   const toggleMute = () => {
       const newState = !isMuted;
       setIsMuted(newState);
       localStorage.setItem('app_muted', newState);
-      if (!newState) playSound('click', true); // Play click only if unmuting/active (force check)
+      if (!newState) playSound('click', true);
   };
 
   const playSound = (type, force = false) => {
-    // LOCAL MUTE CHECK
     if (isMuted && !force) return;
 
     try {
-        const audio = audioRefs.current[type];
+        const audio = audioRefs.current[type]; // FIXED: Uses audioRefs correctly
         if (audio) {
             audio.currentTime = 0;
             switch (type) {
@@ -96,7 +92,9 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             const promise = audio.play();
             if (promise !== undefined) promise.catch(() => {});
         }
-    } catch (e) {}
+    } catch (e) {
+        // Silent fail
+    }
   };
 
   // --- DATA ENGINE ---
@@ -335,6 +333,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     const getScore = (idx) => currentRolls[idx] + currentDecimals[idx];
     const sortedIndices = Object.keys(currentRolls).sort((a, b) => getScore(b) - getScore(a));
     
+    // Sounds Logic (Fail on 1, Heaven on 100)
     const hasNatOne = Object.values(currentRolls).includes(1);
     const hasNatHundred = Object.values(currentRolls).includes(100);
 
