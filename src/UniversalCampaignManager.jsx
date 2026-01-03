@@ -523,7 +523,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         </div>
                     )}
                 </button>
-                {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
+                
             </div>
             
             <div className="flex-grow flex flex-col p-2 gap-2 overflow-hidden min-h-0">
