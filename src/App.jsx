@@ -1,12 +1,19 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import GameLobby from './GameLobby';
 import UniversalCampaignManager from './UniversalCampaignManager';
 
 const App = () => {
+  // 1. SIKKER INITIALISERING
+  // Vi tjekker localStorage én gang ved start.
+  // Hvis den finder "undefined" eller snavs, returnerer den bare null (Lobbyen) uden at crashe.
   const [selectedCampaignId, setSelectedCampaignId] = useState(() => {
     try {
-      return localStorage.getItem('current_campaign_id');
+      const storedId = localStorage.getItem('current_campaign_id');
+      // Tjek om det er et gyldigt ID (ikke "undefined" strengen eller null)
+      if (!storedId || storedId === 'undefined' || storedId === 'null') {
+        return null;
+      }
+      return storedId;
     } catch (e) {
       return null;
     }
@@ -21,12 +28,6 @@ const App = () => {
     localStorage.removeItem('current_campaign_id');
     setSelectedCampaignId(null);
   };
-
-  // Error Boundary-ish: Hvis der opstår en fejl, vis Lobby
-  if (selectedCampaignId === 'undefined') {
-      handleExit();
-      return <GameLobby onSelectCampaign={handleSelect} />;
-  }
 
   return (
     <>
