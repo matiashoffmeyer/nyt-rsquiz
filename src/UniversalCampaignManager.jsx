@@ -615,11 +615,20 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                         </div>
                     </>
                 ) : (
+                    
                     <div className="flex-grow flex flex-col gap-4 justify-center">
+                        
+                        {/* MARRIAGE SECTION */}
                         {useFeature('use_marriage') && (
                             <div className="bg-indigo-900/20 p-2 rounded border border-indigo-500/30">
-                                <div className="flex justify-between items-center mb-1">
-                                    <label className="text-[9px] text-indigo-400 uppercase font-bold flex items-center gap-1"><Users size={10}/> Marriage</label>
+                                <div className="mb-2">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-[9px] text-indigo-400 uppercase font-bold flex items-center gap-1"><Users size={10}/> Marriage</label>
+                                    </div>
+                                    {/* HER ER FIXET: Teksten skjules på landscape mobil, men vises på desktop */}
+                                    <p className="text-[10px] text-indigo-300 italic opacity-80 leading-tight landscape:hidden lg:landscape:block">
+                                        Shuffle decks together. Share library. Cannot attack spouse.
+                                    </p>
                                 </div>
                                 <select value={player.spouse || ""} onChange={(e) => handleMarriage(index, e.target.value)} className="w-full bg-black text-gray-300 border border-gray-700 rounded p-2 text-xs focus:outline-none focus:border-indigo-500">
                                     <option value="">Single (Unmarried)</option>
@@ -627,6 +636,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                 </select>
                             </div>
                         )}
+
+                        {/* DRUNK SECTION */}
                         {useFeature('use_drunk') && (
                             <div className="bg-purple-900/20 p-2 rounded border border-purple-500/30 flex justify-between items-center">
                                 <span className="text-[9px] text-purple-400 font-bold uppercase">Drunk</span>
