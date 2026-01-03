@@ -58,7 +58,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   // --- AUDIO ENGINE ---
   const soundUrls = {
       click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
-      dice_shake: 'https://www.soundjay.com/misc/sounds/dice-rattle-1.mp3', // Rattle lyd
+      // SAMME LYD SOM RANKING (Keepeye GitHub) - Den virker.
+      dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
       dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
       page: 'https://www.soundjay.com/misc/sounds/page-flip-01a.mp3',
       swish: 'https://www.soundjay.com/nature/sounds/whoosh-02.mp3',
@@ -76,7 +77,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                   audioRefs.current[key] = audio;
               });
           } catch (e) {
-              console.warn("Audio initialization failed", e);
+              console.warn("Audio init failed", e);
           }
       };
       loadAudio();
@@ -91,7 +92,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             audio.currentTime = 0;
             switch (type) {
                 case 'click': audio.volume = 0.5; break;
-                case 'dice_shake': audio.volume = 0.8; break;
+                case 'dice_shake': audio.volume = 1.0; break; // Skruet helt op
                 case 'dice_land': audio.volume = 0.8; break;
                 case 'swish': audio.volume = 0.6; break;
                 case 'clash': audio.volume = 0.7; break;
@@ -102,58 +103,16 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             }
             const promise = audio.play();
             if (promise !== undefined) {
-                promise.catch(() => {});
+                promise.catch(() => {}); 
             }
         }
     } catch (e) {}
-  };
-
-  // --- CONTENT DATA (DEN MANGLENDE DEL!) ---
-  const staggingTimeline = [
-      { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
-      { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
-      { title: "Battle 2: Grand Melee", type: "battle", desc: "Creatures have haste and attack each turn if able." },
-      { title: "Post-Battle 2", type: "post", desc: "Workout Session #114 (all buffs up).\nHousmann draft a booster. #107" },
-      { title: "Battle 3: Hunters Loge", type: "battle", desc: "#59 Pre-battle, stack 3 OG’s facedown, when the top OG is defeated, the next OG is turned face up, it's cycle number (X) is equal to the cycle number of the defeated OG, and it becomes the new OG’s turn. The 3 OGs are treated as a single, combined OG.\n\nAs long as there is an OG in play, players may block for each other.\nUntil the first OG dies, players draw their cards from the library of the player to their left.\nAs long as the second OG is in play, players can’t pay mana for their own spells or abilities, but other players can transfer them mana from their manapools.\nAs long as the third OG is in play, each time the first player takes his turn, players must vote to skip their main phases or attack step until the first player's next turn. The top voted phases are skipped. If the vote is tied, both main phases and attack steps are skipped.\n\nIf the OG wins there is no King in the next battle.\nIf you cause an OG to die, gain a VP. If you die while an OG is in play, lose 5 XP and discard 3 random non-basic land cards." },
-      { title: "Post-Battle 3", type: "post", desc: "Mobile Hammock: Minesweeper draft a land booster.\n#107" },
-      { title: "Battle 4: Spikeball", type: "battle", desc: "All vs. All\nFlip a coin to decide the starting attack direction (left or right).\nStart of game: Shuffle 2 markers into each player's deck, when a marker is drawn, the attack direction changes. (The marker is shuffled back into the deck and the player draws another card).\nThe winner is the first player to eliminate the player in his attack direction (or when said player dies for another reason)." },
-      { title: "Post-Battle 4", type: "post", desc: "Dinner a´la card: #105\nShuffle a booster, divide it into piles equal to the number of players. Reveal 1 pile. Players choose in turn (descending ranking order: 1, 2, 3, 4) to add one to their deck (you may skip your turn), until each player has had a turn. Then the pile is replaced with a new pile and the process is repeated with a new starting player (descending by rank: 2, 1, 3, 4, Then: 3, 1, 2, 4 and so on) until all players have had a turn with the starting pick.\nRemaining cards go in Skraldespanden.\nAny of the chosen cards may be added to your starting hand in the following battle. (Players draw cards for the starting hand, minus the number they chose to put in the starting hand)\nPlayers may, in ranking order, gain an available role or switch role with a non-King player of lower ranking." },
-      { title: "Battle 5: Heidi's Bierbar", type: "battle", desc: "All vs All\nIn each player’s end step, he gains his choice of 2 Drunk- or 2 Poison counters.\nWhen a permanent, spell or ability you control causes a player to lose, you may gain his role.\nLast remaining player wins the campaign, if all the last players are killed at the same time (for example by a player-owned OG), the tie breaker is VP, then randomly." }
-  ];
-
-  const getRoleAbilities = (role) => {
-    const data = {
-        'Doctor': ["Whenever a creature enters the battlefield under your control, you may remove a counter from target permanent.", "Whenever you gain a Drunk counter, you may put a Metaxa counter on target player.", "Creatures you control have Infect. At the beginning of your end step, Proliferate."],
-        'Monk': ["Discard a card or Pay (2): Counter target spell unless its controller pays (1).", "If an ability of an OG source you control is activated, copy it. You may choose new targets for the copy.", "Tap 3 untapped creatures you control: Create a token that is a copy of a random OG card."],
-        'Smith': ["Artifact spells you cast cost (1) less to cast for each Level you have.", "Equipped creatures you control have Vigilance, Trample, and Reach.", "Metalcraft — At the beginning of combat, if you control 3+ artifacts, you may create a token that's a copy of target artifact."],
-        'Knight': ["(1), Discard a card: Create a 1/2 white Horse creature token with Haste.", "Equipped creatures you control have Mentor (When attacking, put a +1/+1 counter on target attacking creature with lesser power).", "Battalion — Whenever you attack with 3+ creatures, you may have target creature you control fight target creature you don't control."],
-        'Fool': ["Spells you cast during an opponent's turn cost (1) less to cast.", "Creature cards in your hand have Ninjutsu [X], where X is their CMC.", "Creature cards in your hand have Ninjutsu [X-1], where X is their CMC."],
-        'King': ["Creatures you control get +1/+1 for each Level you possess.", "You may play an additional land on each of your turns. Lands you control have 'Tap: Add one mana of any color'.", "At the beginning of your upkeep, draw an additional card."]
-    };
-    return data[role] || [];
-  };
-  
-  const getRoleReward = (role) => {
-    const rewards = { 
-        'Doctor': 'When one or more creatures die during your turn, gain 1 xp.', 
-        'Monk': 'Whenever your life total changes, gain 1 xp.', 
-        'Smith': 'When an artifact enters play under your control, gain 1 xp.', 
-        'Knight': 'Whenever one or more creatures under your control deal damage, gain 1 XP.', 
-        'Fool': 'Whenever you target an opponent or a permanent under his control with a spell or ability, gain 1 xp (max once pr turn)', 
-        'King': 'Every third time another player gains xp you gain 1 xp.' 
-    };
-    return rewards[role] ? `Reward: ${rewards[role]}` : '';
-  };
-  
-  const getRoleIcon = (role) => {
-      switch(role) { case 'Doctor': return <Heart size={12} />; case 'Monk': return <Scroll size={12} />; case 'Smith': return <Hammer size={12} />; case 'Knight': return <Shield size={12} />; case 'Fool': return <Ghost size={12} />; case 'King': return <Crown size={12} />; default: return null; }
   };
 
   // --- DATA ENGINE ---
   useEffect(() => {
     if (!campaignId) return;
     
-    // Initial Load
     const loadCampaign = async () => {
       const { data, error } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
       if (error) return;
@@ -166,7 +125,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     };
     loadCampaign();
 
-    // Realtime Subscription
     const channel = supabase.channel(`campaign_update_${campaignId}`)
       .on(
         'postgres_changes', 
@@ -209,7 +167,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       if (!window.confirm("RESET CAMPAIGN STATE?")) return;
 
       if (meta.engine === 'rpg') {
-          // STAGGING SAVE POINT
           const savePoint = [
               { name: 'Christian', vp: 2, xp: 10, role: 'Smith' },
               { name: 'Andreas', vp: 1, xp: 13, role: 'Knight' },
@@ -284,7 +241,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const rollDice = (sides) => {
-    playSound('dice_shake'); 
+    playSound('dice_shake'); // Samme lyd som ranking
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
     const interval = setInterval(() => {
@@ -471,6 +428,47 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   
   const useFeature = (featureName) => config?.mechanics?.[featureName] === true;
 
+  // --- CONTENT HELPERS (VIGTIGT: DE ER HER) ---
+  const staggingTimeline = [
+      { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
+      { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
+      { title: "Battle 2: Grand Melee", type: "battle", desc: "Creatures have haste and attack each turn if able." },
+      { title: "Post-Battle 2", type: "post", desc: "Workout Session #114 (all buffs up).\nHousmann draft a booster. #107" },
+      { title: "Battle 3: Hunters Loge", type: "battle", desc: "#59 Pre-battle, stack 3 OG’s facedown, when the top OG is defeated, the next OG is turned face up, it's cycle number (X) is equal to the cycle number of the defeated OG, and it becomes the new OG’s turn. The 3 OGs are treated as a single, combined OG.\n\nAs long as there is an OG in play, players may block for each other.\nUntil the first OG dies, players draw their cards from the library of the player to their left.\nAs long as the second OG is in play, players can’t pay mana for their own spells or abilities, but other players can transfer them mana from their manapools.\nAs long as the third OG is in play, each time the first player takes his turn, players must vote to skip their main phases or attack step until the first player's next turn. The top voted phases are skipped. If the vote is tied, both main phases and attack steps are skipped.\n\nIf the OG wins there is no King in the next battle.\nIf you cause an OG to die, gain a VP. If you die while an OG is in play, lose 5 XP and discard 3 random non-basic land cards." },
+      { title: "Post-Battle 3", type: "post", desc: "Mobile Hammock: Minesweeper draft a land booster.\n#107" },
+      { title: "Battle 4: Spikeball", type: "battle", desc: "All vs. All\nFlip a coin to decide the starting attack direction (left or right).\nStart of game: Shuffle 2 markers into each player's deck, when a marker is drawn, the attack direction changes. (The marker is shuffled back into the deck and the player draws another card).\nThe winner is the first player to eliminate the player in his attack direction (or when said player dies for another reason)." },
+      { title: "Post-Battle 4", type: "post", desc: "Dinner a´la card: #105\nShuffle a booster, divide it into piles equal to the number of players. Reveal 1 pile. Players choose in turn (descending ranking order: 1, 2, 3, 4) to add one to their deck (you may skip your turn), until each player has had a turn. Then the pile is replaced with a new pile and the process is repeated with a new starting player (descending by rank: 2, 1, 3, 4, Then: 3, 1, 2, 4 and so on) until all players have had a turn with the starting pick.\nRemaining cards go in Skraldespanden.\nAny of the chosen cards may be added to your starting hand in the following battle. (Players draw cards for the starting hand, minus the number they chose to put in the starting hand)\nPlayers may, in ranking order, gain an available role or switch role with a non-King player of lower ranking." },
+      { title: "Battle 5: Heidi's Bierbar", type: "battle", desc: "All vs All\nIn each player’s end step, he gains his choice of 2 Drunk- or 2 Poison counters.\nWhen a permanent, spell or ability you control causes a player to lose, you may gain his role.\nLast remaining player wins the campaign, if all the last players are killed at the same time (for example by a player-owned OG), the tie breaker is VP, then randomly." }
+  ];
+
+  const getRoleAbilities = (role) => {
+    const data = {
+        'Doctor': ["Whenever a creature enters the battlefield under your control, you may remove a counter from target permanent.", "Whenever you gain a Drunk counter, you may put a Metaxa counter on target player.", "Creatures you control have Infect. At the beginning of your end step, Proliferate."],
+        'Monk': ["Discard a card or Pay (2): Counter target spell unless its controller pays (1).", "If an ability of an OG source you control is activated, copy it. You may choose new targets for the copy.", "Tap 3 untapped creatures you control: Create a token that is a copy of a random OG card."],
+        'Smith': ["Artifact spells you cast cost (1) less to cast for each Level you have.", "Equipped creatures you control have Vigilance, Trample, and Reach.", "Metalcraft — At the beginning of combat, if you control 3+ artifacts, you may create a token that's a copy of target artifact."],
+        'Knight': ["(1), Discard a card: Create a 1/2 white Horse creature token with Haste.", "Equipped creatures you control have Mentor (When attacking, put a +1/+1 counter on target attacking creature with lesser power).", "Battalion — Whenever you attack with 3+ creatures, you may have target creature you control fight target creature you don't control."],
+        'Fool': ["Spells you cast during an opponent's turn cost (1) less to cast.", "Creature cards in your hand have Ninjutsu [X], where X is their CMC.", "Creature cards in your hand have Ninjutsu [X-1], where X is their CMC."],
+        'King': ["Creatures you control get +1/+1 for each Level you possess.", "You may play an additional land on each of your turns. Lands you control have 'Tap: Add one mana of any color'.", "At the beginning of your upkeep, draw an additional card."]
+    };
+    return data[role] || [];
+  };
+  
+  const getRoleReward = (role) => {
+    const rewards = { 
+        'Doctor': 'When one or more creatures die during your turn, gain 1 xp.', 
+        'Monk': 'Whenever your life total changes, gain 1 xp.', 
+        'Smith': 'When an artifact enters play under your control, gain 1 xp.', 
+        'Knight': 'Whenever one or more creatures under your control deal damage, gain 1 XP.', 
+        'Fool': 'Whenever you target an opponent or a permanent under his control with a spell or ability, gain 1 xp (max once pr turn)', 
+        'King': 'Every third time another player gains xp you gain 1 xp.' 
+    };
+    return rewards[role] ? `Reward: ${rewards[role]}` : '';
+  };
+  
+  const getRoleIcon = (role) => {
+      switch(role) { case 'Doctor': return <Heart size={12} />; case 'Monk': return <Scroll size={12} />; case 'Smith': return <Hammer size={12} />; case 'Knight': return <Shield size={12} />; case 'Fool': return <Ghost size={12} />; case 'King': return <Crown size={12} />; default: return null; }
+  };
+
   const getReminders = () => {
       if (meta.engine === 'rpg') {
           return [
@@ -569,8 +567,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                             </div>
                         )}
 
-                        {/* --- SCROLLABLE CONTENT (Hidden on Landscape) --- */}
-                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden">
+                        {/* --- SCROLLABLE CONTENT (Hidden ONLY on Landscape Mobile) --- */}
+                        <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden md:landscape:block">
                             {useFeature('use_roles') && player.role && (
                                 <div className="mb-3">
                                     <div className="absolute top-1 right-2 text-yellow-700 opacity-50">{getRoleIcon(player.role)}</div>
@@ -718,7 +716,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     
                     <button 
                         onClick={toggleMute} 
-                        className={`text-[8px] uppercase font-bold ml-2 ${isMuted ? 'text-red-500' : 'text-green-500'}`}
+                        className={`text-[8px] uppercase font-bold text-stone-500 hover:text-stone-300 ml-2`}
                     >
                         {isMuted ? "LYD: FRA" : "LYD: TIL"}
                     </button>
