@@ -57,13 +57,16 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
   // --- AUDIO ENGINE ---
   const soundUrls = {
-      click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
-      // Bruger Github lyden da den er stabil og lyder af terninger
-      dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
-      dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
+      click: 'https://www.soundjay.com/buttons/sounds/button-16.mp3',
+      // Fixet Github link (kørt gennem proxy for korrekt lyd-format)
+      dice_shake: 'https://raw.githack.com/keepeye/d20/master/dist/dice-roll.mp3',
+      // Google Hosted lyd (Meget stabil)
+      dice_land: 'https://actions.google.com/sounds/v1/impacts/plastic_box_impact.ogg',
       page: 'https://www.soundjay.com/misc/sounds/page-flip-01a.mp3',
-      swish: 'https://www.soundjay.com/nature/sounds/whoosh-02.mp3',
-      clash: 'https://www.soundjay.com/misc/sounds/sword-clash-1.mp3',
+      // Google Hosted "Whoosh"
+      swish: 'https://actions.google.com/sounds/v1/foley/whoosh_fast.ogg',
+      // Google Hosted "Clash" (Fencing hit)
+      clash: 'https://actions.google.com/sounds/v1/impacts/fencing_foil_hit.ogg',
       high: 'https://www.soundjay.com/misc/sounds/magic-chime-01.mp3',
       low: 'https://www.soundjay.com/misc/sounds/fail-trombone-02.mp3'
   };
