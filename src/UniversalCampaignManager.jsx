@@ -37,30 +37,39 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchStart = useRef(null);
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
+  
+  // Audio Refs (For Instant Playback)
+  const audioRefs = useRef({});
 
-  // --- ONLINE AUDIO ENGINE ---
-  // Vi bruger stabile, åbne kilder (SoundJay, GitHub Raw etc.)
+  // --- ONLINE AUDIO ENGINE (PRELOADED) ---
   const soundUrls = {
       click: 'https://www.soundjay.com/buttons/sounds/button-30.mp3',
-      dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3', // Dice rolling sound
+      dice_shake: 'https://raw.githubusercontent.com/keepeye/d20/master/dist/dice-roll.mp3',
       dice_land: 'https://www.soundjay.com/misc/sounds/dice-throw-2.mp3',
       page: 'https://www.soundjay.com/misc/sounds/page-flip-01a.mp3',
-      swish: 'https://www.soundjay.com/nature/sounds/whoosh-02.mp3', // RPS move
-      clash: 'https://www.soundjay.com/misc/sounds/sword-clash-1.mp3', // RPS win
-      high: 'https://www.soundjay.com/misc/sounds/magic-chime-01.mp3', // Success
-      low: 'https://www.soundjay.com/misc/sounds/fail-trombone-02.mp3' // Fail
+      swish: 'https://www.soundjay.com/nature/sounds/whoosh-02.mp3',
+      clash: 'https://www.soundjay.com/misc/sounds/sword-clash-1.mp3',
+      high: 'https://www.soundjay.com/misc/sounds/magic-chime-01.mp3',
+      low: 'https://www.soundjay.com/misc/sounds/fail-trombone-02.mp3'
   };
 
-  const playSound = (type) => {
-    try {
-        const url = soundUrls[type];
-        if (!url) return;
+  // Preload sounds on mount
+  useEffect(() => {
+      Object.keys(soundUrls).forEach(key => {
+          const audio = new Audio(soundUrls[key]);
+          audio.preload = 'auto'; // Tvinger browseren til at hente filen med det samme
+          audioRefs.current[key] = audio;
+      });
+  }, []);
 
-        const audio = new Audio(url);
+  const playSound = (type) => {
+    const audio = audioRefs.current[type];
+    if (audio) {
+        audio.currentTime = 0; // Reset for at kunne spamme lyden
         
-        // Juster volume baseret på lydtype
+        // Volumen justering
         switch (type) {
-            case 'click': audio.volume = 0.2; break;
+            case 'click': audio.volume = 0.3; break;
             case 'dice_shake': audio.volume = 0.5; break;
             case 'dice_land': audio.volume = 0.6; break;
             case 'swish': audio.volume = 0.3; break;
@@ -69,13 +78,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             case 'low': audio.volume = 0.4; break;
             default: audio.volume = 0.5;
         }
-
-        audio.play().catch(e => {
-            // Browser policy blokerer nogle gange autoplay hvis man ikke har interageret først
-            // Vi logger det bare stille, så appen ikke crasher
-        });
-    } catch (err) {
-        // Fallback: Ingen lyd, men ingen crash
+        
+        audio.play().catch(() => {}); // Ignorer fejl (f.eks. før brugerinteraktion)
     }
   };
 
@@ -279,18 +283,14 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         if (ties.length === 0) {
             hasConflict = false;
         } else {
-            // CONFLICT DETECTED
             const combatants = ties.flat();
             setRankingProcess(prev => ({ ...prev, mode: 'rps_animate', tiedIndices: combatants }));
 
-            // Slow RPS Animation (2.0s)
             let frames = 0;
             const anim = setInterval(() => {
                 const hands = {};
                 combatants.forEach(idx => hands[idx] = rpsOptions[frames % 3]);
                 setRankingProcess(prev => ({ ...prev, rpsHands: hands }));
-                
-                // Play sound every 3rd frame so it's not spammy
                 if (frames % 4 === 0) playSound('swish');
                 frames++;
             }, 200); 
@@ -298,32 +298,26 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             await delay(2000);
             clearInterval(anim);
 
-            // THROW HANDS
             const battleHands = {};
             combatants.forEach(idx => battleHands[idx] = rpsOptions[Math.floor(Math.random() * 3)]);
             
             setRankingProcess(prev => ({ ...prev, mode: 'rps_result', rpsHands: battleHands }));
-            playSound('clash'); // SOUND EFFECT
+            playSound('clash'); 
             
             ties.forEach(group => {
                 group.forEach(playerIdx => {
                     const myHand = battleHands[playerIdx];
                     let didWin = false;
-                    
                     const opponents = group.filter(p => p !== playerIdx);
                     opponents.forEach(oppIdx => {
-                        if (beats(myHand, battleHands[oppIdx])) {
-                            didWin = true;
-                        }
+                        if (beats(myHand, battleHands[oppIdx])) didWin = true;
                     });
-
                     if (didWin) {
                         currentDecimals[playerIdx] = parseFloat((currentDecimals[playerIdx] + 0.1).toFixed(1));
                     }
                 });
             });
 
-            // Update visuals
             setRankingProcess(prev => ({ ...prev, decimals: {...currentDecimals} }));
             await delay(2500); 
         }
@@ -333,7 +327,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     const getScore = (idx) => currentRolls[idx] + currentDecimals[idx];
     const sortedIndices = Object.keys(currentRolls).sort((a, b) => getScore(b) - getScore(a));
     
-    // High roll sound if winner > 90
     if (getScore(sortedIndices[0]) >= 90) playSound('high');
     else if (getScore(sortedIndices[0]) <= 20) playSound('low');
 
@@ -350,6 +343,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const updatePlayer = (index, field, value) => {
+    playSound('click');
     const newPlayers = [...players];
     newPlayers[index][field] = value;
     syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
@@ -365,6 +359,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   };
 
   const handleMarriage = (playerIndex, newSpouseName) => {
+    playSound('click');
     const newPlayers = [...players];
     const currentPlayer = newPlayers[playerIndex];
     if (currentPlayer.spouse) {
@@ -423,12 +418,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     if (!player) return null;
     const reminders = getReminders();
     
-    // VISUAL STATE LOGIC
     const { mode, rolls, tiedIndices, rpsHands, decimals } = rankingProcess;
     const isActive = mode !== 'idle';
     const isTied = tiedIndices.includes(index);
     const showRPS = (mode === 'rps_animate' || mode === 'rps_result') && isTied;
-    
     const displayValue = isActive ? (rolls[index] !== undefined ? rolls[index] : '?') : (player.ranking_roll || '-');
     const decimalValue = isActive && decimals[index] > 0 ? `,${Math.round(decimals[index]*10)}` : '';
 
@@ -436,22 +429,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full select-none">
             <div className={`h-1 w-full ${player.color || 'bg-gray-600'}`}></div>
             <div className="p-2 bg-gradient-to-b from-white/5 to-transparent flex justify-between items-center shrink-0">
-                <button 
-                    onClick={handleDramaticRankingRoll}
-                    className="text-left flex-grow focus:outline-none hover:opacity-80 transition-opacity flex items-center gap-2 overflow-hidden"
-                >
+                <button onClick={handleDramaticRankingRoll} className="text-left flex-grow focus:outline-none hover:opacity-80 transition-opacity flex items-center gap-2 overflow-hidden">
                     <span className="font-black text-lg text-gray-200 truncate" style={{ fontFamily: 'Cinzel, serif' }}>{player.name}</span>
-                    
-                    {/* VISUAL RANKING DISPLAY */}
                     {showRPS ? (
-                        // RPS MODE
                         <div className="bg-red-900/50 border border-red-500 rounded px-1.5 py-0.5 flex items-center justify-center min-w-[34px] h-[28px] animate-pulse">
-                            <span className="text-xl leading-none filter drop-shadow-md">
-                                {rpsHands[index] || '✊'}
-                            </span>
+                            <span className="text-xl leading-none filter drop-shadow-md">{rpsHands[index] || '✊'}</span>
                         </div>
                     ) : (
-                        // NUMBER MODE
                         <div className={`border rounded px-1.5 py-0.5 flex items-center gap-0.5 shadow-md min-w-[34px] h-[28px] justify-center transition-colors duration-300 ${isTied && !showRPS ? 'bg-red-900 border-red-500' : 'bg-black border-yellow-600/50'}`}>
                             <span className={`text-sm font-bold leading-none ${isTied ? 'text-red-200' : 'text-yellow-500'}`}>
                                 {displayValue}
@@ -615,6 +599,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
   return (
     <div className="h-dvh w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative flex">
+      {/* Background */}
       <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
         <style>{`@keyframes nebula { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } .nebula-bg { background: linear-gradient(-45deg, #1a0b0b, #2e1010, #0f172a, #000000); background-size: 400% 400%; animation: nebula 15s ease infinite; }`}</style>
         <div className="w-full h-full nebula-bg"></div>
@@ -631,7 +616,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         {/* HEADER */}
         <div className="flex justify-between items-center bg-[#111]/90 backdrop-blur border-b border-white/10 p-2 rounded-lg shrink-0 gap-2">
             <div className="flex flex-col shrink-0">
-                <button onClick={onExit} className="flex items-center gap-1 text-[10px] uppercase text-stone-500 hover:text-white mb-1">
+                <button onClick={() => { playSound('click'); onExit(); }} className="flex items-center gap-1 text-[10px] uppercase text-stone-500 hover:text-white mb-1">
                     <LogOut size={10}/> Exit
                 </button>
                 <h1 className="text-sm md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest uppercase truncate max-w-[150px]" style={{ fontFamily: 'Cinzel, serif' }}>
@@ -640,20 +625,28 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
             </div>
 
-            <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
-                <div className="hidden md:flex text-[10px] text-red-500 font-bold uppercase items-center gap-1"><Skull size={10} /> Stalemate</div>
-                <div className="flex items-center gap-1">
+            {/* STALEMATE & LAST ROLL (Visible on mobile landscape now) */}
+            <div className="flex items-center gap-2">
+                <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
                     <button onClick={() => { playSound('click'); setStalemate(Math.max(0, stalemate - 1)); syncState(players, Math.max(0, stalemate - 1), epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Minus size={14}/></button>
                     <span className="text-xl font-mono font-bold text-white w-6 text-center">{stalemate}</span>
                     <button onClick={() => { playSound('click'); setStalemate(stalemate + 1); syncState(players, stalemate + 1, epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Plus size={14}/></button>
                 </div>
+
+                {/* LAST ROLL DISPLAY - Now always visible in a flexible container */}
+                <div className="bg-black border border-yellow-600/50 rounded px-2 py-1 flex flex-col items-center justify-center min-w-[50px] shadow-[0_0_10px_rgba(234,179,8,0.2)] flex-shrink-0">
+                    <span className="text-[8px] text-gray-500 uppercase">D{lastRollRecord.type}</span>
+                    <span className="text-lg font-bold text-yellow-500 leading-none">{lastRollRecord.value}</span>
+                </div>
             </div>
 
+            {/* DICE BUTTONS */}
             <div className="flex items-center gap-1">
-                <button onClick={() => rollDice(6)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D6</button>
-                <button onClick={() => rollDice(20)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
+                <button onClick={() => { playSound('click'); rollDice(6); }} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D6</button>
+                <button onClick={() => { playSound('click'); rollDice(20); }} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
             </div>
 
+            {/* DESKTOP MENU BTNS */}
             <div className="hidden md:flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
                 <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
@@ -663,9 +656,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </div>
         </div>
 
+        {/* MOBILE CODEX BUTTON (Hidden on landscape) */}
         <div className="w-full px-0 mt-0 md:hidden landscape:hidden">
-            <button onClick={() => setShowRules(!showRules)} className="w-full bg-[#3d2b0f] hover:bg-[#523812] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
-                <BookOpen size={18} className="text-yellow-500"/>
+            <button onClick={() => setShowRules(!showRules)} className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group">
+                <BookOpen size={18} className="text-yellow-500 group-hover:text-yellow-300"/>
                 <span className="font-bold uppercase tracking-widest text-sm" style={{ fontFamily: 'Cinzel, serif' }}>Åbn Codex</span>
             </button>
         </div>
