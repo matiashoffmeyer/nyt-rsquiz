@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { Save, Upload, RefreshCw, Skull, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, Users, Wifi, WifiOff, Minus, Plus, LogOut, AlertCircle } from 'lucide-react';
+import { Save, Upload, RefreshCw, Skull, Trophy, Crown, Heart, Shield, Scroll, Hammer, Ghost, BookOpen, X, Sword, Beer, Info, Clock, Users, Wifi, WifiOff, Minus, Plus, LogOut } from 'lucide-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -25,11 +24,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const [diceOverlay, setDiceOverlay] = useState({ active: false, value: 1, type: 20, finished: false });
   
   // RANKING VISUALS STATE
-  // Mode: 'idle' | 'shuffling' | 'show_rolls' | 'resolving_ties' | 'finished'
   const [rankingProcess, setRankingProcess] = useState({ 
       mode: 'idle', 
-      rolls: {}, // Gemmer d100 værdien: { 0: 45, 1: 88 }
-      tiedIndices: [] // Hvem skal rulle om? [0, 3]
+      rolls: {}, 
+      tiedIndices: [] 
   });
 
   // Refs
@@ -163,7 +161,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       window.location.reload(); 
   };
 
-  // --- STANDARD DICE ---
+  // --- GAME ACTIONS ---
   const rollDice = (sides) => {
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
@@ -189,14 +187,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     // STEP 1: INITIAL SHUFFLE
     setRankingProcess({ mode: 'shuffling', rolls: {}, tiedIndices: [] });
     
-    // Create random noise effect
     const shuffleInterval = setInterval(() => {
         const noise = {};
         players.forEach((_, i) => noise[i] = Math.floor(Math.random() * 100) + 1);
         setRankingProcess(prev => ({ ...prev, rolls: noise }));
     }, 50);
 
-    await delay(1500); // Shuffle for 1.5 sec
+    await delay(1500);
     clearInterval(shuffleInterval);
 
     // STEP 2: LAND FIRST ROLLS
@@ -204,12 +201,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     players.forEach((_, i) => currentRolls[i] = Math.floor(Math.random() * 100) + 1);
     setRankingProcess({ mode: 'show_rolls', rolls: currentRolls, tiedIndices: [] });
 
-    await delay(1000); // Let players see initial numbers
+    await delay(1000);
 
     // STEP 3: RESOLVE TIES LOOP
     let hasConflict = true;
     while (hasConflict) {
-        // Find ties
         const counts = {};
         Object.values(currentRolls).forEach(v => counts[v] = (counts[v]||0)+1);
         const duplicates = Object.keys(counts).filter(k => counts[k] > 1).map(Number);
@@ -217,7 +213,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         if (duplicates.length === 0) {
             hasConflict = false;
         } else {
-            // MARK TIES VISUALLY
             const conflictedIndices = Object.keys(currentRolls)
                 .map(Number)
                 .filter(idx => duplicates.includes(currentRolls[idx]));
@@ -228,33 +223,33 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 tiedIndices: conflictedIndices 
             });
 
-            await delay(2000); // Pause so everyone sees who is tied (RED TEXT)
+            await delay(2000);
 
-            // REROLL ONLY TIED PLAYERS
             conflictedIndices.forEach(idx => {
                 currentRolls[idx] = Math.floor(Math.random() * 100) + 1;
             });
 
-            // UPDATE DISPLAY
             setRankingProcess({ 
                 mode: 'show_rolls', 
-                rolls: {...currentRolls}, // Spread to force render
-                tiedIndices: [] // Remove red warning
+                rolls: {...currentRolls}, 
+                tiedIndices: [] 
             });
             
-            await delay(1500); // Show new numbers
+            await delay(1500);
         }
     }
 
-    // STEP 4: FINALIZE
-    const sortedIndices = Object.keys(currentRolls).sort((a, b) => currentRolls[a] - currentRolls[b]);
+    // STEP 4: FINALIZE (High Roll = Rank 1)
+    const sortedIndices = Object.keys(currentRolls).sort((a, b) => currentRolls[b] - currentRolls[a]);
+    
     const newPlayers = [...players];
     sortedIndices.forEach((playerIdx, rankOrder) => {
         newPlayers[playerIdx].rank = rankOrder + 1;
+        newPlayers[playerIdx].ranking_roll = currentRolls[playerIdx]; // Gemmer rullet
     });
 
-    setRankingProcess({ mode: 'idle', rolls: {}, tiedIndices: [] }); // Reset visual state
-    syncState(newPlayers, stalemate, epilogueMode, lastRollRecord); // Save ranks to DB
+    setRankingProcess({ mode: 'idle', rolls: {}, tiedIndices: [] });
+    syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
   };
 
   const updatePlayer = (index, field, value) => {
@@ -322,7 +317,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     if (!player) return null;
     const reminders = getReminders();
     
-    // LOGIC FOR RANKING VISUALS
     const showRankProcess = rankingProcess.mode !== 'idle';
     const isTied = rankingProcess.tiedIndices.includes(index);
     const d100Val = rankingProcess.rolls[index];
@@ -339,20 +333,18 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     
                     {/* VISUAL RANKING DISPLAY */}
                     {showRankProcess ? (
-                        // SHOWING RAW D100 DURING ROLL
                         <div className={`border rounded px-1.5 py-0.5 flex items-center justify-center min-w-[28px] h-[24px] transition-colors duration-200 ${isTied ? 'bg-red-900 border-red-500 animate-pulse' : 'bg-black border-yellow-600/50'}`}>
                             <span className={`text-sm font-bold leading-none ${isTied ? 'text-red-200' : 'text-yellow-500'}`}>
                                 {d100Val !== undefined ? d100Val : '?'}
                             </span>
                         </div>
-                    ) : player.rank ? (
-                        // SHOWING FINAL RANK
-                        <div className="bg-black border border-yellow-600/50 rounded px-1.5 py-0.5 flex items-center justify-center min-w-[24px] h-[24px] shadow-[0_0_5px_rgba(234,179,8,0.2)]">
-                            <span className="text-sm font-bold text-yellow-500 leading-none">
-                                {player.rank}
-                            </span>
+                    ) : player.rank && (
+                        <div className="bg-black border border-yellow-600/50 rounded px-1.5 py-0.5 flex items-center gap-1 shadow-[0_0_5px_rgba(234,179,8,0.2)]">
+                            <span className="text-[10px] text-stone-500 font-mono leading-none">{player.ranking_roll || '?'}</span>
+                            <div className="h-3 w-px bg-yellow-900/50"></div>
+                            <span className="text-sm font-bold text-yellow-500 leading-none">#{player.rank}</span>
                         </div>
-                    ) : null}
+                    )}
                 </button>
                 {epilogueMode && <span className="text-[10px] text-gray-500 uppercase tracking-wide absolute right-2">Epilogue</span>}
             </div>
@@ -398,7 +390,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                             </div>
                         )}
 
-                        {/* --- TEXT BOX AREA (ROLES + REMINDERS) --- */}
                         <div className="flex-1 min-h-0 bg-black/40 border border-gray-800 rounded p-2 overflow-y-auto custom-scrollbar relative landscape:hidden">
                             {useFeature('use_roles') && player.role && (
                                 <div className="mb-3">
@@ -726,3 +717,4 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 };
 
 export default UniversalCampaignManager;
+
