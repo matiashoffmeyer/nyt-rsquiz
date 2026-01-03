@@ -38,7 +38,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
   
-  // Audio Refs (Safe storage)
+  // Audio Refs
   const audioStore = useRef({});
 
   // --- SAFE AUDIO ENGINE ---
@@ -53,12 +53,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       low: 'https://www.soundjay.com/misc/sounds/fail-trombone-02.mp3'
   };
 
-  // Safe Preloader
   useEffect(() => {
       try {
           Object.keys(soundUrls).forEach(key => {
               const audio = new Audio(soundUrls[key]);
-              // Vi loader ikke aggressivt med .load() for at undgå memory crash
               audioStore.current[key] = audio;
           });
       } catch (e) {
@@ -72,22 +70,20 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         if (audio) {
             audio.currentTime = 0;
             switch (type) {
-                case 'click': audio.volume = 0.4; break;
-                case 'dice_shake': audio.volume = 0.6; break;
+                case 'click': audio.volume = 0.5; break;
+                case 'dice_shake': audio.volume = 0.7; break;
                 case 'dice_land': audio.volume = 0.8; break;
-                case 'swish': audio.volume = 0.5; break;
-                case 'clash': audio.volume = 0.6; break;
-                case 'page': audio.volume = 0.5; break;
+                case 'swish': audio.volume = 0.6; break;
+                case 'clash': audio.volume = 0.7; break;
+                case 'page': audio.volume = 0.6; break;
                 case 'high': audio.volume = 0.8; break;
                 case 'low': audio.volume = 0.8; break;
                 default: audio.volume = 0.5;
             }
             const p = audio.play();
-            if (p !== undefined) p.catch(() => {}); // Catch autoplay blocks
+            if (p !== undefined) p.catch(() => {}); 
         }
-    } catch (e) {
-        // Ignorer lydfejl for at undgå crash
-    }
+    } catch (e) {}
   };
 
   // --- CONTENT DATA ---
@@ -168,6 +164,43 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     await supabase.from('campaigns').update({ active_state: { players: newPlayers, stalemate: newStalemate, epilogueMode: newEpilogue, last_roll: newRoll } }).eq('id', campaignId);
   };
 
+  // --- RESET LOGIC (STAGGING SPECIAL) ---
+  const resetData = async () => {
+      playSound('click');
+      if (!window.confirm("RESET CAMPAIGN STATE?")) return;
+
+      if (meta.engine === 'rpg') {
+          // STAGGING SAVE POINT: LT 20, HS 7
+          // Christian: 2 VP, 10 XP
+          // Andreas: 1 VP, 13 XP
+          // Frederik: 1 VP, 16 XP
+          // Matias: 3 VP, 10 XP
+          const savePoint = [
+              { name: 'Christian', vp: 2, xp: 10 },
+              { name: 'Andreas', vp: 1, xp: 13 },
+              { name: 'Frederik', vp: 1, xp: 16 },
+              { name: 'Matias', vp: 3, xp: 10 }
+          ];
+
+          const newPlayers = players.map(p => {
+              const save = savePoint.find(s => p.name.toLowerCase().includes(s.name.toLowerCase()));
+              if (save) {
+                  return { ...p, lt: 20, hs: 7, vp: save.vp, xp: save.xp, role: '', spouse: '', drunk: 0, rank: null, ranking_roll: null };
+              }
+              // Default fallback for unknown players in Stagging
+              return { ...p, lt: 20, hs: 7, vp: 0, xp: 0, role: '', spouse: '', drunk: 0, rank: null, ranking_roll: null };
+          });
+          
+          syncState(newPlayers, 0, false, { type: '-', value: '-' });
+      } else {
+          // STANDARD RESET (Setup Phase)
+          const resetPlayers = players.map(p => ({
+              ...p, vp: 0, xp: 0, lt: 20, hs: 7, role: '', spouse: '', drunk: 0, rank: null, ranking_roll: null
+          }));
+          syncState(resetPlayers, 0, false, { type: '-', value: '-' });
+      }
+  };
+
   // --- ACTIONS ---
   const exportData = () => {
     playSound('click');
@@ -210,12 +243,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     };
     reader.readAsText(file);
     event.target.value = ''; 
-  };
-
-  const resetData = async () => {
-      playSound('click');
-      if (!window.confirm("RESET CAMPAIGN?")) return;
-      window.location.reload(); 
   };
 
   const rollDice = (sides) => {
@@ -644,6 +671,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
             </div>
 
+            {/* STALEMATE & LAST ROLL */}
             <div className="flex items-center gap-2">
                 <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
                     <button onClick={() => { playSound('click'); setStalemate(Math.max(0, stalemate - 1)); syncState(players, Math.max(0, stalemate - 1), epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Minus size={14}/></button>
@@ -657,11 +685,13 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </div>
             </div>
 
+            {/* DICE BUTTONS */}
             <div className="flex items-center gap-1">
                 <button onClick={() => { playSound('click'); rollDice(6); }} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D6</button>
                 <button onClick={() => { playSound('click'); rollDice(20); }} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
             </div>
 
+            {/* DESKTOP MENU */}
             <div className="hidden md:flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
                 <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
@@ -671,6 +701,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </div>
         </div>
 
+        {/* MOBILE CODEX BUTTON */}
         <div className="w-full px-0 mt-0 md:hidden landscape:hidden">
             <button onClick={() => { playSound('page'); setShowRules(!showRules); }} className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group">
                 <BookOpen size={18} className="text-yellow-500 group-hover:text-yellow-300"/>
@@ -678,6 +709,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </button>
         </div>
 
+        {/* --- MAIN GAME VIEW --- */}
         <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0 landscape:grid landscape:grid-cols-4 landscape:gap-2">
             {(players || []).map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
         </div>
@@ -689,6 +721,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         </div>
       </div>
 
+      {/* --- CODEX PANE --- */}
       <div className={`fixed right-0 top-0 bottom-0 z-40 bg-[#0f0f13]/95 backdrop-blur-xl border-l border-yellow-900/30 shadow-2xl transition-all duration-300 flex flex-col ${showRules ? 'w-full md:w-1/3 translate-x-0' : 'w-full md:w-1/3 translate-x-full'}`}>
         <div className="flex justify-between items-center p-4 border-b border-gray-800">
             <h2 className="text-xl font-bold text-yellow-500" style={{ fontFamily: 'Cinzel, serif' }}>Codex: {meta.title}</h2>
