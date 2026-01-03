@@ -25,11 +25,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   
   // RANKING / RPS STATE
   const [rankingProcess, setRankingProcess] = useState({ 
-      mode: 'idle', // 'idle' | 'shuffling' | 'show_rolls' | 'rps_battle' | 'rps_result'
-      rolls: {},      // Gemmer heltallet (f.eks. 88)
-      decimals: {},   // Gemmer decimalen (f.eks. 0.9)
-      tiedIndices: [], // Hvem er i konflikt?
-      rpsHands: {}    // Hvad viser de lige nu? '🪨', '📄', '✂️'
+      mode: 'idle', // 'idle' | 'shuffling' | 'show_rolls' | 'rps_animate' | 'rps_result'
+      rolls: {},      // Heltal (1-100)
+      decimals: {},   // Decimaler (0.0, 0.1, 0.2...)
+      tiedIndices: [], // Hvem kæmper lige nu?
+      rpsHands: {}    // Nuværende hånd
   });
 
   // Refs
@@ -181,18 +181,20 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
 
   // --- RPS RANKING ENGINE ---
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-  const rpsOptions = ['✊', '✋', '✌️'];
+  const rpsOptions = ['🪨', '📄', '✂️']; // Rock, Paper, Scissors
 
-  const getRpsResult = (a, b) => {
-      if (a === b) return 0; // Draw
-      if ((a === '✊' && b === '✌️') || (a === '✋' && b === '✊') || (a === '✌️' && b === '✋')) return 1; // A wins
-      return -1; // B wins
+  // Helper: Checks if Hand A beats Hand B
+  const beats = (a, b) => {
+      if (a === '🪨' && b === '✂️') return true;
+      if (a === '📄' && b === '🪨') return true;
+      if (a === '✂️' && b === '📄') return true;
+      return false;
   };
 
   const handleDramaticRankingRoll = async () => {
     if (rankingProcess.mode !== 'idle' && rankingProcess.mode !== 'finished') return;
 
-    // STEP 1: INITIAL SHUFFLE
+    // 1. INITIAL SHUFFLE
     setRankingProcess({ mode: 'shuffling', rolls: {}, decimals: {}, tiedIndices: [], rpsHands: {} });
     const shuffleInterval = setInterval(() => {
         const noise = {};
@@ -203,97 +205,99 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     await delay(1500);
     clearInterval(shuffleInterval);
 
-    // STEP 2: LAND INITIAL INTEGERS
+    // 2. LAND INITIAL INTEGERS
     let currentRolls = {};
     let currentDecimals = {};
     players.forEach((_, i) => {
         currentRolls[i] = Math.floor(Math.random() * 100) + 1;
-        currentDecimals[i] = 0; // Start with no decimal
+        currentDecimals[i] = 0.0;
     });
     setRankingProcess({ mode: 'show_rolls', rolls: currentRolls, decimals: currentDecimals, tiedIndices: [], rpsHands: {} });
 
-    await delay(1000);
+    await delay(1500);
 
-    // STEP 3: RESOLVE TIES WITH RPS TOURNAMENT
+    // 3. RESOLVE TIES WITH BATTLE ROYALE
     let hasConflict = true;
     while (hasConflict) {
-        // Find duplicate values
-        const counts = {};
-        Object.values(currentRolls).forEach(v => counts[v] = (counts[v]||0)+1);
-        const duplicateValues = Object.keys(counts).filter(k => counts[k] > 1).map(Number);
-        
-        if (duplicateValues.length === 0) {
+        // Group players by SCORE (Integer + Decimal)
+        const groups = {};
+        Object.keys(currentRolls).forEach(idx => {
+            const score = currentRolls[idx] + currentDecimals[idx];
+            // Use fixed string key to group floats accurately
+            const key = score.toFixed(1); 
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(Number(idx));
+        });
+
+        // Find groups with > 1 player
+        const ties = Object.values(groups).filter(g => g.length > 1);
+
+        if (ties.length === 0) {
             hasConflict = false;
         } else {
-            // Identify ALL tied players
-            const tiedIndices = Object.keys(currentRolls)
-                .map(Number)
-                .filter(idx => duplicateValues.includes(currentRolls[idx]));
+            // Process ALL tie groups simultaneously (Chaos!)
+            // Flat list of everyone fighting
+            const combatants = ties.flat();
             
-            // Enter RPS Battle Mode
-            setRankingProcess(prev => ({ ...prev, mode: 'rps_battle', tiedIndices }));
-            
-            // Animate RPS hands
-            let rpsFrame = 0;
-            const rpsInterval = setInterval(() => {
+            setRankingProcess(prev => ({ ...prev, mode: 'rps_animate', tiedIndices: combatants }));
+
+            // Slow Animation (1.5s)
+            let frames = 0;
+            const anim = setInterval(() => {
                 const hands = {};
-                tiedIndices.forEach(idx => hands[idx] = rpsOptions[Math.floor(Math.random() * 3)]);
+                combatants.forEach(idx => hands[idx] = rpsOptions[frames % 3]); // Cycle 1,2,3
                 setRankingProcess(prev => ({ ...prev, rpsHands: hands }));
-                rpsFrame++;
-            }, 100);
+                frames++;
+            }, 200); // Slow frame rate
 
-            await delay(2000); // Fight for 2 seconds
-            clearInterval(rpsInterval);
+            await delay(2000);
+            clearInterval(anim);
 
-            // Determine Winners (Assign Random Unique Decimals Logic via RPS Flavor)
-            // To guarantee progress, we just assign random hands until no draws, or force unique random decimals
-            // Real RPS Logic for 2 players:
-            const newHands = {};
-            tiedIndices.forEach(idx => newHands[idx] = rpsOptions[Math.floor(Math.random() * 3)]);
+            // THROW HANDS
+            const battleHands = {};
+            combatants.forEach(idx => battleHands[idx] = rpsOptions[Math.floor(Math.random() * 3)]);
             
-            // Check for internal draws in the group (e.g. both rock)
-            // Simplification: We generate unique decimals for everyone in the tie group to break it
-            // but visually we show the "Winning Hand" if it's a 2-player duel.
+            setRankingProcess(prev => ({ ...prev, mode: 'rps_result', rpsHands: battleHands }));
             
-            // Assign unique decimals to break the tie
-            const uniqueDecimals = [];
-            while(uniqueDecimals.length < tiedIndices.length) {
-                const d = Math.floor(Math.random() * 9) + 1; // 1-9
-                if(!uniqueDecimals.includes(d)) uniqueDecimals.push(d);
-            }
-            // Sort decimals high to low
-            uniqueDecimals.sort((a,b) => b - a);
+            // CALCULATE WINNERS PER GROUP
+            ties.forEach(group => {
+                // Check each player in this group against the others in the group
+                group.forEach(playerIdx => {
+                    const myHand = battleHands[playerIdx];
+                    let didWin = false;
+                    
+                    // Does my hand beat ANYONE else in this group?
+                    const opponents = group.filter(p => p !== playerIdx);
+                    opponents.forEach(oppIdx => {
+                        if (beats(myHand, battleHands[oppIdx])) {
+                            didWin = true;
+                        }
+                    });
 
-            // Assign decimals to players
-            tiedIndices.forEach((pidx, i) => {
-                currentDecimals[pidx] = uniqueDecimals[i]; // Highest decimal gets 'Winner' status
-                // We leave the base Roll (integer) alone, so they are still "tied" visually until we display decimal
+                    // If I beat someone, I get +0.1
+                    if (didWin) {
+                        currentDecimals[playerIdx] = parseFloat((currentDecimals[playerIdx] + 0.1).toFixed(1));
+                    }
+                });
             });
 
-            // Show Result
-            setRankingProcess(prev => ({ ...prev, mode: 'rps_result', rpsHands: newHands, decimals: currentDecimals }));
+            // Update decimals visually
+            setRankingProcess(prev => ({ ...prev, decimals: {...currentDecimals} }));
             
-            // Wait to show who won RPS
-            await delay(2000); 
-
-            // Clear conflict flag (The decimals resolved it)
-            // Technically we loop again to verify no two players have exact same Integer AND Decimal (highly unlikely with logic above)
-            hasConflict = false; 
+            await delay(2500); // Let them see the hands and result
         }
     }
 
-    // STEP 4: FINALIZE
-    // Score = Integer + (Decimal / 10)
-    const getScore = (idx) => currentRolls[idx] + (currentDecimals[idx] / 10);
-    
+    // 4. FINALIZE
+    const getScore = (idx) => currentRolls[idx] + currentDecimals[idx];
     const sortedIndices = Object.keys(currentRolls).sort((a, b) => getScore(b) - getScore(a));
     
     const newPlayers = [...players];
     sortedIndices.forEach((playerIdx, rankOrder) => {
         newPlayers[playerIdx].rank = rankOrder + 1;
-        // Format: "88" or "88,9" if decimal exists
+        const roll = currentRolls[playerIdx];
         const dec = currentDecimals[playerIdx];
-        newPlayers[playerIdx].ranking_roll = dec > 0 ? `${currentRolls[playerIdx]},${dec}` : `${currentRolls[playerIdx]}`;
+        newPlayers[playerIdx].ranking_roll = dec > 0 ? `${roll},${Math.round(dec * 10)}` : `${roll}`;
     });
 
     setRankingProcess({ mode: 'idle', rolls: {}, decimals: {}, tiedIndices: [], rpsHands: {} });
@@ -371,10 +375,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     const { mode, rolls, tiedIndices, rpsHands, decimals } = rankingProcess;
     const isActive = mode !== 'idle';
     const isTied = tiedIndices.includes(index);
-    const showRPS = (mode === 'rps_battle' || mode === 'rps_result') && isTied;
+    const showRPS = (mode === 'rps_animate' || mode === 'rps_result') && isTied;
     
     const displayValue = isActive ? (rolls[index] !== undefined ? rolls[index] : '?') : (player.ranking_roll || '-');
-    const decimalValue = isActive && decimals[index] > 0 ? `,${decimals[index]}` : '';
+    const decimalValue = isActive && decimals[index] > 0 ? `,${Math.round(decimals[index]*10)}` : '';
 
     return (
         <div className="flex flex-col bg-[#111]/90 backdrop-blur-md border border-gray-800 rounded-lg overflow-hidden shadow-2xl relative h-full select-none">
@@ -389,17 +393,17 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     {/* VISUAL RANKING DISPLAY */}
                     {showRPS ? (
                         // RPS MODE
-                        <div className="bg-red-900/50 border border-red-500 rounded px-1.5 py-0.5 flex items-center justify-center min-w-[30px] h-[26px] animate-pulse">
-                            <span className="text-lg leading-none filter drop-shadow-md">
+                        <div className="bg-red-900/50 border border-red-500 rounded px-1.5 py-0.5 flex items-center justify-center min-w-[34px] h-[28px] animate-pulse">
+                            <span className="text-xl leading-none filter drop-shadow-md">
                                 {rpsHands[index] || '✊'}
                             </span>
                         </div>
                     ) : (
                         // NUMBER MODE
-                        <div className={`border rounded px-1.5 py-0.5 flex items-center gap-0.5 shadow-md min-w-[30px] h-[26px] justify-center transition-colors duration-300 ${isTied && !showRPS ? 'bg-red-900 border-red-500' : 'bg-black border-yellow-600/50'}`}>
+                        <div className={`border rounded px-1.5 py-0.5 flex items-center gap-0.5 shadow-md min-w-[34px] h-[28px] justify-center transition-colors duration-300 ${isTied && !showRPS ? 'bg-red-900 border-red-500' : 'bg-black border-yellow-600/50'}`}>
                             <span className={`text-sm font-bold leading-none ${isTied ? 'text-red-200' : 'text-yellow-500'}`}>
                                 {displayValue}
-                                {mode === 'rps_result' && <span className="text-[10px] text-yellow-300 opacity-80">{decimalValue}</span>}
+                                {isActive && <span className="text-xs text-yellow-300 opacity-90">{decimalValue}</span>}
                             </span>
                             {!isActive && player.rank && (
                                 <>
@@ -607,6 +611,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
             </div>
         </div>
 
+        {/* MOBILE CODEX BUTTON (Hidden on landscape) */}
         <div className="w-full px-0 mt-0 md:hidden landscape:hidden">
             <button onClick={() => setShowRules(!showRules)} className="w-full bg-[#3d2b0f] hover:bg-[#523812] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
                 <BookOpen size={18} className="text-yellow-500"/>
