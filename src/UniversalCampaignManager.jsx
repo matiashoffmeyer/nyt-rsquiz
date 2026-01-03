@@ -25,7 +25,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   
   // RANKING VISUALS STATE
   const [rankingProcess, setRankingProcess] = useState({ 
-      mode: 'idle', // 'idle' | 'shuffling' | 'show_rolls' | 'resolving_ties'
+      mode: 'idle', 
       rolls: {}, 
       tiedIndices: [] 
   });
@@ -36,7 +36,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const touchEnd = useRef(null);
   const minSwipeDistance = 50;
 
-  // --- CONTENT DATA (STAGGING ORIGINALS) ---
+  // --- CONTENT DATA ---
   const staggingTimeline = [
       { title: "Battle 1: Repentance", type: "battle", desc: "All vs All, you may pay life instead of mana for your spells." },
       { title: "Post-Battle 1", type: "post", desc: "Bid i det sure løg #101 for each loser.\nQuilt draft a Booster." },
@@ -81,7 +81,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   useEffect(() => {
     if (!campaignId) return;
     const loadCampaign = async () => {
-      const { data } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
+      const { data, error } = await supabase.from('campaigns').select('*').eq('id', campaignId).single();
+      if (error) { console.error(error); return; }
       if (data) {
         setMeta({ title: data.title, engine: data.engine });
         setConfig(data.static_config);
@@ -113,7 +114,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     await supabase.from('campaigns').update({ active_state: { players: newPlayers, stalemate: newStalemate, epilogueMode: newEpilogue, last_roll: newRoll } }).eq('id', campaignId);
   };
 
-  // --- SAFE SAVE / LOAD ACTIONS ---
+  // --- ACTIONS ---
   const exportData = () => {
     const data = JSON.stringify({ 
       campaignId, 
@@ -141,9 +142,8 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target.result);
-        if (data.campaignId && data.campaignId !== campaignId) {
-            const confirmLoad = window.confirm(`ADVARSEL: Forkert kampagne ID. Vil du overskrive ${meta.title}?`);
-            if (!confirmLoad) return;
+        if (data.campaignId && data.campaignId != campaignId) {
+            if (!window.confirm(`ADVARSEL: ID match ikke. Vil du overskrive?`)) return;
         }
         if (data.players) {
             syncState(data.players, data.stalemate || 0, data.epilogueMode || false, data.last_roll || { type: '-', value: '-' });
@@ -161,7 +161,6 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       window.location.reload(); 
   };
 
-  // --- GAME ACTIONS ---
   const rollDice = (sides) => {
     setDiceOverlay({ active: true, value: 1, type: sides, finished: false });
     let counter = 0;
@@ -178,15 +177,14 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     }, 50);
   };
 
-  // --- DRAMATIC RANKING ROLL ENGINE ---
+  // --- RANKING LOGIC ---
   const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
   const handleDramaticRankingRoll = async () => {
     if (rankingProcess.mode !== 'idle' && rankingProcess.mode !== 'finished') return;
 
-    // STEP 1: INITIAL SHUFFLE
+    // STEP 1: SHUFFLE
     setRankingProcess({ mode: 'shuffling', rolls: {}, tiedIndices: [] });
-    
     const shuffleInterval = setInterval(() => {
         const noise = {};
         players.forEach((_, i) => noise[i] = Math.floor(Math.random() * 100) + 1);
@@ -196,14 +194,14 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     await delay(1500);
     clearInterval(shuffleInterval);
 
-    // STEP 2: LAND FIRST ROLLS
+    // STEP 2: LAND
     let currentRolls = {};
     players.forEach((_, i) => currentRolls[i] = Math.floor(Math.random() * 100) + 1);
     setRankingProcess({ mode: 'show_rolls', rolls: currentRolls, tiedIndices: [] });
 
     await delay(1000);
 
-    // STEP 3: RESOLVE TIES LOOP
+    // STEP 3: CONFLICTS
     let hasConflict = true;
     while (hasConflict) {
         const counts = {};
@@ -217,31 +215,20 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 .map(Number)
                 .filter(idx => duplicates.includes(currentRolls[idx]));
             
-            setRankingProcess({ 
-                mode: 'resolving_ties', 
-                rolls: currentRolls, 
-                tiedIndices: conflictedIndices 
-            });
-
+            setRankingProcess({ mode: 'resolving_ties', rolls: currentRolls, tiedIndices: conflictedIndices });
             await delay(2000);
 
             conflictedIndices.forEach(idx => {
                 currentRolls[idx] = Math.floor(Math.random() * 100) + 1;
             });
 
-            setRankingProcess({ 
-                mode: 'show_rolls', 
-                rolls: {...currentRolls}, 
-                tiedIndices: [] 
-            });
-            
+            setRankingProcess({ mode: 'show_rolls', rolls: {...currentRolls}, tiedIndices: [] });
             await delay(1500);
         }
     }
 
-    // STEP 4: FINALIZE (High Roll = Rank 1)
+    // STEP 4: FINALIZE (High = Rank 1)
     const sortedIndices = Object.keys(currentRolls).sort((a, b) => currentRolls[b] - currentRolls[a]);
-    
     const newPlayers = [...players];
     sortedIndices.forEach((playerIdx, rankOrder) => {
         newPlayers[playerIdx].rank = rankOrder + 1;
@@ -269,17 +256,24 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
   const handleMarriage = (playerIndex, newSpouseName) => {
     const newPlayers = [...players];
     const currentPlayer = newPlayers[playerIndex];
-    const oldSpouseName = currentPlayer.spouse;
-    if (oldSpouseName) {
-        const oldSpouseIndex = newPlayers.findIndex(p => p.name === oldSpouseName);
-        if (oldSpouseIndex !== -1) newPlayers[oldSpouseIndex].spouse = "";
+    
+    // Clear old
+    if (currentPlayer.spouse) {
+        const oldIdx = newPlayers.findIndex(p => p.name === currentPlayer.spouse);
+        if (oldIdx !== -1) newPlayers[oldIdx].spouse = "";
     }
     currentPlayer.spouse = newSpouseName;
+    
+    // Set new
     if (newSpouseName) {
-        const newSpouseIndex = newPlayers.findIndex(p => p.name === newSpouseName);
-        if (newSpouseIndex !== -1) {
-            const targetExName = newPlayers[newSpouseIndex].spouse;
-            newPlayers[newSpouseIndex].spouse = currentPlayer.name;
+        const newIdx = newPlayers.findIndex(p => p.name === newSpouseName);
+        if (newIdx !== -1) {
+            const exName = newPlayers[newIdx].spouse;
+            if (exName) {
+                 const exIdx = newPlayers.findIndex(p => p.name === exName);
+                 if (exIdx !== -1) newPlayers[exIdx].spouse = "";
+            }
+            newPlayers[newIdx].spouse = currentPlayer.name;
         }
     }
     syncState(newPlayers, stalemate, epilogueMode, lastRollRecord);
@@ -312,11 +306,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       return [];
   };
 
-  // --- PLAYER CARD ---
+  // --- COMPONENT: PLAYER CARD ---
   const PlayerCard = ({ player, index }) => {
     if (!player) return null;
     const reminders = getReminders();
-    
     const showRankProcess = rankingProcess.mode !== 'idle';
     const isTied = rankingProcess.tiedIndices.includes(index);
     const d100Val = rankingProcess.rolls[index];
@@ -354,7 +347,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                     <>
                         {useFeature('use_roles') && (
                             <div className="grid grid-cols-[1fr_auto] gap-2 items-center shrink-0">
-                                <select value={player.role} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-1 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none hover:border-gray-500 transition-colors">
+                                <select value={player.role || ""} onChange={(e) => updatePlayer(index, 'role', e.target.value)} className="bg-black text-gray-300 border border-gray-700 text-xs rounded p-1 font-bold focus:outline-none focus:border-yellow-600 w-full appearance-none hover:border-gray-500 transition-colors">
                                     <option value="">-- No Role --</option>
                                     {['Doctor','Monk','Smith','Knight','Fool','King'].map(r=><option key={r} value={r}>{r}</option>)}
                                 </select>
@@ -435,7 +428,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                                 <div className="flex justify-between items-center mb-1">
                                     <label className="text-[9px] text-indigo-400 uppercase font-bold flex items-center gap-1"><Users size={10}/> Marriage</label>
                                 </div>
-                                <select value={player.spouse} onChange={(e) => handleMarriage(index, e.target.value)} className="w-full bg-black text-gray-300 border border-gray-700 rounded p-2 text-xs focus:outline-none focus:border-indigo-500">
+                                <select value={player.spouse || ""} onChange={(e) => handleMarriage(index, e.target.value)} className="w-full bg-black text-gray-300 border border-gray-700 rounded p-2 text-xs focus:outline-none focus:border-indigo-500">
                                     <option value="">Single (Unmarried)</option>
                                     {players.filter(p => p.name !== player.name).map((p, i) => <option key={i} value={p.name}>Married to {p.name}</option>)}
                                 </select>
@@ -481,20 +474,11 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
     );
   };
 
-  // --- SWIPE LOGIC ---
-  const onTouchStart = (e) => { touchEnd.current = null; touchStart.current = e.targetTouches[0].clientX; };
-  const onTouchMove = (e) => { touchEnd.current = e.targetTouches[0].clientX; };
-  const onTouchEnd = () => {
-    if (!touchStart.current || !touchEnd.current) return;
-    const distance = touchStart.current - touchEnd.current;
-    if (distance > minSwipeDistance) setActivePlayerIndex((prev) => (prev + 1) % players.length);
-    if (distance < -minSwipeDistance) setActivePlayerIndex((prev) => (prev - 1 + players.length) % players.length);
-  };
-
   if (!config) return <div className="text-white p-10 font-serif">Loading Chronicles...</div>;
 
   return (
     <div className="h-dvh w-screen overflow-hidden bg-[#050505] text-gray-300 font-sans relative flex">
+      {/* Background */}
       <div className="absolute inset-0 z-0 opacity-40 pointer-events-none">
         <style>{`@keyframes nebula { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } .nebula-bg { background: linear-gradient(-45deg, #1a0b0b, #2e1010, #0f172a, #000000); background-size: 400% 400%; animation: nebula 15s ease infinite; }`}</style>
         <div className="w-full h-full nebula-bg"></div>
@@ -502,8 +486,7 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
       
       {diceOverlay.active && (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
-            <style>{`@keyframes chaos { 0% { transform: rotate(0deg) scale(0.5); } 100% { transform: rotate(360deg) scale(1); } } @keyframes landing { 0% { transform: scale(3); opacity: 0; } 50% { transform: scale(0.8); opacity: 1; } 100% { transform: scale(1); } } .rolling-anim { animation: chaos 0.1s infinite linear; opacity: 0.7; color: #444; } .landed-anim { animation: landing 0.4s ease-out forwards; text-shadow: 0 0 50px #d4af37; color: #d4af37; transform: scale(1.5); }`}</style>
-            <div className={`font-black text-[20rem] leading-none ${diceOverlay.finished ? 'landed-anim' : 'rolling-anim'}`}>{diceOverlay.value}</div>
+            <div className={`font-black text-[20rem] text-amber-500 animate-pulse`}>{diceOverlay.value}</div>
         </div>
       )}
 
@@ -518,12 +501,10 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 <h1 className="text-sm md:text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-yellow-500 tracking-widest uppercase truncate max-w-[150px]" style={{ fontFamily: 'Cinzel, serif' }}>
                     {meta.title}
                 </h1>
-                {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/> Connected</div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/> Offline Mode</div>}
+                {isConnected ? <div className="text-[8px] text-green-500 flex items-center gap-1 uppercase tracking-wider"><Wifi size={8}/></div> : <div className="text-[8px] text-gray-600 flex items-center gap-1 uppercase tracking-wider"><WifiOff size={8}/></div>}
             </div>
 
-            {/* STALEMATE */}
             <div className="bg-black/60 border border-red-900/30 rounded flex items-center px-1 gap-1">
-                <div className="hidden md:flex text-[10px] text-red-500 font-bold uppercase items-center gap-1"><Skull size={10} /> Stalemate</div>
                 <div className="flex items-center gap-1">
                     <button onClick={() => { setStalemate(Math.max(0, stalemate - 1)); syncState(players, Math.max(0, stalemate - 1), epilogueMode, lastRollRecord); }} className="w-8 h-8 flex items-center justify-center rounded hover:bg-white/10 text-gray-400 font-bold"><Minus size={14}/></button>
                     <span className="text-xl font-mono font-bold text-white w-6 text-center">{stalemate}</span>
@@ -531,55 +512,34 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
                 </div>
             </div>
 
-            {/* DICE */}
-            <div className="flex items-center gap-2">
-                <div className="hidden md:flex gap-1">
-                    {[4, 6, 8, 10, 12, 20].map(sides => (
-                        <button key={sides} onClick={() => rollDice(sides)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 hover:border-blue-400 text-blue-200 rounded font-bold text-[10px] active:scale-95">D{sides}</button>
-                    ))}
-                </div>
-                <div className="flex md:hidden gap-1">
-                    <button onClick={() => rollDice(6)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 text-blue-200 rounded font-bold text-xs">D6</button>
-                    <button onClick={() => rollDice(20)} className="px-2 py-1 bg-gradient-to-br from-blue-900 to-black border border-blue-700/50 text-blue-200 rounded font-bold text-xs">D20</button>
-                </div>
-                <div className="bg-black border border-yellow-600/50 rounded px-2 py-1 flex flex-col items-center justify-center min-w-[50px] shadow-[0_0_10px_rgba(234,179,8,0.2)]">
-                    <span className="text-[8px] text-gray-500 uppercase">D{lastRollRecord.type}</span>
-                    <span className="text-lg font-bold text-yellow-500 leading-none">{lastRollRecord.value}</span>
-                </div>
+            <div className="flex items-center gap-1">
+                <button onClick={() => rollDice(6)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D6</button>
+                <button onClick={() => rollDice(20)} className="px-2 py-1 bg-blue-900/50 border border-blue-700 text-blue-200 rounded text-xs font-bold">D20</button>
             </div>
 
-            {/* DESKTOP MENU BTNS */}
             <div className="hidden md:flex gap-1">
                 <button onClick={exportData} className="p-2 hover:bg-white/10 rounded text-green-500"><Save size={16}/></button>
-                <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer" title="Load"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
+                <label className="p-2 hover:bg-white/10 rounded text-blue-500 cursor-pointer"><Upload size={16}/><input type="file" ref={fileInputRef} onChange={importData} className="hidden" accept=".json" /></label>
                 <button onClick={() => setShowRules(!showRules)} className="p-2 bg-yellow-600 text-black rounded font-bold hover:bg-yellow-500"><BookOpen size={16}/></button>
-                <button onClick={toggleEpilogue} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`}><Crown size={16}/></button>
+                <button onClick={toggleEpilogue} className={`p-2 hover:bg-white/10 rounded ${epilogueMode ? 'text-yellow-400' : 'text-gray-500'}`}><Crown size={16}/></button>
                 <button onClick={resetData} className="p-2 hover:bg-white/10 rounded text-red-500"><RefreshCw size={16}/></button>
             </div>
         </div>
 
-        {/* MOBILE CODEX BUTTON (Hidden on landscape) */}
+        {/* MOBILE CODEX BUTTON */}
         <div className="w-full px-0 mt-0 md:hidden landscape:hidden">
-            <button onClick={() => setShowRules(!showRules)} className="w-full bg-[#3d2b0f] hover:bg-[#523812] active:bg-[#2e1f0a] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2 transition-colors group">
-                <BookOpen size={18} className="text-yellow-500 group-hover:text-yellow-300"/>
+            <button onClick={() => setShowRules(!showRules)} className="w-full bg-[#3d2b0f] hover:bg-[#523812] border border-yellow-800/50 text-yellow-100 py-3 rounded-lg shadow-md flex items-center justify-center gap-2">
+                <BookOpen size={18} className="text-yellow-500"/>
                 <span className="font-bold uppercase tracking-widest text-sm" style={{ fontFamily: 'Cinzel, serif' }}>Åbn Codex</span>
             </button>
         </div>
 
         {/* --- MAIN GAME VIEW --- */}
-        <div className="
-            hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0 
-            landscape:grid landscape:grid-cols-4 landscape:gap-2
-        ">
+        <div className="hidden md:grid grid-cols-4 gap-2 flex-grow min-h-0 landscape:grid landscape:grid-cols-4 landscape:gap-2">
             {players.map((player, index) => <PlayerCard key={index} player={player} index={index} />)}
         </div>
 
-        <div 
-            className="md:hidden landscape:hidden flex flex-grow items-center justify-center relative overflow-hidden select-none touch-pan-y" 
-            onTouchStart={onTouchStart} 
-            onTouchMove={onTouchMove} 
-            onTouchEnd={onTouchEnd}
-        >
+        <div className="md:hidden landscape:hidden flex flex-grow items-center justify-center relative overflow-hidden touch-pan-y" onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
             <div className="w-full h-full p-1 transition-transform duration-200">
                 <PlayerCard player={players[activePlayerIndex]} index={activePlayerIndex} />
             </div>
@@ -601,111 +561,51 @@ const UniversalCampaignManager = ({ campaignId, onExit }) => {
         </div>
 
         <div className="flex-grow overflow-y-auto p-2 space-y-2 text-sm text-gray-300 custom-scrollbar pb-20">
-            
             {meta.engine === 'rpg' ? (
                 <>
+                    {/* RPG Rules Section */}
                     <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                        <button onClick={() => toggleRuleSection('core')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'core' ? 'text-blue-300 bg-white/5' : 'text-blue-500'}`}>
+                        <button onClick={() => toggleRuleSection('core')} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between text-blue-500 hover:bg-white/5">
                             <span><Info size={12} className="inline mr-2"/> Core Rules</span>
                             <span>{activeRuleSection === 'core' ? '−' : '+'}</span>
                         </button>
                         {activeRuleSection === 'core' && (
                             <div className="p-3 border-t border-gray-800 space-y-3 text-xs leading-relaxed text-gray-400">
-                                <p><strong>Setup:</strong> 4-5 players, 5 battles, 6 boosters and a land booster. HS 6, LT 15. Dual land market is 2 x types (20) = 40 cards.</p>
-                                <p><strong>Bidding & Roles:</strong> At the beginning of the campaign players secretly bid a number to subtract from their LT. Players choose a non-King-role to gain, starting with the highest bidder and then in descending order. Only one player can have a role at a time.</p>
-                                <p><strong>King Role:</strong> When a player wins a battle, he gains the King role for the next battle.</p>
-                                <p><strong>Role Selection:</strong> At the beginning of a battle, all non-King players may gain an available role, in descending ranking order.</p>
-                                <p><strong>Dead Players:</strong> After a player is dead in battle 1-4 other players can’t gain more XP in that battle (except rewards based on the outcome of the battle).</p>
-                                <p><strong>Levels:</strong> Level 1 (&lt; 10 xp), Level 2 (10 xp), Level 3 (20 xp). Players can’t have more than 20 xp or less than 0.</p>
-                                <p><strong>Ranking:</strong> Player ranking is determined by the number of VPs, if tied, the most recent wins count highest. Gain a VP by winning a battle. The winner of the campaign is the winner of the final battle.</p>
-                                <p><strong>Mulligans:</strong> If you want to mulligan your starting hand, you may shuffle your hand and draw a new hand, then, before looking at it, put one card from your hand on the bottom of your library. For each time you mulligan, put an extra card on the bottom of your library.</p>
-                                <p><strong>Draw-out:</strong> If, at any point, you can’t draw a card from your library you may instead sacrifice a non-land permanent. If you don’t, you lose 2 life.</p>
-                                <p><strong>Stalemate:</strong> The moment 2 players are left in any battle, put a timer dice to 1. Increase it at the beginning of turns. When it reaches 10 (in consensus only), the battle ends and the winner is the player with the most lives, if tied, the most non-land permanents in play, if tied, the most cards on hand, if tied, the most cards left in his library.</p>
+                                <p><strong>Setup:</strong> 4-5 players, 5 battles, 6 boosters and a land booster. HS 6, LT 15.</p>
+                                <p><strong>Mulligans:</strong> New hand -> put 1 on bottom (+1 per mulligan).</p>
                             </div>
                         )}
                     </div>
-
-                    <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                        <button onClick={() => toggleRuleSection('roles')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'roles' ? 'text-green-300 bg-white/5' : 'text-green-500'}`}>
-                            <span><Crown size={12} className="inline mr-2"/> Roles</span>
-                            <span>{activeRuleSection === 'roles' ? '−' : '+'}</span>
-                        </button>
-                        {activeRuleSection === 'roles' && (
-                            <div className="p-3 border-t border-gray-800 space-y-4 text-xs leading-relaxed text-gray-400">
-                                {['Doctor','Monk','Smith','Knight','Fool','King'].map(r => (
-                                    <div key={r} className="border-b border-gray-800 last:border-0 pb-2">
-                                        <strong className="text-yellow-600 block mb-1 uppercase">{r}</strong>
-                                        <ul className="list-disc pl-4 space-y-1">
-                                            {getRoleAbilities(r).map((ab, i) => <li key={i}>{ab}</li>)}
-                                            <li className="text-yellow-500/80 italic">{getRoleReward(r)}</li>
-                                        </ul>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
+                    {/* Render Timeline for RPG */}
                     {staggingTimeline.map((event, i) => (
                         <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                            <button onClick={() => toggleRuleSection(`event-${i}`)} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === `event-${i}` ? (event.type === 'battle' ? 'text-red-300 bg-white/5' : 'text-blue-300 bg-white/5') : (event.type === 'battle' ? 'text-red-500' : 'text-blue-500')}`}>
-                                <span>{event.type === 'battle' ? <Sword size={12} className="inline mr-2"/> : <Beer size={12} className="inline mr-2"/>} {event.title}</span>
-                                <span>{activeRuleSection === `event-${i}` ? '−' : '+'}</span>
-                            </button>
-                            {activeRuleSection === `event-${i}` && (
-                                <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{event.desc}</div>
-                            )}
-                        </div>
-                    ))}
-
-                    <div className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                        <button onClick={() => toggleRuleSection('epi')} className={`w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors ${activeRuleSection === 'epi' ? 'text-indigo-300 bg-white/5' : 'text-indigo-500'}`}>
-                            <span><Clock size={12} className="inline mr-2"/> Epilogue</span>
-                            <span>{activeRuleSection === 'epi' ? '−' : '+'}</span>
-                        </button>
-                        {activeRuleSection === 'epi' && (
-                            <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 space-y-2">
-                                <p>The Role and XP system is abandoned. Booster draft a non mono booster #105.</p>
-                                <strong className="text-white block mt-2">The Day After (All vs All)</strong>
-                                <p>Players start with a number of Drunk counters corresponding to their inverse placement in the previous battle (Last place starts with 3 Drunk counter, second last with 4 Drunk counters and so on).</p>
-                                <p>When a Drunk counter is removed from a player he draws a card.</p>
-                                <p>Sober Up: At the beginning of your upkeep, you may pay 1 (so 2 because you’re Drunk) mana to remove a Drunk counter.</p>
-                                <p>All spells have “Rather than cast this card from your hand, you must pay its mana cost and exile it with a time counter on it. At the beginning of your upkeep, remove a time counter. When the last is removed, cast it without paying its mana cost.“ and all creatures enter tapped.</p>
-                                <p>Last place gains +1 LT, second last +2 LT and so on. LTs can exceed 20.</p>
-                                <strong className="text-white block mt-2">The Big Day (All vs All)</strong>
-                                <p>The winner of the previous battle proposes marriage to another player. That player may refuse. If a player accepts, the 2 become married. The winner continues asking other players until one accepts. The final player asked, can’t refuse.</p>
-                                <p>The highest ranked remaining player repeats the proposal process with the remaining unmarried player(s).</p>
-                                <p>The married players shuffle their decks and share a library (the library remains in play when one of the married players dies).</p>
-                                <p>Married players can’t attack each other unless they are the only remaining players.</p>
-                                <p>A player may end the marriage with his partner with sorcery speed by giving all cards in his hand to the abandoned partner.</p>
-                                <p>2 unmarried players may marry with sorcery speed. As long as they remain married, they may draw from the other players library.</p>
-                                <p>The final remaining player wins the Epilogue of Stagging It Up.</p>
-                            </div>
-                        )}
-                    </div>
-                </>
-            ) : (
-                <>
-                    {config?.rules_text && config.rules_text.map((rule, i) => (
-                        <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                            <button onClick={() => toggleRuleSection(`rule-${i}`)} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors text-blue-500">
-                                <span><Info size={12} className="inline mr-2"/> {rule.title}</span>
-                                <span>{activeRuleSection === `rule-${i}` ? '−' : '+'}</span>
-                            </button>
-                            {activeRuleSection === `rule-${i}` && (
-                                <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{rule.desc}</div>
-                            )}
-                        </div>
-                    ))}
-
-                    {config?.timeline && config.timeline.map((event, i) => (
-                        <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
-                            <button onClick={() => toggleRuleSection(`event-${i}`)} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between hover:bg-white/5 transition-colors text-red-500">
+                            <button onClick={() => toggleRuleSection(`event-${i}`)} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between text-red-500 hover:bg-white/5">
                                 <span><Sword size={12} className="inline mr-2"/> {event.title}</span>
                                 <span>{activeRuleSection === `event-${i}` ? '−' : '+'}</span>
                             </button>
-                            {activeRuleSection === `event-${i}` && (
-                                <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{event.desc}</div>
-                            )}
+                            {activeRuleSection === `event-${i}` && <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{event.desc}</div>}
+                        </div>
+                    ))}
+                </>
+            ) : (
+                <>
+                    {/* Standard Rules */}
+                    {config?.rules_text && config.rules_text.map((rule, i) => (
+                        <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                            <button onClick={() => toggleRuleSection(`rule-${i}`)} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between text-blue-500 hover:bg-white/5">
+                                <span><Info size={12} className="inline mr-2"/> {rule.title}</span>
+                                <span>{activeRuleSection === `rule-${i}` ? '−' : '+'}</span>
+                            </button>
+                            {activeRuleSection === `rule-${i}` && <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{rule.desc}</div>}
+                        </div>
+                    ))}
+                    {config?.timeline && config.timeline.map((event, i) => (
+                        <div key={i} className="border border-gray-800 rounded bg-black/20 overflow-hidden">
+                            <button onClick={() => toggleRuleSection(`event-${i}`)} className="w-full p-3 font-bold text-left uppercase tracking-widest flex justify-between text-red-500 hover:bg-white/5">
+                                <span><Sword size={12} className="inline mr-2"/> {event.title}</span>
+                                <span>{activeRuleSection === `event-${i}` ? '−' : '+'}</span>
+                            </button>
+                            {activeRuleSection === `event-${i}` && <div className="p-3 border-t border-gray-800 text-xs leading-relaxed text-gray-400 whitespace-pre-wrap">{event.desc}</div>}
                         </div>
                     ))}
                 </>
