@@ -1,27 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import GameLobby from './GameLobby';
 import UniversalCampaignManager from './UniversalCampaignManager';
 
 const App = () => {
-  // 1. SIKKER INITIALISERING
-  // Vi tjekker localStorage én gang ved start.
-  // Hvis den finder "undefined" eller snavs, returnerer den bare null (Lobbyen) uden at crashe.
+  // Sikker opstart: Vi læser kun localStorage én gang ved load
   const [selectedCampaignId, setSelectedCampaignId] = useState(() => {
     try {
-      const storedId = localStorage.getItem('current_campaign_id');
-      // Tjek om det er et gyldigt ID (ikke "undefined" strengen eller null)
-      if (!storedId || storedId === 'undefined' || storedId === 'null') {
-        return null;
-      }
-      return storedId;
+      const stored = localStorage.getItem('current_campaign_id');
+      // Hvis det er "undefined" (som tekst) eller null, så start i lobby
+      if (!stored || stored === 'undefined' || stored === 'null') return null;
+      return stored;
     } catch (e) {
       return null;
     }
   });
 
   const handleSelect = (id) => {
-    localStorage.setItem('current_campaign_id', id);
-    setSelectedCampaignId(id);
+    // Gemmer kun hvis ID er gyldigt
+    if (id) {
+      localStorage.setItem('current_campaign_id', id);
+      setSelectedCampaignId(id);
+    }
   };
 
   const handleExit = () => {
@@ -31,13 +30,13 @@ const App = () => {
 
   return (
     <>
-      {!selectedCampaignId ? (
-        <GameLobby onSelectCampaign={handleSelect} />
-      ) : (
+      {selectedCampaignId ? (
         <UniversalCampaignManager 
           campaignId={selectedCampaignId} 
           onExit={handleExit} 
         />
+      ) : (
+        <GameLobby onSelectCampaign={handleSelect} />
       )}
     </>
   );
