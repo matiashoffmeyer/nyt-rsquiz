@@ -255,10 +255,10 @@ const TrackerCounter = ({ label, value, onChange, colorClass, icon: Icon, isDeca
 // --- MAIN COMPONENT: TRACKER MODE ---
 const COUNTER_DEFS = [
     { id: 'cmd', label: 'CMD DMG', icon: Sword, color: 'border-red-900/50 text-red-400', decay: false },
-    { id: 'poison', label: 'POISON', icon: Droplet, color: 'border-emerald-900/50 text-emerald-400', decay: false },
+    { id: 'poison', label: 'HAND SIZE', icon: Droplet, color: 'border-emerald-900/50 text-emerald-400', decay: false },
     { id: 'tax', label: 'TAX/MANA', icon: Shield, color: 'border-yellow-900/50 text-yellow-400', decay: true },
     { id: 'storm', label: 'STORM', icon: Zap, color: 'border-blue-900/50 text-blue-400', decay: true },
-    { id: 'exp', label: 'EXP', icon: Flame, color: 'border-orange-900/50 text-orange-400', decay: false },
+    { id: 'exp', label: 'VICTORY POINTS', icon: Flame, color: 'border-orange-900/50 text-orange-400', decay: false },
 ];
 
 const TrackerMode = ({ players, updatePlayer, syncState, playSound, onExit, campaignId }) => {
