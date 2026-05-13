@@ -554,11 +554,11 @@ const TrackerMode = ({ players, updatePlayer, syncState, playSound, onExit, camp
                         >
                             <Dices size={16} /> <span className="text-[10px] font-bold">D20</span>
                         </button>
-                        <button 
-                            onClick={() => { playSound('click'); setDiceState({ active: true, sides: 6, count: 2 }); }} 
+                        <button
+                            onClick={() => { playSound('click'); setDiceState({ active: true, sides: 6, count: 1 }); }}
                             className="h-12 rounded-xl bg-stone-900 border border-stone-800 flex items-center justify-center gap-2 text-stone-400 hover:text-white hover:bg-stone-800 transition-all active:scale-95"
                         >
-                            <Dices size={16} /> <span className="text-[10px] font-bold">2xD6</span>
+                            <Dices size={16} /> <span className="text-[10px] font-bold">D6</span>
                         </button>
                         <button 
                             onClick={() => setModalConfig({ 
