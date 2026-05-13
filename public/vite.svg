@@ -1,0 +1,23 @@
+<svg width="400" height="400" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g>
+<rect width="400" height="400" fill="url(#paint0_radial_halo)"/>
+<circle cx="200" cy="200" r="160" fill="url(#paint1_radial_button)"/>
+<circle cx="200" cy="200" r="162" stroke="url(#paint2_radial_border)" stroke-width="4"/>
+<text x="200" y="200" text-anchor="middle" dominant-baseline="central" font-family="Arial, sans-serif" font-weight="900" font-size="40" fill="white" letter-spacing="1">PASS TURN</text>
+</g>
+<defs>
+<radialGradient id="paint0_radial_halo" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(200 200) rotate(90) scale(200)">
+<stop stop-color="#C05621"/>
+<stop offset="0.6" stop-color="#431407" stop-opacity="0.8"/>
+<stop offset="1" stop-color="#0C0A09" stop-opacity="0"/>
+</radialGradient>
+<radialGradient id="paint1_radial_button" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(200 200) rotate(90) scale(160)">
+<stop stop-color="#0F766E"/>
+<stop offset="1" stop-color="#042F2E"/>
+</radialGradient>
+<radialGradient id="paint2_radial_border" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(200 200) rotate(90) scale(162)">
+<stop stop-color="#5EEAD4"/>
+<stop offset="1" stop-color="#0D9488"/>
+</radialGradient>
+</defs>
+</svg>
