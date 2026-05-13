@@ -254,7 +254,7 @@ const TrackerCounter = ({ label, value, onChange, colorClass, icon: Icon, isDeca
 
 // --- MAIN COMPONENT: TRACKER MODE ---
 const COUNTER_DEFS = [
-    { id: 'cmd', label: 'CMD DMG', icon: Sword, color: 'border-red-900/50 text-red-400', decay: false },
+    { id: 'cmd', label: 'GENERIC 1', icon: Sword, color: 'border-red-900/50 text-red-400', decay: false },
     { id: 'poison', label: 'HAND SIZE', icon: Droplet, color: 'border-emerald-900/50 text-emerald-400', decay: false },
     { id: 'tax', label: 'DRUNK', icon: Shield, color: 'border-yellow-900/50 text-yellow-400', decay: true },
     { id: 'storm', label: 'VANISHING', icon: Zap, color: 'border-blue-900/50 text-blue-400', decay: true },
@@ -526,7 +526,7 @@ const TrackerMode = ({ players, updatePlayer, syncState, playSound, onExit, camp
                                 color="text-purple-500"
                                 ringColor="border-purple-900/20"
                             />
-                             <div className="mt-2 text-[9px] font-black uppercase tracking-[0.3em] text-stone-600">Energy</div>
+                             <div className="mt-2 text-[9px] font-black uppercase tracking-[0.3em] text-stone-600">Generic 2</div>
                         </div>
                     </div>
 
