@@ -127,7 +127,9 @@ const DirectRotaryKnob = ({ value, onChange, onCommit, size = 160, icon: Icon = 
     };
 
     const handlePointerUp = (e) => {
-        e.target.releasePointerCapture(e.pointerId);
+        // pointerLeave + pointerUp kan begge fyre — release må ikke crashe og må aldrig blokere commit.
+        if (lastAngleRef.current === null) return;
+        try { e.target.releasePointerCapture(e.pointerId); } catch (err) {}
         lastAngleRef.current = null;
         accumRef.current = 0;
         setIsTouching(false);
@@ -261,29 +263,41 @@ const COUNTER_DEFS = [
 
 const TrackerMode = ({ players, updatePlayer, syncState, playSound, onExit, campaignId }) => {
 
-    // Single Player Setup: Vi arbejder altid på players[0]
-    // Persistens-nøgle pr. kampagne, så hver tracker-session har sin egen state mellem reloads.
+    // Single Player Setup: Vi arbejder altid på players[0].
+    // localStorage er PRIMÆR source of truth pr. campaign — Supabase er en best-effort backup-sync.
+    // Stats må aldrig nulstilles uden at brugeren eksplicit trykker RESET → CONFIRM.
     const myIndex = 0;
     const storageKey = `tracker_state_${campaignId || 'default'}`;
 
     const loadSavedState = () => {
         try {
             const raw = localStorage.getItem(storageKey);
-            if (!raw) return {};
+            if (!raw) return null;
             const parsed = JSON.parse(raw);
-            return parsed && typeof parsed === 'object' ? parsed : {};
+            return parsed && typeof parsed === 'object' ? parsed : null;
         } catch (e) {
-            return {};
+            return null;
         }
     };
-    const savedStateRef = useRef(loadSavedState());
+    const initialSaved = useRef(loadSavedState()).current;
+    const hadLocalData = initialSaved !== null;
 
-    // Hvis Supabase har en player, bruger vi den; ellers falder vi tilbage til localStorage; ellers defaults.
-    const remoteMe = players[myIndex];
-    const me = remoteMe || {
-        lt: savedStateRef.current.lt !== undefined ? savedStateRef.current.lt : 40,
-        drunk: savedStateRef.current.drunk !== undefined ? savedStateRef.current.drunk : 0,
-    };
+    // Lokal state er den eneste kilde til hvad der vises. Remote kan kun seed'e første gang
+    // hvis localStorage var tomt — derefter ignoreres remote, så et stale Supabase-push
+    // aldrig kan resette spillerens stats.
+    const [persistedLife, setPersistedLife] = useState(
+        initialSaved && typeof initialSaved.lt === 'number' ? initialSaved.lt : 40
+    );
+    const [persistedDrunk, setPersistedDrunk] = useState(
+        initialSaved && typeof initialSaved.drunk === 'number' ? initialSaved.drunk : 0
+    );
+    const [counters, setCounters] = useState(() => {
+        const savedVals = (initialSaved && initialSaved.counters) || {};
+        return COUNTER_DEFS.map(def => ({
+            ...def,
+            value: typeof savedVals[def.id] === 'number' ? savedVals[def.id] : 0,
+        }));
+    });
 
     // --- STATE ---
     const [optimisticLife, setOptimisticLife] = useState(null);
@@ -295,52 +309,70 @@ const TrackerMode = ({ players, updatePlayer, syncState, playSound, onExit, camp
     const [diceState, setDiceState] = useState({ active: false, sides: 20, count: 1 });
     const lastShakeTime = useRef(0);
 
-    const [counters, setCounters] = useState(() => {
-        const savedVals = savedStateRef.current.counters || {};
-        return COUNTER_DEFS.map(def => ({
-            ...def,
-            value: typeof savedVals[def.id] === 'number' ? savedVals[def.id] : 0,
-        }));
-    });
+    // ÉN-GANGS seeding fra remote: kun hvis vi IKKE allerede har data lokalt.
+    // Når flagget er sat, må intet remote-event mere ændre lokal state.
+    const hydratedRef = useRef(hadLocalData);
+    useEffect(() => {
+        if (hydratedRef.current) return;
+        if (!Array.isArray(players)) return;
+        const remote = players[myIndex];
+        if (!remote) return;
+        const hasLt = typeof remote.lt === 'number';
+        const hasDrunk = typeof remote.drunk === 'number';
+        if (!hasLt && !hasDrunk) return;
+        if (hasLt) setPersistedLife(remote.lt);
+        if (hasDrunk) setPersistedDrunk(remote.drunk);
+        hydratedRef.current = true;
+    }, [players]);
 
-    // Persistens: skriv life, drunk og counters til localStorage hver gang noget ændres.
+    // Persistens: skriv altid til localStorage når noget ændres.
     useEffect(() => {
         try {
             const counterValues = {};
             counters.forEach(c => { counterValues[c.id] = c.value; });
             localStorage.setItem(storageKey, JSON.stringify({
-                lt: me.lt,
-                drunk: me.drunk,
+                lt: persistedLife,
+                drunk: persistedDrunk,
                 counters: counterValues,
             }));
         } catch (e) {}
-    }, [storageKey, me.lt, me.drunk, counters]);
+    }, [storageKey, persistedLife, persistedDrunk, counters]);
 
-    // Sync fix
+    // Ryd optimistic display når committed værdi matcher.
     useEffect(() => {
-        if (optimisticLife !== null && me?.lt === optimisticLife) setOptimisticLife(null);
-        if (optimisticDrunk !== null && me?.drunk === optimisticDrunk) setOptimisticDrunk(null);
-    }, [me?.lt, me?.drunk, optimisticLife, optimisticDrunk]);
+        if (optimisticLife !== null && persistedLife === optimisticLife) setOptimisticLife(null);
+        if (optimisticDrunk !== null && persistedDrunk === optimisticDrunk) setOptimisticDrunk(null);
+    }, [persistedLife, persistedDrunk, optimisticLife, optimisticDrunk]);
+
+    // Best-effort spejling til Supabase. En fejl her må ALDRIG koste lokal state.
+    const mirrorToSupabase = (nextLife, nextDrunk) => {
+        try {
+            const newPlayers = Array.isArray(players) ? [...players] : [];
+            const base = newPlayers[myIndex] || {};
+            newPlayers[myIndex] = { ...base, lt: nextLife, drunk: nextDrunk };
+            const result = syncState(newPlayers);
+            if (result && typeof result.catch === 'function') result.catch(() => {});
+        } catch (e) {}
+    };
 
     // --- HANDLERS ---
     const handleLocalLifeChange = (delta) => {
-        const currentBase = pendingLifeRef.current !== null ? pendingLifeRef.current : (optimisticLife !== null ? optimisticLife : (me?.lt || 0));
+        const currentBase = pendingLifeRef.current !== null ? pendingLifeRef.current : (optimisticLife !== null ? optimisticLife : persistedLife);
         const newVal = currentBase + delta;
         pendingLifeRef.current = newVal;
-        setOptimisticLife(newVal); 
+        setOptimisticLife(newVal);
     };
 
     const handleLifeCommit = () => {
         if (pendingLifeRef.current === null) return;
-        const newPlayers = [...players];
-        const base = newPlayers[myIndex] || { lt: 40, drunk: me.drunk || 0 };
-        newPlayers[myIndex] = { ...base, lt: pendingLifeRef.current };
-        syncState(newPlayers);
+        const newVal = pendingLifeRef.current;
+        setPersistedLife(newVal);
+        mirrorToSupabase(newVal, persistedDrunk);
         pendingLifeRef.current = null;
     };
 
     const handleLocalDrunkChange = (delta) => {
-        const currentBase = pendingDrunkRef.current !== null ? pendingDrunkRef.current : (optimisticDrunk !== null ? optimisticDrunk : (me?.drunk || 0));
+        const currentBase = pendingDrunkRef.current !== null ? pendingDrunkRef.current : (optimisticDrunk !== null ? optimisticDrunk : persistedDrunk);
         const newVal = Math.max(0, currentBase + delta);
         pendingDrunkRef.current = newVal;
         setOptimisticDrunk(newVal);
@@ -348,10 +380,9 @@ const TrackerMode = ({ players, updatePlayer, syncState, playSound, onExit, camp
 
     const handleDrunkCommit = () => {
         if (pendingDrunkRef.current === null) return;
-        const newPlayers = [...players];
-        const base = newPlayers[myIndex] || { lt: me.lt || 40, drunk: 0 };
-        newPlayers[myIndex] = { ...base, drunk: pendingDrunkRef.current };
-        syncState(newPlayers);
+        const newVal = pendingDrunkRef.current;
+        setPersistedDrunk(newVal);
+        mirrorToSupabase(persistedLife, newVal);
         pendingDrunkRef.current = null;
     };
 
@@ -360,28 +391,30 @@ const TrackerMode = ({ players, updatePlayer, syncState, playSound, onExit, camp
     };
 
     const handleUpkeep = () => {
-        playSound('bell'); 
+        playSound('bell');
         if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
 
         let didChange = false;
         const newCounters = counters.map(c => {
             if (c.decay && c.value > 0) {
                 didChange = true;
-                return { ...c, value: Math.max(0, c.value - 1) }; 
+                return { ...c, value: Math.max(0, c.value - 1) };
             }
             return c;
         });
         if (didChange) setCounters(newCounters);
     };
 
+    // Kun denne funktion må nulstille stats — og den kaldes kun fra CONFIRM-knappen i modal.
     const handleReset = () => {
-        const newPlayers = [...players];
-        const base = newPlayers[myIndex] || {};
-        newPlayers[myIndex] = { ...base, lt: 40, drunk: 0 };
-        syncState(newPlayers);
+        setPersistedLife(40);
+        setPersistedDrunk(0);
         setCounters(prev => prev.map(c => ({ ...c, value: 0 })));
+        mirrorToSupabase(40, 0);
         setOptimisticLife(null);
         setOptimisticDrunk(null);
+        pendingLifeRef.current = null;
+        pendingDrunkRef.current = null;
         setModalConfig({ isOpen: false });
         playSound('click');
     };
@@ -470,13 +503,13 @@ const TrackerMode = ({ players, updatePlayer, syncState, playSound, onExit, camp
                     <div className="flex justify-between items-end gap-2 px-2">
                         {/* PRIMARY LIFE */}
                         <div className="flex flex-col items-center">
-                             <DirectRotaryKnob 
-                                value={optimisticLife !== null ? optimisticLife : (me.lt || 0)} 
-                                onChange={handleLocalLifeChange} 
+                             <DirectRotaryKnob
+                                value={optimisticLife !== null ? optimisticLife : persistedLife}
+                                onChange={handleLocalLifeChange}
                                 onCommit={handleLifeCommit}
-                                size={150} 
-                                icon={Heart} 
-                                color="text-red-500" 
+                                size={150}
+                                icon={Heart}
+                                color="text-red-500"
                                 ringColor="border-stone-800"
                             />
                             <div className="mt-2 text-[9px] font-black uppercase tracking-[0.3em] text-stone-600">Life</div>
@@ -484,13 +517,13 @@ const TrackerMode = ({ players, updatePlayer, syncState, playSound, onExit, camp
 
                         {/* SECONDARY RESOURCE (Drunk/Mana) */}
                         <div className="flex flex-col items-center mb-1">
-                            <DirectRotaryKnob 
-                                value={optimisticDrunk !== null ? optimisticDrunk : (me.drunk || 0)} 
-                                onChange={handleLocalDrunkChange} 
+                            <DirectRotaryKnob
+                                value={optimisticDrunk !== null ? optimisticDrunk : persistedDrunk}
+                                onChange={handleLocalDrunkChange}
                                 onCommit={handleDrunkCommit}
-                                size={120} 
-                                icon={Zap} 
-                                color="text-purple-500" 
+                                size={120}
+                                icon={Zap}
+                                color="text-purple-500"
                                 ringColor="border-purple-900/20"
                             />
                              <div className="mt-2 text-[9px] font-black uppercase tracking-[0.3em] text-stone-600">Energy</div>
@@ -583,7 +616,10 @@ const TrackerMode = ({ players, updatePlayer, syncState, playSound, onExit, camp
                 actions={
                     <>
                         <button onClick={() => setModalConfig({ isOpen: false })} className="flex-1 py-3 bg-stone-800 rounded-lg font-bold text-stone-400">CANCEL</button>
-                        <button onClick={() => { modalConfig.onConfirm(); }} className="flex-1 py-3 bg-red-600 rounded-lg font-bold text-white shadow-lg shadow-red-900/50">CONFIRM</button>
+                        <button onClick={() => {
+                            if (typeof modalConfig.onConfirm === 'function') modalConfig.onConfirm();
+                            else setModalConfig({ isOpen: false });
+                        }} className="flex-1 py-3 bg-red-600 rounded-lg font-bold text-white shadow-lg shadow-red-900/50">CONFIRM</button>
                     </>
                 }
             >
